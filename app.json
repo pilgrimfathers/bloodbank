@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bloodbank.app",
+      "bundleIdentifier": "com.bloodbankkgq.app",
       "buildNumber": "1.0.0",
       "icon": "./assets/images/ios/AppIcon~ios-marketing.png"
     },
@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/images/android/play_store_512.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.bloodbank.app",
+      "package": "com.bloodbankkgq.app",
       "versionCode": 1
     },
     "web": {
