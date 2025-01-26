@@ -1,29 +1,55 @@
-# Welcome to your Expo app 👋
+# Blood Bank App 🩸
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A cross-platform mobile application built with Expo and React Native that connects blood donors with those in need.
 
-## Get started
+## Features
+
+- 🔐 Secure authentication with Firebase
+- 👤 User profiles for donors and requesters
+- 🏥 Create and manage blood donation requests
+- 🔍 Search and filter blood requests
+- 📱 Cross-platform support (iOS, Android, Web)
+- 📍 Location-based request tracking
+- 📊 Real-time status updates
+
+## Tech Stack
+
+- [Expo](https://expo.dev) - React Native framework
+- [Firebase](https://firebase.google.com) - Backend and Authentication
+- [TypeScript](https://www.typescriptlang.org) - Type safety
+- [Expo Router](https://docs.expo.dev/router/introduction) - File-based routing
+
+## Getting Started
 
 1. Install dependencies
-
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Configure Firebase
+   - Create a Firebase project
+   - Enable Authentication and Firestore
+   - Update the Firebase config in `app/config/firebase.ts`
 
+3. Start the development server
    ```bash
-    npx expo start
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Development Options
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+You can run the app in:
+- [iOS Simulator](https://docs.expo.dev/workflow/ios-simulator)
+- [Android Emulator](https://docs.expo.dev/workflow/android-studio-emulator)
+- [Web Browser](https://docs.expo.dev/workflow/web)
+- [Expo Go](https://expo.dev/client) on your physical device
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project Structure
+
+app/
+├── (auth)/          # Authentication screens
+├── (tabs)/          # Main app tabs
+├── components/      # Reusable components
 
 ## Get a fresh project
 
