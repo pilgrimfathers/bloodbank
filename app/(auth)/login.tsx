@@ -88,11 +88,17 @@ export default function Login() {
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/register')}>
-          <Text style={styles.linkText}>
-            New to Blood Bank? <Text style={styles.linkTextBold}>Create an account</Text>
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.linkContainer}>
+          <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/privacy-policy')}>
+            <Text style={styles.linkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/register')}>
+            <Text style={styles.linkText}>
+              New to Blood Bank? <Text style={styles.linkTextBold}>Create an account</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -148,6 +154,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  linkContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+    gap: 16,
   },
   linkButton: {
     marginTop: 24,
