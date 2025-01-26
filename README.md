@@ -46,10 +46,27 @@ You can run the app in:
 
 ## Project Structure
 
+```
 app/
 ├── (auth)/          # Authentication screens
+│   ├── login/       # Login screen
+│   ├── register/    # Registration screen
+│   └── forgot/      # Password recovery
 ├── (tabs)/          # Main app tabs
+│   ├── home/        # Home screen
+│   ├── donate/      # Donation management
+│   ├── requests/    # Blood requests
+│   └── profile/     # User profile
 ├── components/      # Reusable components
+│   ├── common/      # Shared UI components
+│   ├── forms/       # Form components
+│   └── layouts/     # Layout components
+├── config/          # App configuration
+├── hooks/           # Custom React hooks
+├── services/        # API and external services
+├── types/           # TypeScript definitions
+└── utils/           # Helper functions
+```
 
 ## Get a fresh project
 
