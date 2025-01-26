@@ -49,23 +49,31 @@ You can run the app in:
 ```
 app/
 ├── (auth)/          # Authentication screens
-│   ├── login/       # Login screen
-│   ├── register/    # Registration screen
-│   └── forgot/      # Password recovery
+│   ├── _layout.tsx  # Auth layout configuration
+│   ├── login.tsx    # Login screen
+│   └── register.tsx # Registration screen
 ├── (tabs)/          # Main app tabs
-│   ├── home/        # Home screen
-│   ├── donate/      # Donation management
-│   ├── requests/    # Blood requests
-│   └── profile/     # User profile
+│   ├── _layout.tsx  # Tabs layout configuration
+│   ├── home.tsx     # Home screen
+│   ├── messages.tsx # Messages screen
+│   ├── profile.tsx  # User profile
+│   ├── requests.tsx # Blood requests
+│   └── search.tsx   # Search functionality
+├── request/         # Request-related screens
+│   ├── [id].tsx    # Request details screen
+│   └── new.tsx     # New request screen
 ├── components/      # Reusable components
-│   ├── common/      # Shared UI components
-│   ├── forms/       # Form components
-│   └── layouts/     # Layout components
+│   ├── BackButton.tsx
+│   ├── LoadingSpinner.tsx
+│   ├── PageContainer.tsx
+│   ├── QuoteCarousel.tsx
+│   └── SkeletonLoader.tsx
 ├── config/          # App configuration
-├── hooks/           # Custom React hooks
-├── services/        # API and external services
-├── types/           # TypeScript definitions
-└── utils/           # Helper functions
+│   └── firebase.ts  # Firebase configuration
+├── types/          # TypeScript definitions
+│   └── index.ts    # Type definitions
+├── _layout.tsx     # Root layout configuration
+└── index.tsx       # Landing screen
 ```
 
 ## Get a fresh project
