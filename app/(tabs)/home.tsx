@@ -141,12 +141,14 @@ export default function HomeScreen() {
                     </View>
                   </View>
                   <Text style={styles.hospital}>{request.hospital}</Text>
+                  <Text style={styles.patientName}>Patient: {request.patientName}</Text>
                   <Text style={styles.location}>{request.location}</Text>
                   <View style={styles.requestFooter}>
                     <Text style={styles.units}>{request.units} units needed</Text>
-                    <Text style={styles.date}>
-                      {request.createdAt.toLocaleDateString()}
-                    </Text>
+                    <View style={styles.dateContainer}>
+                      <Text style={styles.requesterName}>by {request.requesterName}</Text>
+                      <Text style={styles.date}>{request.createdAt.toLocaleDateString()}</Text>
+                    </View>
                   </View>
                 </View>
               ))
@@ -262,6 +264,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  patientName: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
   location: {
     color: '#666',
     marginBottom: 8,
@@ -284,5 +291,15 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginTop: 16,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requesterName: {
+    color: '#666',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
 }); 

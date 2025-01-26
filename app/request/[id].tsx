@@ -73,15 +73,19 @@ export default function RequestDetails() {
               <View style={styles.bloodTypeContainer}>
                 <Text style={styles.bloodType}>{request.bloodType}</Text>
               </View>
-              <Text style={styles.date}>
-                {request.createdAt.toLocaleDateString()}
-              </Text>
+              <View style={styles.dateContainer}>
+                <Text style={styles.requesterName}>by {request.requesterName}</Text>
+                <Text style={styles.date}>
+                  {request.createdAt.toLocaleDateString()}
+                </Text>
+              </View>
             </View>
           </View>
 
           <View style={styles.detailsContainer}>
             <View style={styles.detailsCard}>
-              <DetailItem icon="person" label="Patient" value={request.requesterName} />
+              <DetailItem icon="account" label="Patient" value={request.patientName} />
+              <DetailItem icon="account-circle" label="Requester" value={request.requesterName} />
               <DetailItem icon="hospital" label="Hospital" value={request.hospital} />
               <DetailItem icon="map-marker" label="Location" value={request.location} />
               <DetailItem icon="water" label="Units Needed" value={`${request.units} units`} />
@@ -97,6 +101,7 @@ export default function RequestDetails() {
                 label="Status" 
                 value={request.status.toUpperCase()}
                 color={request.status === 'open' ? '#2e7d32' : '#666'}
+                isLast
               />
             </View>
           </View>
@@ -126,9 +131,18 @@ export default function RequestDetails() {
   );
 }
 
-function DetailItem({ icon, label, value, color }: { icon: string, label: string, value: string, color?: string }) {
+function DetailItem({ icon, label, value, color, isLast }: { 
+  icon: string, 
+  label: string, 
+  value: string, 
+  color?: string,
+  isLast?: boolean 
+}) {
   return (
-    <View style={styles.detailItem}>
+    <View style={[
+      styles.detailItem, 
+      isLast && { borderBottomWidth: 0 }
+    ]}>
       <MaterialCommunityIcons name={icon as any} size={24} color={color || '#666'} />
       <View style={styles.detailContent}>
         <Text style={styles.detailLabel}>{label}</Text>
@@ -142,7 +156,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginTop: 100,
+    marginTop: 80,
   },
   container: {
     flex: 1,
@@ -172,12 +186,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requesterName: {
+    color: '#666',
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
   date: {
     color: '#666',
     fontSize: 16,
   },
   detailsContainer: {
-    padding: 20,
+    padding: 10,
   },
   detailsCard: {
     backgroundColor: 'white',

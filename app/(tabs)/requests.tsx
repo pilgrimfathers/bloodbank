@@ -59,13 +59,15 @@ export default function RequestsScreen() {
       </View>
 
       <Text style={styles.hospital}>{item.hospital}</Text>
+      <Text style={styles.patientName}>Patient: {item.patientName}</Text>
       <Text style={styles.location}>{item.location}</Text>
       
       <View style={styles.footer}>
         <Text style={styles.units}>{item.units} units needed</Text>
-        <Text style={styles.date}>
-          {item.createdAt.toLocaleDateString()}
-        </Text>
+        <View style={styles.dateContainer}>
+          <Text style={styles.requesterName}>by {item.requesterName}</Text>
+          <Text style={styles.date}>{item.createdAt.toLocaleDateString()}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -173,6 +175,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  patientName: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
   location: {
     color: '#666',
     marginBottom: 12,
@@ -185,6 +192,16 @@ const styles = StyleSheet.create({
   units: {
     color: '#E53935',
     fontWeight: '500',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  requesterName: {
+    color: '#666',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   date: {
     color: '#666',
