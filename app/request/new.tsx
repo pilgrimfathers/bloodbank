@@ -18,11 +18,12 @@ export default function NewRequestScreen() {
     hospital: '',
     location: '',
     contactNumber: '',
+    patientName: '',
   });
 
   const handleSubmit = async () => {
     try {
-      if (!formData.bloodType || !formData.units || !formData.urgency || !formData.hospital || !formData.location) {
+      if (!formData.bloodType || !formData.units || !formData.urgency || !formData.hospital || !formData.location || !formData.patientName) {
         Alert.alert('Error', 'Please fill in all required fields');
         return;
       }
@@ -36,6 +37,7 @@ export default function NewRequestScreen() {
       const request: Omit<BloodRequest, 'id'> = {
         requesterId: user.uid,
         requesterName: user.displayName || 'Anonymous',
+        patientName: formData.patientName,
         bloodType: formData.bloodType,
         units: parseInt(formData.units),
         urgency: formData.urgency,
@@ -62,6 +64,13 @@ export default function NewRequestScreen() {
         <View style={styles.container}>
           <View style={styles.formCard}>
             <Text style={styles.title}>Create Blood Request</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Patient Name"
+              value={formData.patientName}
+              onChangeText={(text) => setFormData({...formData, patientName: text})}
+            />
 
             <View style={styles.bloodTypeContainer}>
               {bloodTypes.map((type) => (

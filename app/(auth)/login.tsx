@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { Link, router } from 'expo-router';
 import { auth } from '../config/firebase';
@@ -9,6 +9,20 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        router.replace('/(tabs)/home');
+      }
+    });
+
+    if (auth.currentUser) {
+      router.replace('/(tabs)/home');
+    }
+
+    return unsubscribe;
+  }, [auth]);
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
@@ -16,9 +30,8 @@ export default function Login() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password).then((user) => {
-        router.push('/(tabs)/home');
-      });
+      await signInWithEmailAndPassword(auth, email, password);
+      // No need to manually navigate here as the auth state change will trigger the useEffect
     } catch (error: any) {
       let errorMessage = 'An error occurred during login';
       

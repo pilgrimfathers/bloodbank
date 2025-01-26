@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Dimensions, Animated } from 'react-native';
-import { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Dimensions, Animated, Easing } from 'react-native';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -24,10 +24,31 @@ const quotes = [
 export default function QuoteCarousel() {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollViewRef = useRef<any>(null);
+
+  const scrollToIndex = useCallback((index: number) => {
+    scrollViewRef.current?.scrollTo({
+      x: index * (CARD_WIDTH + SPACING),
+      animated: true,
+      duration: 2000,
+      easing: Easing.bezier(0.6, 1, 0.4, 2)
+    });
+    setCurrentIndex(index);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (currentIndex + 1) % quotes.length;
+      scrollToIndex(nextIndex);
+    }, 5000);
+
+    return () => clearInterval(timer);
+  }, [currentIndex, scrollToIndex]);
 
   return (
     <View style={styles.container}>
       <Animated.ScrollView
+        ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={CARD_WIDTH + SPACING}

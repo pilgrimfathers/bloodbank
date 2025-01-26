@@ -5,8 +5,10 @@ import { firestore, auth } from '../config/firebase';
 import { BloodRequest } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import QuoteCarousel from '../components/QuoteCarousel';
+import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function HomeScreen() {
+  const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState('');
   const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([]);
   const [stats, setStats] = useState({
@@ -22,6 +24,7 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       // Query for all open requests, ordered by creation date
       const recentQuery = query(
         collection(firestore, 'bloodRequests'),
@@ -42,8 +45,6 @@ export default function HomeScreen() {
         getDocs(urgentQuery)
       ]);
 
-      console.log(recentSnapshot.docs.map(doc => doc.data()));
-
       const recentData = recentSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -58,6 +59,8 @@ export default function HomeScreen() {
       });
     } catch (error) {
       console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,6 +88,10 @@ export default function HomeScreen() {
         return '#2e7d32';
     }
   };
+
+  if (loading) {
+    return <SkeletonLoader />;
+  }
 
   return (
       <ScrollView style={styles.container}>

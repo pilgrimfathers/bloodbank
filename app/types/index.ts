@@ -13,6 +13,7 @@ export type BloodRequest = {
   id: string;
   requesterId: string;
   requesterName: string;
+  patientName: string;
   bloodType: string;
   units: number;
   urgency: 'high' | 'medium' | 'low';
