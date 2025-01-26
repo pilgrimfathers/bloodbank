@@ -1,23 +1,22 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Link } from 'expo-router';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function LandingScreen() {
   return (
-    <View style={styles.container}>
-      <Image 
-        source={{ uri: 'https://img.freepik.com/free-vector/hand-drawn-blood-cartoon-illustration_23-2150682068.jpg' }}
-        style={styles.image}
-      />
-      <Text style={styles.title}>Blood Bank</Text>
-      <Text style={styles.subtitle}>Every drop counts, be a lifesaver today</Text>
-      
-      <Link href="/(auth)/login" asChild>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
+      <View style={styles.container}>
+        <Image 
+          source={{ uri: 'https://img.freepik.com/free-vector/hand-drawn-blood-cartoon-illustration_23-2150682068.jpg' }}
+          style={styles.image}
+        />
+        <Text style={styles.title}>Blood Bank</Text>
+        <Text style={styles.subtitle}>Every drop counts, be a lifesaver today</Text>
+        
+        <Link href="/(auth)/login" asChild>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+        </Link>
+      </View>
   );
 }
 

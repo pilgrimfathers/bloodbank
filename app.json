@@ -4,30 +4,40 @@
     "slug": "blood-bank",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "icon": "./assets/images/android/play_store_512.png",
+    "scheme": "bloodbank",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/android/play_store_512.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bloodbank.app",
+      "buildNumber": "1.0.0",
+      "icon": "./assets/images/ios/AppIcon~ios-marketing.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/android/play_store_512.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.bloodbank.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/web/favicon.ico"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/android/play_store_512.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

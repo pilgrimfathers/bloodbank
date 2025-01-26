@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { auth, firestore } from '../config/firebase';
@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginTop: 16,
     padding: 16,
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
   },
   infoItem: {
     flexDirection: 'row',
@@ -163,6 +164,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    width: Platform.OS === 'web' ? '20%' : 'auto',
+    marginHorizontal: Platform.OS === 'web' ? 'auto' : 0,
   },
   logoutText: {
     color: 'white',

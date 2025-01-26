@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebase';
@@ -73,43 +73,45 @@ export default function HomeScreen() {
       </View>
 
       <QuoteCarousel />
+      <View style={styles.contentContainer}>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.totalRequests}</Text>
-          <Text style={styles.statLabel}>Total Requests</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.totalRequests}</Text>
+            <Text style={styles.statLabel}>Total Requests</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.urgentRequests}</Text>
+            <Text style={styles.statLabel}>Urgent Needs</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.myDonations}</Text>
+            <Text style={styles.statLabel}>My Donations</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.urgentRequests}</Text>
-          <Text style={styles.statLabel}>Urgent Needs</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.myDonations}</Text>
-          <Text style={styles.statLabel}>My Donations</Text>
-        </View>
-      </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Urgent Blood Needs</Text>
-        {urgentRequests.length === 0 ? (
-          <Text style={styles.noRequests}>No urgent requests found</Text>
-        ) : (
-          urgentRequests.map(request => (
-            <View key={request.id} style={styles.requestCard}>
-              <View style={styles.requestHeader}>
-              <View style={styles.bloodTypeContainer}>
-                <Text style={styles.bloodType}>{request.bloodType}</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Urgent Blood Needs</Text>
+          {urgentRequests.length === 0 ? (
+            <Text style={styles.noRequests}>No urgent requests found</Text>
+          ) : (
+            urgentRequests.map(request => (
+              <View key={request.id} style={styles.requestCard}>
+                <View style={styles.requestHeader}>
+                <View style={styles.bloodTypeContainer}>
+                  <Text style={styles.bloodType}>{request.bloodType}</Text>
+                </View>
+                <Text style={styles.date}>
+                  {request.createdAt.toLocaleDateString()}
+                </Text>
               </View>
-              <Text style={styles.date}>
-                {request.createdAt.toLocaleDateString()}
-              </Text>
-            </View>
-            <Text style={styles.hospital}>{request.hospital}</Text>
-            <Text style={styles.location}>{request.location}</Text>
-            <Text style={styles.units}>{request.units} units needed</Text>
-            </View>
-          ))
-        )}
+              <Text style={styles.hospital}>{request.hospital}</Text>
+              <Text style={styles.location}>{request.location}</Text>
+              <Text style={styles.units}>{request.units} units needed</Text>
+              </View>
+            ))
+          )}
+        </View>
       </View>
     </ScrollView>
   );
@@ -120,9 +122,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  contentContainer: {
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
+  },
   greeting: {
     padding: 20,
     paddingTop: 24,
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
     backgroundColor: 'white',
   },
   greetingRow: {
