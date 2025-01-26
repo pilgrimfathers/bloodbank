@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, RefreshControl } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebase';
 import { BloodRequest } from '../types';
@@ -12,6 +12,7 @@ import BackButton from '../components/BackButton';
 export default function RequestDetails() {
   const { id } = useLocalSearchParams();
   const [request, setRequest] = useState<BloodRequest | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchRequest();
@@ -57,6 +58,17 @@ export default function RequestDetails() {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchRequest();
+    } catch (error) {
+      console.error('Error refreshing request:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id]);
+
   if (!request) {
     return <LoadingSpinner />;
   }
@@ -66,7 +78,12 @@ export default function RequestDetails() {
   return (
     <PageContainer>
       <BackButton />
-      <View style={styles.wrapper}>
+      <ScrollView 
+        style={styles.wrapper}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerContent}>
@@ -126,7 +143,7 @@ export default function RequestDetails() {
             </View>
           )}
         </View>
-      </View>
+      </ScrollView>
     </PageContainer>
   );
 }
@@ -156,7 +173,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginTop: 80,
+    marginTop: Platform.OS === 'web' ? 80 : 95,
   },
   container: {
     flex: 1,

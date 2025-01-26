@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
-import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebase';
 import { BloodRequest } from '../types';
@@ -16,6 +16,7 @@ export default function HomeScreen() {
     urgentRequests: 0,
     myDonations: 0,
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -99,73 +100,92 @@ export default function HomeScreen() {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        fetchData(),
+        fetchUserName()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   if (loading) {
     return <SkeletonLoader />;
   }
 
   return (
-      <ScrollView style={styles.container}>
-        <View style={styles.greeting}>
-          <View style={styles.greetingRow}>
-            <Text style={styles.greetingText}>Hello, {userName}</Text>
-            <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
+      <View style={styles.greeting}>
+        <View style={styles.greetingRow}>
+          <Text style={styles.greetingText}>Hello, {userName}</Text>
+          <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
+        </View>
+        <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
+      </View>
+
+      <QuoteCarousel />
+      <View style={styles.contentContainer}>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.totalRequests}</Text>
+            <Text style={styles.statLabel}>Total Requests</Text>
           </View>
-          <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.urgentRequests}</Text>
+            <Text style={styles.statLabel}>Urgent Needs</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.myDonations}</Text>
+            <Text style={styles.statLabel}>My Donations</Text>
+          </View>
         </View>
 
-        <QuoteCarousel />
-        <View style={styles.contentContainer}>
-          <View style={styles.statsContainer}>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.totalRequests}</Text>
-              <Text style={styles.statLabel}>Total Requests</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.urgentRequests}</Text>
-              <Text style={styles.statLabel}>Urgent Needs</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{stats.myDonations}</Text>
-              <Text style={styles.statLabel}>My Donations</Text>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Blood Requests</Text>
-            {recentRequests.length === 0 ? (
-              <Text style={styles.noRequests}>No requests found</Text>
-            ) : (
-              recentRequests.map(request => (
-                <View key={request.id} style={styles.requestCard}>
-                  <View style={styles.requestHeader}>
-                    <View style={styles.bloodTypeContainer}>
-                      <Text style={styles.bloodType}>{request.bloodType}</Text>
-                    </View>
-                    <View style={[
-                      styles.urgencyBadge,
-                      { backgroundColor: getUrgencyColor(request.urgency) }
-                    ]}>
-                      <Text style={styles.urgencyText}>
-                        {request.urgency.toUpperCase()}
-                      </Text>
-                    </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Blood Requests</Text>
+          {recentRequests.length === 0 ? (
+            <Text style={styles.noRequests}>No requests found</Text>
+          ) : (
+            recentRequests.map(request => (
+              <View key={request.id} style={styles.requestCard}>
+                <View style={styles.requestHeader}>
+                  <View style={styles.bloodTypeContainer}>
+                    <Text style={styles.bloodType}>{request.bloodType}</Text>
                   </View>
-                  <Text style={styles.hospital}>{request.hospital}</Text>
-                  <Text style={styles.patientName}>Patient: {request.patientName}</Text>
-                  <Text style={styles.location}>{request.location}</Text>
-                  <View style={styles.requestFooter}>
-                    <Text style={styles.units}>{request.units} units needed</Text>
-                    <View style={styles.dateContainer}>
-                      <Text style={styles.requesterName}>by {request.requesterName}</Text>
-                      <Text style={styles.date}>{request.createdAt.toLocaleDateString()}</Text>
-                    </View>
+                  <View style={[
+                    styles.urgencyBadge,
+                    { backgroundColor: getUrgencyColor(request.urgency) }
+                  ]}>
+                    <Text style={styles.urgencyText}>
+                      {request.urgency.toUpperCase()}
+                    </Text>
                   </View>
                 </View>
-              ))
-            )}
-          </View>
+                <Text style={styles.hospital}>{request.hospital}</Text>
+                <Text style={styles.patientName}>Patient: {request.patientName}</Text>
+                <Text style={styles.location}>{request.location}</Text>
+                <View style={styles.requestFooter}>
+                  <Text style={styles.units}>{request.units} units needed</Text>
+                  <View style={styles.dateContainer}>
+                    <Text style={styles.requesterName}>by {request.requesterName}</Text>
+                    <Text style={styles.date}>{request.createdAt.toLocaleDateString()}</Text>
+                  </View>
+                </View>
+              </View>
+            ))
+          )}
         </View>
-      </ScrollView>
+      </View>
+    </ScrollView>
   );
 }
 
