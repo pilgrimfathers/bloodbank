@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAuthenticated() && isOwner(userId);
+      allow delete: if false; // Prevent user deletion
+    }
+
+    // Blood requests collection
+    match /bloodRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                   request.resource.data.requesterId == request.auth.uid &&
+                   request.resource.data.status == 'open';
+      allow update: if isAuthenticated() && (
+        // Allow owners to update their requests
+        isOwner(resource.data.requesterId) ||
+        // Allow updates for fulfilling requests (donors)
+        (resource.data.status == 'open' && 
+         request.resource.data.status in ['fulfilled', 'closed'])
+      );
+      allow delete: if false; // Prevent request deletion
+    }
+  }
+} 

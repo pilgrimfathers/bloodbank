@@ -5,13 +5,13 @@ import { Platform } from 'react-native';
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDELjS60NoeXW7Uop1fpanQQ3nvPiTD6zA",
-    authDomain: "blood-bank-3e585.firebaseapp.com",
-    projectId: "blood-bank-3e585",
-    storageBucket: "blood-bank-3e585.firebasestorage.app",
-    messagingSenderId: "1093840618926",
-    appId: "1:1093840618926:web:d400147f9efe0a8ba0343f",
-    measurementId: "G-8N025SQY7K"
+    apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 // initialize Firebase App
