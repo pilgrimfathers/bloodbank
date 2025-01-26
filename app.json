@@ -28,9 +28,9 @@
       "versionCode": 1
     },
     "web": {
+      "output": "server",
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/web/favicon.ico"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
@@ -46,6 +46,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "86eb4501-a1e3-4678-a4ce-eb310ad5313b"
+      }
     }
   }
 }
