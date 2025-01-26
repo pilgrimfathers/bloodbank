@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { BloodRequest } from '../types';
@@ -104,7 +104,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
+    paddingVertical: 24,
     backgroundColor: 'white',
   },
   title: {

@@ -126,9 +126,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
   },
   greeting: {
-    padding: 20,
-    paddingTop: 24,
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
+    paddingVertical: 24,
     backgroundColor: 'white',
   },
   greetingRow: {

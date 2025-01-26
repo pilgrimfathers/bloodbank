@@ -133,8 +133,8 @@ const styles = StyleSheet.create({
   infoSection: {
     backgroundColor: 'white',
     marginTop: 16,
-    padding: 16,
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
+    paddingVertical: 24,
   },
   infoItem: {
     flexDirection: 'row',
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    width: Platform.OS === 'web' ? '20%' : 'auto',
-    marginHorizontal: Platform.OS === 'web' ? 'auto' : 0,
+    width: Platform.OS === 'web' ? '20%' : '30%',
+    marginHorizontal: 'auto',
   },
   logoutText: {
     color: 'white',
