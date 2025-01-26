@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    marginTop: Platform.OS === 'ios' ? 60 : 0,
   },
   header: {
     flexDirection: 'row',
