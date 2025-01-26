@@ -8,22 +8,6 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  const handleNavigation = useCallback(() => {
-    if (initializing) return;
-
-    // Check if the current route requires authentication
-    const inAuthGroup = segments[0] === '(auth)';
-    const inProtectedRoute = !['index', '(auth)'].includes(segments[0] || '');
-
-    if (!isAuthenticated && inProtectedRoute) {
-      // Redirect to login if trying to access protected route while not authenticated
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // Redirect to home if trying to access auth pages while authenticated
-      router.replace('/(tabs)/home');
-    }
-  }, [isAuthenticated, segments, initializing]);
-
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setIsAuthenticated(!!user);
@@ -34,8 +18,17 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    handleNavigation();
-  }, [handleNavigation]);
+    if (initializing) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inProtectedRoute = segments[0] === '(tabs)' || segments[0] === 'request';
+
+    if (!isAuthenticated && inProtectedRoute) {
+      router.replace('/(auth)/login');
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace('/(tabs)/home');
+    }
+  }, [isAuthenticated, initializing, segments[0]]);
 
   if (initializing) return null;
 

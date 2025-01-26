@@ -50,6 +50,23 @@ export default function Register() {
 
   const handleRegister = async () => {
     try {
+      // Validation checks
+      if (!formData.email || !formData.password || !formData.confirmPassword) {
+        Alert.alert('Error', 'Please fill in all required fields');
+        return;
+      }
+
+      // Password validation
+      if (formData.password.length < 6) {
+        Alert.alert('Error', 'Password must be at least 6 characters long');
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        Alert.alert('Error', 'Passwords do not match');
+        return;
+      }
+
       if (!formData.bloodType) {
         Alert.alert('Error', 'Please select your blood type');
         return;
@@ -79,9 +96,28 @@ export default function Register() {
 
     } catch (error: any) {
       let errorMessage = 'Registration failed';
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'Email already registered';
+      
+      // Handle specific Firebase Auth errors
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already registered';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak. Please use at least 6 characters';
+          break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your internet connection';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many attempts. Please try again later';
+          break;
+        default:
+          console.error('Registration error:', error);
       }
+      
       Alert.alert('Error', errorMessage);
     }
   };
