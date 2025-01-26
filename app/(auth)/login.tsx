@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { auth } from '../config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import BackButton from '../components/BackButton';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -54,12 +54,7 @@ export default function Login() {
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
-          <MaterialCommunityIcons name="arrow-left" size={24} color="#E53935" />
-        </TouchableOpacity>
+        <BackButton />
         <Image 
           source={require('../../assets/images/icon.png')}
           style={[styles.icon, { width: 100, height: 100 }]}

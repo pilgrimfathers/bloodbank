@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-import { router } from 'expo-router';
 import { auth, firestore } from '../config/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import BackButton from '../components/BackButton';
 
 const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -79,7 +78,6 @@ export default function Register() {
       });
 
     } catch (error: any) {
-        console.log(error);
       let errorMessage = 'Registration failed';
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = 'Email already registered';
@@ -185,12 +183,7 @@ export default function Register() {
 
   return (
     <ScrollView style={styles.container}>
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => router.back()}
-      >
-        <MaterialCommunityIcons name="arrow-left" size={24} color="#E53935" />
-      </TouchableOpacity>
+      <BackButton />
       <View style={styles.formContainer}>
         <Text style={styles.title}>Blood Bank</Text>
         <View style={styles.stepIndicator}>
