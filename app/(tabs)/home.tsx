@@ -8,7 +8,7 @@ import QuoteCarousel from '../components/QuoteCarousel';
 
 export default function HomeScreen() {
   const [userName, setUserName] = useState('');
-  const [urgentRequests, setUrgentRequests] = useState<BloodRequest[]>([]);
+  const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([]);
   const [stats, setStats] = useState({
     totalRequests: 0,
     urgentRequests: 0,
@@ -22,25 +22,38 @@ export default function HomeScreen() {
 
   const fetchData = async () => {
     try {
-      const urgentQuery = query(
+      // Query for all open requests, ordered by creation date
+      const recentQuery = query(
         collection(firestore, 'bloodRequests'),
-        where('urgency', '==', 'high'),
         where('status', '==', 'open'),
         orderBy('createdAt', 'desc'),
         limit(5)
       );
       
-      const urgentSnapshot = await getDocs(urgentQuery);
-      const urgentData = urgentSnapshot.docs.map(doc => ({
+      // Query for urgent requests count
+      const urgentQuery = query(
+        collection(firestore, 'bloodRequests'),
+        where('urgency', '==', 'high'),
+        where('status', '==', 'open')
+      );
+      
+      const [recentSnapshot, urgentSnapshot] = await Promise.all([
+        getDocs(recentQuery),
+        getDocs(urgentQuery)
+      ]);
+
+      console.log(recentSnapshot.docs.map(doc => doc.data()));
+
+      const recentData = recentSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
       })) as BloodRequest[];
       
-      setUrgentRequests(urgentData);
+      setRecentRequests(recentData);
       setStats({
-        totalRequests: urgentData.length,
-        urgentRequests: urgentData.length,
+        totalRequests: recentData.length,
+        urgentRequests: urgentSnapshot.size,
         myDonations: 0,
       });
     } catch (error) {
@@ -62,58 +75,78 @@ export default function HomeScreen() {
     }
   };
 
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'high':
+        return '#c62828';
+      case 'medium':
+        return '#ef6c00';
+      default:
+        return '#2e7d32';
+    }
+  };
+
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.greeting}>
-        <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>Hello, {userName}</Text>
-          <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
-        </View>
-        <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
-      </View>
-
-      <QuoteCarousel />
-      <View style={styles.contentContainer}>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalRequests}</Text>
-            <Text style={styles.statLabel}>Total Requests</Text>
+      <ScrollView style={styles.container}>
+        <View style={styles.greeting}>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greetingText}>Hello, {userName}</Text>
+            <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.urgentRequests}</Text>
-            <Text style={styles.statLabel}>Urgent Needs</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.myDonations}</Text>
-            <Text style={styles.statLabel}>My Donations</Text>
-          </View>
+          <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Urgent Blood Needs</Text>
-          {urgentRequests.length === 0 ? (
-            <Text style={styles.noRequests}>No urgent requests found</Text>
-          ) : (
-            urgentRequests.map(request => (
-              <View key={request.id} style={styles.requestCard}>
-                <View style={styles.requestHeader}>
-                <View style={styles.bloodTypeContainer}>
-                  <Text style={styles.bloodType}>{request.bloodType}</Text>
+        <QuoteCarousel />
+        <View style={styles.contentContainer}>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.totalRequests}</Text>
+              <Text style={styles.statLabel}>Total Requests</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.urgentRequests}</Text>
+              <Text style={styles.statLabel}>Urgent Needs</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={styles.statValue}>{stats.myDonations}</Text>
+              <Text style={styles.statLabel}>My Donations</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recent Blood Requests</Text>
+            {recentRequests.length === 0 ? (
+              <Text style={styles.noRequests}>No requests found</Text>
+            ) : (
+              recentRequests.map(request => (
+                <View key={request.id} style={styles.requestCard}>
+                  <View style={styles.requestHeader}>
+                    <View style={styles.bloodTypeContainer}>
+                      <Text style={styles.bloodType}>{request.bloodType}</Text>
+                    </View>
+                    <View style={[
+                      styles.urgencyBadge,
+                      { backgroundColor: getUrgencyColor(request.urgency) }
+                    ]}>
+                      <Text style={styles.urgencyText}>
+                        {request.urgency.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.hospital}>{request.hospital}</Text>
+                  <Text style={styles.location}>{request.location}</Text>
+                  <View style={styles.requestFooter}>
+                    <Text style={styles.units}>{request.units} units needed</Text>
+                    <Text style={styles.date}>
+                      {request.createdAt.toLocaleDateString()}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.date}>
-                  {request.createdAt.toLocaleDateString()}
-                </Text>
-              </View>
-              <Text style={styles.hospital}>{request.hospital}</Text>
-              <Text style={styles.location}>{request.location}</Text>
-              <Text style={styles.units}>{request.units} units needed</Text>
-              </View>
-            ))
-          )}
+              ))
+            )}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
   );
 }
 
@@ -191,12 +224,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  noRequests: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
-  },
   requestHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -213,9 +240,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  date: {
-    color: '#666',
+  urgencyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  urgencyText: {
+    color: 'white',
     fontSize: 12,
+    fontWeight: 'bold',
   },
   hospital: {
     fontSize: 18,
@@ -226,8 +259,23 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  requestFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   units: {
     color: '#E53935',
     fontWeight: '500',
+  },
+  date: {
+    color: '#666',
+    fontSize: 12,
+  },
+  noRequests: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 16,
   },
 }); 

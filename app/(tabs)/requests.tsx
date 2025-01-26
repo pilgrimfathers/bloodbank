@@ -82,15 +82,17 @@ export default function RequestsScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={requests}
-        renderItem={renderRequest}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      />
+      <View style={styles.listContainer}>
+        <FlatList
+            data={requests}
+            renderItem={renderRequest}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.list}
+            refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+        />
+      </View>
     </View>
   );
 }
@@ -122,6 +124,13 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
+  },
+  listContainer: {
+    flex: 1,
+    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    alignSelf: 'center',
+    width: '100%',
+    padding: 20,
   },
   requestCard: {
     backgroundColor: 'white',

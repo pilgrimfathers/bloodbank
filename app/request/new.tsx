@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    marginTop: 100,
   },
   container: {
     flex: 1,

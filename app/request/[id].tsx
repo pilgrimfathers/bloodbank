@@ -35,14 +35,24 @@ export default function RequestDetails() {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: BloodRequest['status']) => {
+  const handleStatusUpdate = async (newStatus: 'fulfilled' | 'closed') => {
     try {
-      const docRef = doc(firestore, 'bloodRequests', id as string);
-      await updateDoc(docRef, { status: newStatus });
-      await fetchRequest();
-      Alert.alert('Success', 'Request status updated');
+      const requestRef = doc(firestore, 'bloodRequests', id as string);
+      const updateData: any = { 
+        status: newStatus,
+        updatedAt: new Date()
+      };
+      
+      // If request is being fulfilled, add donor information
+      if (newStatus === 'fulfilled') {
+        updateData.donorId = auth.currentUser?.uid;
+        updateData.fulfilledAt = new Date();
+      }
+
+      await updateDoc(requestRef, updateData);
+      router.back();
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Error updating request:', error);
       Alert.alert('Error', 'Failed to update request status');
     }
   };
@@ -71,6 +81,7 @@ export default function RequestDetails() {
 
           <View style={styles.detailsContainer}>
             <View style={styles.detailsCard}>
+              <DetailItem icon="person" label="Patient" value={request.requesterName} />
               <DetailItem icon="hospital" label="Hospital" value={request.hospital} />
               <DetailItem icon="map-marker" label="Location" value={request.location} />
               <DetailItem icon="water" label="Units Needed" value={`${request.units} units`} />
@@ -96,14 +107,16 @@ export default function RequestDetails() {
                 style={[styles.actionButton, { backgroundColor: '#43A047' }]}
                 onPress={() => handleStatusUpdate('fulfilled')}
               >
-                <Text style={styles.actionButtonText}>Mark as Fulfilled</Text>
+                <MaterialCommunityIcons name="check-circle" size={20} color="white" />
+                <Text style={styles.actionButtonText}>Fulfill</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: '#666' }]}
                 onPress={() => handleStatusUpdate('closed')}
               >
-                <Text style={styles.actionButtonText}>Close Request</Text>
+                <MaterialCommunityIcons name="close-circle" size={20} color="white" />
+                <Text style={styles.actionButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -129,6 +142,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+    marginTop: 100,
   },
   container: {
     flex: 1,
@@ -137,14 +151,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   header: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     borderRadius: Platform.OS === 'web' ? 12 : 0,
     marginTop: Platform.OS === 'web' ? 20 : 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
   headerContent: {
     padding: 20,
@@ -202,20 +211,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionContainer: {
-    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
     gap: 12,
-    maxWidth: Platform.OS === 'web' ? 400 : '100%',
-    alignSelf: 'center',
-    width: '100%',
+    padding: 20,
   },
   actionButton: {
-    padding: 15,
-    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    minWidth: 100,
+    justifyContent: 'center',
   },
   actionButtonText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 }); 
