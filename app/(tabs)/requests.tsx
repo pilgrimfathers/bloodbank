@@ -44,6 +44,14 @@ export default function RequestsScreen() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return '#43A047';
+      case 'fulfilled': case 'closed': return 'green';
+      default: return '#757575';
+    }
+  };
+
   const renderRequest = ({ item }: { item: BloodRequest }) => (
     <TouchableOpacity 
       style={styles.requestCard}
@@ -53,8 +61,13 @@ export default function RequestsScreen() {
         <View style={styles.bloodTypeContainer}>
           <Text style={styles.bloodType}>{item.bloodType}</Text>
         </View>
-        <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(item.urgency) }]}>
-          <Text style={styles.urgencyText}>{item.urgency.toUpperCase()}</Text>
+        <View style={styles.badges}>
+          <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(item.urgency) }]}>
+            <Text style={styles.badgeText}>{item.urgency.toUpperCase()}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
+          </View>
         </View>
       </View>
 
@@ -206,5 +219,19 @@ const styles = StyleSheet.create({
   date: {
     color: '#666',
     fontSize: 12,
+  },
+  badges: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 }); 

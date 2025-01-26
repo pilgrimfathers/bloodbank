@@ -25,6 +25,8 @@ export default function HomeScreen() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const userId = auth.currentUser?.uid;
+      
       // Query for all open requests, ordered by creation date
       const recentQuery = query(
         collection(firestore, 'bloodRequests'),
@@ -39,10 +41,18 @@ export default function HomeScreen() {
         where('urgency', '==', 'high'),
         where('status', '==', 'open')
       );
+
+      // Query for user's donations
+      const donationsQuery = query(
+        collection(firestore, 'bloodRequests'),
+        where('donorId', '==', userId),
+        where('status', '==', 'fulfilled')
+      );
       
-      const [recentSnapshot, urgentSnapshot] = await Promise.all([
+      const [recentSnapshot, urgentSnapshot, donationsSnapshot] = await Promise.all([
         getDocs(recentQuery),
-        getDocs(urgentQuery)
+        getDocs(urgentQuery),
+        getDocs(donationsQuery)
       ]);
 
       const recentData = recentSnapshot.docs.map(doc => ({
@@ -55,7 +65,7 @@ export default function HomeScreen() {
       setStats({
         totalRequests: recentData.length,
         urgentRequests: urgentSnapshot.size,
-        myDonations: 0,
+        myDonations: donationsSnapshot.size,
       });
     } catch (error) {
       console.error('Error fetching data:', error);
