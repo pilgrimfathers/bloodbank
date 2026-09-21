@@ -27,7 +27,7 @@ Roles are enforced in `firestore.rules`. To create the first admin, open your us
 - `donations/{id}`: one record per donation (`donorId`, `date`, `hospital`, `requestId`, `recordedBy`). Logging or deleting a donation keeps `users.lastDonation` in sync.
 - `bloodRequests/{id}`: requests, tagged with `district`.
 
-After changing `firestore.rules`, publish them: paste into Firebase console → Firestore → Rules, or run `firebase deploy --only firestore:rules` (needs a `firebase.json` pointing at the file).
+After changing `firestore.rules` or `firestore.indexes.json`, deploy with `firebase deploy --only firestore` (project set in `.firebaserc`).
 
 ## Tech Stack
 
