@@ -1,62 +1,88 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { Link } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { BLOOD_TYPES } from '@/src/constants';
+import { palette, radius, space } from '@/src/theme';
+import Button from '@/src/components/ui/Button';
+import Text from '@/src/components/ui/Text';
 
 export default function LandingScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-      <View style={styles.container}>
-        <Image 
-          source={{ uri: 'https://img.freepik.com/free-vector/hand-drawn-blood-cartoon-illustration_23-2150682068.jpg' }}
-          style={styles.image}
-        />
-        <Text style={styles.title}>Blood Bank</Text>
-        <Text style={styles.subtitle}>Every drop counts, be a lifesaver today</Text>
-        
-        <Link href="/(auth)/login" asChild>
-          <TouchableOpacity style={styles.button}>
-            <Text style={styles.buttonText}>Get Started</Text>
-          </TouchableOpacity>
-        </Link>
+    <View style={styles.page}>
+      <View style={[styles.band, { paddingTop: insets.top + space.xxl }]}>
+        <View style={styles.inner}>
+          <MaterialCommunityIcons name="water" size={56} color="#fff" />
+          <Text variant="display" color="#fff" style={styles.title}>Blood Bank Kerala</Text>
+          <Text variant="body" color="rgba(255,255,255,0.85)">
+            Donors, volunteers and patients across all 14 districts, one phone call apart.
+          </Text>
+          <View style={styles.groups}>
+            {BLOOD_TYPES.map(type => (
+              <View key={type} style={styles.group}>
+                <Text variant="bodyStrong" color="#fff">{type}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + space.xl }]}>
+        <View style={styles.inner}>
+          <Text variant="heading">Every donation counts</Text>
+          <Text variant="body" color={palette.inkMuted} style={styles.lead}>
+            Sign up as a donor, track your cool-off, and help volunteers find blood when someone needs it.
+          </Text>
+          <Button label="Get started" onPress={() => router.push('/(auth)/login')} />
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  page: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    backgroundColor: palette.paper,
   },
-  image: {
-    width: 280,
-    height: 280,
-    marginBottom: 20,
+  band: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: palette.blood,
+    paddingHorizontal: space.xl,
+    paddingBottom: space.xxl,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   title: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#E53935',
-    marginTop: 20,
+    marginTop: space.lg,
+    marginBottom: space.sm,
   },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    marginTop: 10,
-    marginBottom: 40,
-    textAlign: 'center',
+  groups: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginTop: space.xl,
   },
-  button: {
-    backgroundColor: '#E53935',
-    padding: 16,
-    borderRadius: 8,
-    width: '100%',
-    maxWidth: 300,
-    alignItems: 'center',
+  group: {
+    paddingHorizontal: space.md,
+    paddingVertical: space.xs,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.14)',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+  footer: {
+    paddingHorizontal: space.xl,
+    paddingTop: space.xl,
+  },
+  lead: {
+    marginTop: space.xs,
+    marginBottom: space.xl,
   },
 });

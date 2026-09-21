@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { COLORS, COOLOFF_MONTHS } from '@/src/constants';
+import { COOLOFF_MONTHS } from '@/src/constants';
 import { Donation, UserProfile } from '@/src/types';
 import { coversDistrict, getDonations, getUser, logDonation } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { addMonths } from '@/src/utils/eligibility';
 import { formatDate, parseDateInput, toDateInput } from '@/src/utils/format';
-import BackButton from '@/src/components/BackButton';
-import EligibilityBadge from '@/src/components/EligibilityBadge';
+import { palette, space } from '@/src/theme';
+import DonorCard from '@/src/components/DonorCard';
 import Field from '@/src/components/Field';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
+import Button from '@/src/components/ui/Button';
+import EmptyState from '@/src/components/ui/EmptyState';
+import Screen from '@/src/components/ui/Screen';
 
 // Logs a donation for the current user, or for any donor a volunteer manages.
 export default function NewDonationScreen() {
@@ -40,19 +41,28 @@ export default function NewDonationScreen() {
       }
     })().catch(error => {
       console.error('Error loading donor:', error);
-      showMessage('Error', 'Failed to load donor');
+      showMessage('Could not load donor', 'Check your connection and try again.');
     });
   }, [targetId, requestId]);
 
-  if (!me || !donor) return <LoadingSpinner />;
+  if (!me || !donor) {
+    return (
+      <Screen back title="Log donation">
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
+  }
 
   const isSelf = donor.id === me.id;
   if (!isSelf && !coversDistrict(me, donor.district)) {
     return (
-      <PageContainer>
-        <BackButton />
-        <Text style={styles.empty}>You can't log donations for this donor.</Text>
-      </PageContainer>
+      <Screen back title="Log donation">
+        <EmptyState
+          icon="lock-outline"
+          title="You can't log donations for this donor"
+          message="Only volunteers who manage this donor's district can do that."
+        />
+      </Screen>
     );
   }
 
@@ -77,83 +87,38 @@ export default function NewDonationScreen() {
     setSaving(true);
     try {
       await logDonation(donor, { date: donationDate, hospital, requestId }, { id: me.id, name: me.name });
-      showMessage('Donation recorded', `Thank you! ${donor.name} can donate again from ${formatDate(addMonths(donationDate, COOLOFF_MONTHS))}.`);
+      showMessage('Donation saved', `Thank you! ${isSelf ? 'You' : donor.name} can donate again from ${formatDate(addMonths(donationDate, COOLOFF_MONTHS))}.`);
       router.back();
     } catch (error) {
       console.error('Error logging donation:', error);
-      showMessage('Error', 'Failed to record donation');
+      showMessage('Could not save donation', 'Check your connection and try again.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper} contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{isSelf ? 'I donated blood' : `Log donation`}</Text>
-          <Text style={styles.subtitle}>
-            {donor.name} · {donor.bloodType}{donor.district ? ` · ${donor.district}` : ''}
-          </Text>
-          <View style={styles.eligibility}>
-            <EligibilityBadge lastDonation={donor.lastDonation} variant="card" />
-          </View>
-          <Field label="Donation date *" value={date} onChangeText={setDate} placeholder="DD-MM-YYYY" />
-          <Field label="Hospital / blood bank" value={hospital} onChangeText={setHospital} />
-          <TouchableOpacity style={styles.button} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Save donation</Text>}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </PageContainer>
+    <Screen
+      back
+      title={isSelf ? 'I donated blood' : 'Log donation'}
+      subtitle={isSelf ? 'This starts your cool-off period' : `For ${donor.name}${donor.district ? `, ${donor.district}` : ''}`}
+    >
+      <DonorCard
+        bloodType={donor.bloodType}
+        lastDonation={donor.lastDonation}
+        donationCount={donor.donationCount ?? history.length}
+      />
+      <View>
+        <Field label="Donation date" value={date} onChangeText={setDate} placeholder="DD-MM-YYYY" hint="Today by default" />
+        <Field label="Hospital or blood bank" value={hospital} onChangeText={setHospital} placeholder="e.g. District Hospital, Kanhangad" />
+        <Button icon="water-check" label="Save donation" onPress={handleSave} loading={saving} />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    padding: 16,
-    paddingTop: HEADER_OFFSET,
-    maxWidth: 800,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  subtitle: {
-    color: COLORS.muted,
-    marginTop: 4,
-  },
-  eligibility: {
-    marginVertical: 16,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  empty: {
-    textAlign: 'center',
-    color: COLORS.muted,
-    marginTop: 120,
+  loading: {
+    paddingVertical: space.xxl,
   },
 });

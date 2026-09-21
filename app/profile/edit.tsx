@@ -1,19 +1,24 @@
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { auth, firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { COLORS } from '@/src/constants';
 import { showMessage } from '@/src/utils/dialog';
-import BackButton from '@/src/components/BackButton';
+import { palette, space } from '@/src/theme';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
+import Screen from '@/src/components/ui/Screen';
 
 export default function EditProfileScreen() {
   const { profile } = useCurrentUser();
-  if (!profile) return <LoadingSpinner />;
+
+  if (!profile) {
+    return (
+      <Screen back title="Edit profile">
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
+  }
 
   const handleSubmit = async ({ lastDonation, notes, ...details }: DonorFormValues) => {
     try {
@@ -24,45 +29,19 @@ export default function EditProfileScreen() {
       router.back();
     } catch (error) {
       console.error('Error updating profile:', error);
-      showMessage('Error', 'Failed to update profile');
+      showMessage('Could not save profile', 'Check your connection and try again.');
     }
   };
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper} contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Edit profile</Text>
-          <DonorForm initial={profile} submitLabel="Save changes" onSubmit={handleSubmit} />
-        </View>
-      </ScrollView>
-    </PageContainer>
+    <Screen back title="Edit profile" subtitle="Keep your details current so volunteers can reach you">
+      <DonorForm initial={profile} submitLabel="Save changes" onSubmit={handleSubmit} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    padding: 16,
-    paddingTop: HEADER_OFFSET,
-    paddingBottom: 40,
-    maxWidth: 800,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 16,
+  loading: {
+    paddingVertical: space.xxl,
   },
 });

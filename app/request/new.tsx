@@ -1,262 +1,145 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { addDoc, collection } from 'firebase/firestore';
 import { auth, firestore } from '@/src/config/firebase';
-import { collection, addDoc } from 'firebase/firestore';
-import { BloodRequest } from '@/src/types';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
-import BackButton from '@/src/components/BackButton';
-import ChipSelect from '@/src/components/ChipSelect';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { BLOOD_TYPES, KERALA_DISTRICTS } from '@/src/constants';
+import { BloodRequest } from '@/src/types';
 import { showMessage } from '@/src/utils/dialog';
+import { normalizePhone } from '@/src/utils/format';
+import { space } from '@/src/theme';
+import ChipSelect from '@/src/components/ChipSelect';
+import Field from '@/src/components/Field';
+import Button from '@/src/components/ui/Button';
+import Screen from '@/src/components/ui/Screen';
 
-const urgencyLevels = ['low', 'medium', 'high'] as const;
+type Urgency = BloodRequest['urgency'];
+
+const URGENCY_LABELS: Record<Urgency, string> = {
+  high: 'Urgent',
+  medium: 'Needed soon',
+  low: 'Planned',
+};
 
 export default function NewRequestScreen() {
   const { profile } = useCurrentUser();
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     district: profile?.district ?? '',
     bloodType: '',
-    units: '',
-    urgency: '' as typeof urgencyLevels[number],
+    units: '1',
+    urgency: '' as Urgency | '',
     hospital: '',
     location: '',
-    contactNumber: '',
+    contactNumber: profile?.phoneNumber ?? '',
     patientName: '',
   });
+  const set = (patch: Partial<typeof formData>) => setFormData(prev => ({ ...prev, ...patch }));
 
   const handleSubmit = async () => {
+    const units = Number(formData.units);
+    const contactNumber = normalizePhone(formData.contactNumber);
+
+    if (!formData.patientName.trim()) return showMessage('Missing patient name', 'Enter the name of the patient who needs blood.');
+    if (!formData.bloodType) return showMessage('Missing blood type', 'Select the blood type the patient needs.');
+    if (!/^\d+$/.test(formData.units.trim()) || units < 1) {
+      return showMessage('Invalid units', 'Enter the number of units needed, for example 2.');
+    }
+    if (!formData.urgency) return showMessage('Missing urgency', 'Select how soon the blood is needed.');
+    if (!formData.hospital.trim()) return showMessage('Missing hospital', 'Enter the hospital or blood bank name.');
+    if (!formData.district) return showMessage('Missing district', 'Select the district of the hospital.');
+    if (!formData.location.trim()) return showMessage('Missing area', 'Enter the area or town of the hospital.');
+    if (!contactNumber) return showMessage('Invalid phone', 'Enter a 10-digit Indian mobile number donors can call.');
+
+    const user = auth.currentUser;
+    if (!user) return showMessage('Not signed in', 'Sign in again to post a request.');
+
+    setSaving(true);
     try {
-      if (!formData.bloodType || !formData.units || !formData.urgency || !formData.hospital || !formData.district || !formData.location || !formData.patientName) {
-        showMessage('Error', 'Please fill in all required fields');
-        return;
-      }
-
-      const user = auth.currentUser;
-      if (!user) {
-        showMessage('Error', 'You must be logged in to create a request');
-        return;
-      }
-
       const request: Omit<BloodRequest, 'id'> = {
         requesterId: user.uid,
-        requesterName: user.displayName || 'Anonymous',
-        patientName: formData.patientName,
+        requesterName: user.displayName || profile?.name || 'Anonymous',
+        patientName: formData.patientName.trim(),
         bloodType: formData.bloodType,
-        units: parseInt(formData.units),
+        units,
         urgency: formData.urgency,
-        hospital: formData.hospital,
+        hospital: formData.hospital.trim(),
         district: formData.district,
-        location: formData.location,
+        location: formData.location.trim(),
         status: 'open',
         createdAt: new Date(),
-        contactNumber: formData.contactNumber,
+        contactNumber,
       };
 
       await addDoc(collection(firestore, 'bloodRequests'), request);
-      showMessage('Success', 'Blood request created successfully');
+      showMessage('Request posted', 'Volunteers and donors can now see it.');
       router.back();
     } catch (error) {
       console.error('Error creating request:', error);
-      showMessage('Error', 'Failed to create blood request');
+      showMessage('Could not post request', 'Check your connection and try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper}>
-        <View style={styles.container}>
-          <View style={styles.formCard}>
-            <Text style={styles.title}>Create Blood Request</Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Patient Name"
-              value={formData.patientName}
-              onChangeText={(text) => setFormData({...formData, patientName: text})}
-            />
-
-            <View style={styles.bloodTypeContainer}>
-              {BLOOD_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.bloodTypeButton,
-                    formData.bloodType === type && styles.bloodTypeSelected
-                  ]}
-                  onPress={() => setFormData({...formData, bloodType: type})}
-                >
-                  <Text style={[
-                    styles.bloodTypeText,
-                    formData.bloodType === type && styles.bloodTypeTextSelected
-                  ]}>{type}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Units Needed"
-              value={formData.units}
-              onChangeText={(text) => setFormData({...formData, units: text})}
-              keyboardType="numeric"
-            />
-
-            <View style={styles.urgencyContainer}>
-              {urgencyLevels.map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[
-                    styles.urgencyButton,
-                    formData.urgency === level && styles.urgencySelected,
-                    { backgroundColor: level === 'high' ? '#ffebee' : level === 'medium' ? '#fff3e0' : '#e8f5e9' }
-                  ]}
-                  onPress={() => setFormData({...formData, urgency: level})}
-                >
-                  <Text style={[
-                    styles.urgencyText,
-                    formData.urgency === level && styles.urgencyTextSelected,
-                    { color: level === 'high' ? '#c62828' : level === 'medium' ? '#ef6c00' : '#2e7d32' }
-                  ]}>{level.toUpperCase()}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Hospital Name"
-              value={formData.hospital}
-              onChangeText={(text) => setFormData({...formData, hospital: text})}
-            />
-
-            <ChipSelect
-              label="District"
-              options={KERALA_DISTRICTS}
-              value={formData.district || null}
-              onChange={(district) => setFormData({...formData, district})}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Area / town"
-              value={formData.location}
-              onChangeText={(text) => setFormData({...formData, location: text})}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Contact Number"
-              value={formData.contactNumber}
-              onChangeText={(text) => setFormData({...formData, contactNumber: text})}
-              keyboardType="phone-pad"
-            />
-
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Create Request</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </PageContainer>
+    <Screen back title="Request blood" subtitle="Volunteers will call donors who match">
+      <Field
+        label="Patient name *"
+        value={formData.patientName}
+        onChangeText={patientName => set({ patientName })}
+      />
+      <ChipSelect
+        label="Blood type needed *"
+        options={BLOOD_TYPES}
+        value={formData.bloodType || null}
+        onChange={bloodType => set({ bloodType })}
+      />
+      <Field
+        label="Units needed *"
+        value={formData.units}
+        onChangeText={units => set({ units })}
+        keyboardType="number-pad"
+      />
+      <ChipSelect
+        label="How soon *"
+        options={['high', 'medium', 'low']}
+        value={formData.urgency || null}
+        onChange={urgency => set({ urgency: urgency as Urgency })}
+        format={value => URGENCY_LABELS[value as Urgency]}
+      />
+      <Field
+        label="Hospital or blood bank *"
+        value={formData.hospital}
+        onChangeText={hospital => set({ hospital })}
+      />
+      <ChipSelect
+        label="District *"
+        options={KERALA_DISTRICTS}
+        value={formData.district || null}
+        onChange={district => set({ district })}
+      />
+      <Field
+        label="Area / town *"
+        value={formData.location}
+        onChangeText={location => set({ location })}
+        placeholder="e.g. Kanhangad, Edappally"
+      />
+      <Field
+        label="Contact number *"
+        value={formData.contactNumber}
+        onChangeText={contactNumber => set({ contactNumber })}
+        keyboardType="phone-pad"
+        hint="Donors and volunteers will call this number"
+      />
+      <Button label="Post request" icon="water-plus" loading={saving} onPress={handleSubmit} style={styles.submit} />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    marginTop: HEADER_OFFSET,
+  submit: {
+    marginTop: space.sm,
   },
-  container: {
-    flex: 1,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
-    alignSelf: 'center',
-    width: '100%',
-    padding: 20,
-  },
-  formCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#E53935',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f8f8',
-  },
-  bloodTypeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  bloodTypeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E53935',
-  },
-  bloodTypeSelected: {
-    backgroundColor: '#E53935',
-  },
-  bloodTypeText: {
-    color: '#E53935',
-  },
-  bloodTypeTextSelected: {
-    color: 'white',
-  },
-  urgencyContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  urgencyButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    marginHorizontal: 4,
-    alignItems: 'center',
-  },
-  urgencySelected: {
-    backgroundColor: '#E53935',
-  },
-  urgencyText: {
-    fontWeight: 'bold',
-  },
-  urgencyTextSelected: {
-    color: 'white',
-  },
-  submitButton: {
-    backgroundColor: '#E53935',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-    maxWidth: Platform.OS === 'web' ? 400 : '100%',
-    alignSelf: 'center',
-    width: '100%',
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-}); 
+});

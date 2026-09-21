@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { auth, firestore } from '@/src/config/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import BackButton from '@/src/components/BackButton';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
+import Field from '@/src/components/Field';
+import Button from '@/src/components/ui/Button';
+import Screen from '@/src/components/ui/Screen';
+import Text from '@/src/components/ui/Text';
 import { showMessage } from '@/src/utils/dialog';
 import { logDonation } from '@/src/utils/data';
+import { palette, radius, space } from '@/src/theme';
 import { UserProfile } from '@/src/types';
 
 type Step = 'account' | 'details';
@@ -22,15 +25,15 @@ export default function Register() {
 
   const handleNext = () => {
     if (!account.email || !account.password || !account.confirmPassword) {
-      showMessage('Error', 'Please fill in all fields');
+      showMessage('Missing details', 'Fill in your email and both password fields.');
       return;
     }
     if (account.password.length < 6) {
-      showMessage('Error', 'Password must be at least 6 characters long');
+      showMessage('Password too short', 'Use at least 6 characters.');
       return;
     }
     if (account.password !== account.confirmPassword) {
-      showMessage('Error', 'Passwords do not match');
+      showMessage('Passwords do not match', 'Type the same password in both fields.');
       return;
     }
     setStep('details');
@@ -74,168 +77,108 @@ export default function Register() {
         );
       }
     } catch (error: any) {
-      let errorMessage = 'Registration failed';
+      let errorMessage = 'Registration failed. Check your connection and try again.';
 
       // Handle specific Firebase Auth errors
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'This email is already registered';
+          errorMessage = 'This email is already registered. Log in instead.';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'Please enter a valid email address';
+          errorMessage = 'That email address is not valid.';
           break;
         case 'auth/weak-password':
-          errorMessage = 'Password is too weak. Please use at least 6 characters';
+          errorMessage = 'Password is too weak. Use at least 6 characters.';
           break;
         case 'auth/network-request-failed':
-          errorMessage = 'Network error. Please check your internet connection';
+          errorMessage = 'No internet connection. Check your network and try again.';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Too many attempts. Please try again later';
+          errorMessage = 'Too many attempts. Wait a few minutes and try again.';
           break;
         default:
           console.error('Registration error:', error);
       }
 
-      showMessage('Error', errorMessage);
+      showMessage('Could not create account', errorMessage);
     }
   };
 
+  const stepNumber = step === 'account' ? 1 : 2;
+
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.container}>
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Blood Bank</Text>
-          <View style={styles.stepIndicator}>
-            <View style={[styles.stepDot, step === 'account' && styles.activeStep]} />
-            <View style={styles.stepLine} />
-            <View style={[styles.stepDot, step === 'details' && styles.activeStep]} />
-          </View>
-  
-          {step === 'account' ? (
-            <>
-              <Text style={styles.stepTitle}>Create your account</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={account.email}
-                onChangeText={(text) => setAccount({...account, email: text})}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={account.password}
-                onChangeText={(text) => setAccount({...account, password: text})}
-                secureTextEntry
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm Password"
-                value={account.confirmPassword}
-                onChangeText={(text) => setAccount({...account, confirmPassword: text})}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.button} onPress={handleNext}>
-                <Text style={styles.buttonText}>Next</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.stepTitle}>Donor details</Text>
-              <DonorForm showLastDonation submitLabel="Register" onSubmit={handleRegister} />
-              <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={() => setStep('account')}
-              >
-                <Text style={[styles.buttonText, styles.secondaryButtonText]}>Back</Text>
-              </TouchableOpacity>
-            </>
-          )}
+    <Screen
+      back
+      title={step === 'account' ? 'Create your account' : 'Donor details'}
+      subtitle={`Step ${stepNumber} of 2`}
+    >
+      <View style={styles.progress}>
+        <View style={[styles.segment, styles.segmentDone]} />
+        <View style={[styles.segment, stepNumber === 2 && styles.segmentDone]} />
+      </View>
+
+      {step === 'account' ? (
+        <View>
+          <Field
+            label="Email"
+            value={account.email}
+            onChangeText={(text) => setAccount({...account, email: text})}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+          />
+          <Field
+            label="Password"
+            value={account.password}
+            onChangeText={(text) => setAccount({...account, password: text})}
+            secureTextEntry
+            hint="At least 6 characters"
+          />
+          <Field
+            label="Confirm password"
+            value={account.confirmPassword}
+            onChangeText={(text) => setAccount({...account, confirmPassword: text})}
+            secureTextEntry
+          />
+          <Button label="Continue" onPress={handleNext} />
         </View>
-      </ScrollView>
-    </PageContainer>
+      ) : (
+        <View>
+          <Text variant="body" color={palette.inkMuted} style={styles.intro}>
+            Volunteers use these details to reach you when someone nearby needs your blood group.
+          </Text>
+          <DonorForm showLastDonation submitLabel="Create account" onSubmit={handleRegister} />
+          <Button
+            label="Back to account"
+            variant="quiet"
+            color={palette.inkMuted}
+            onPress={() => setStep('account')}
+            style={styles.back}
+          />
+        </View>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  formContainer: {
-    padding: 20,
-    paddingTop: HEADER_OFFSET,
-    paddingBottom: 60,
-    maxWidth: 480,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    textAlign: 'center',
-    color: '#E53935',
-  },
-  stepIndicator: {
+  progress: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
+    gap: space.sm,
   },
-  stepDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#ddd',
-  },
-  activeStep: {
-    backgroundColor: '#E53935',
-  },
-  stepLine: {
+  segment: {
     flex: 1,
-    height: 2,
-    backgroundColor: '#ddd',
-    marginHorizontal: 8,
-    maxWidth: 60,
+    height: 6,
+    borderRadius: radius.pill,
+    backgroundColor: palette.line,
   },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#333',
+  segmentDone: {
+    backgroundColor: palette.blood,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f8f8',
+  intro: {
+    marginBottom: space.lg,
   },
-  button: {
-    backgroundColor: '#E53935',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#E53935',
-    marginTop: 12,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButtonText: {
-    color: '#E53935',
+  back: {
+    marginTop: space.md,
   },
 });

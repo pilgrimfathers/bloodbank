@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native';
-import { BLOOD_TYPES, COLORS, KERALA_DISTRICTS } from '../constants';
+import { StyleSheet, Switch, View } from 'react-native';
+import { BLOOD_TYPES, KERALA_DISTRICTS } from '../constants';
+import { palette, radius, space } from '../theme';
 import { UserProfile } from '../types';
 import { showMessage } from '../utils/dialog';
 import { normalizePhone, parseDateInput, toDateInput } from '../utils/format';
 import ChipSelect from './ChipSelect';
 import Field from './Field';
+import Button from './ui/Button';
+import Text from './ui/Text';
 
 export type DonorFormValues = {
   name: string;
@@ -78,36 +81,37 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
 
   return (
     <View>
-      <Field label="Full name *" value={form.name} onChangeText={name => set({ name })} />
+      <Field label="Full name" value={form.name} onChangeText={name => set({ name })} autoComplete="name" />
       <Field
-        label="Phone number *"
+        label="Phone number"
         value={form.phoneNumber}
         onChangeText={phoneNumber => set({ phoneNumber })}
         keyboardType="phone-pad"
         placeholder="10-digit mobile number"
+        autoComplete="tel"
       />
       <ChipSelect
-        label="Blood type *"
+        label="Blood group"
         options={BLOOD_TYPES}
         value={form.bloodType || null}
         onChange={bloodType => set({ bloodType })}
       />
       <ChipSelect
-        label="District *"
+        label="District"
         options={KERALA_DISTRICTS}
         value={form.district || null}
         onChange={district => set({ district })}
       />
       <Field
-        label="Area / town"
+        label="Area or town"
         value={form.area}
         onChangeText={area => set({ area })}
         placeholder="e.g. Kanhangad, Edappally"
       />
-      <Field label="Address" value={form.address} onChangeText={address => set({ address })} multiline />
+      <Field label="Address (optional)" value={form.address} onChangeText={address => set({ address })} multiline />
       {showLastDonation && (
         <Field
-          label="Last donation date"
+          label="Last donation date (optional)"
           value={form.lastDonation}
           onChangeText={lastDonation => set({ lastDonation })}
           placeholder="DD-MM-YYYY"
@@ -115,14 +119,14 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
         />
       )}
       <Field
-        label="Medical conditions"
+        label="Medical conditions (optional)"
         value={form.medicalConditions}
         onChangeText={medicalConditions => set({ medicalConditions })}
         multiline
       />
       {showNotes && (
         <Field
-          label="Volunteer notes"
+          label="Volunteer notes (optional)"
           value={form.notes}
           onChangeText={notes => set({ notes })}
           multiline
@@ -131,21 +135,19 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
       )}
       <View style={styles.switchRow}>
         <View style={styles.switchText}>
-          <Text style={styles.switchLabel}>Available to donate</Text>
-          <Text style={styles.switchHint}>Turn off to stop being contacted for requests</Text>
+          <Text variant="bodyStrong">Available to donate</Text>
+          <Text variant="caption" color={palette.inkMuted}>Turn off to stop volunteers calling for requests</Text>
         </View>
         <Switch
           value={form.isDonor}
           onValueChange={isDonor => set({ isDonor })}
-          trackColor={{ true: COLORS.primary }}
+          trackColor={{ false: palette.line, true: palette.leaf }}
+          thumbColor="#fff"
+          accessibilityLabel="Available to donate"
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={submitting}>
-        {submitting
-          ? <ActivityIndicator color="white" />
-          : <Text style={styles.buttonText}>{submitLabel}</Text>}
-      </TouchableOpacity>
+      <Button label={submitLabel} onPress={handleSubmit} loading={submitting} />
     </View>
   );
 }
@@ -154,29 +156,15 @@ const styles = StyleSheet.create({
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: space.md,
+    padding: space.lg,
+    marginBottom: space.xl,
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.line,
   },
   switchText: {
     flex: 1,
-  },
-  switchLabel: {
-    fontSize: 16,
-    color: '#333',
-  },
-  switchHint: {
-    fontSize: 12,
-    color: '#999',
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

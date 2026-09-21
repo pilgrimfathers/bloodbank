@@ -1,130 +1,103 @@
-import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
-import BackButton from '@/src/components/BackButton';
+import { StyleSheet, View } from 'react-native';
+import { palette, space } from '@/src/theme';
+import Screen from '@/src/components/ui/Screen';
+import Section from '@/src/components/ui/Section';
+import Text from '@/src/components/ui/Text';
 
 export default function PrivacyPolicyScreen() {
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Privacy Policy</Text>
-          
-          <Section title="Introduction">
-            <Text style={styles.text}>
-              This Privacy Policy describes how Blood Bank ("we," "our," or "us") collects, uses, and shares your personal information when you use our mobile application.
-            </Text>
-          </Section>
+    <Screen back title="Privacy policy">
+      <Section title="Introduction">
+        <Text variant="body">
+          This privacy policy describes how Blood Bank ("we," "our," or "us") collects, uses, and shares your personal information when you use our mobile application.
+        </Text>
+      </Section>
 
-          <Section title="Information We Collect">
-            <Text style={styles.text}>
-              • Personal Information: Name, email address, phone number, blood type, and location{'\n'}
-              • Health Information: Blood type and donation history{'\n'}
-              • Location Data: Your approximate location when using location-based features
-            </Text>
-          </Section>
+      <Section title="Information we collect">
+        <Bullets items={[
+          'Personal information: name, email address, phone number, blood type, and location',
+          'Health information: blood type and donation history',
+          'Location data: your approximate location when using location-based features',
+        ]} />
+      </Section>
 
-          <Section title="How We Use Your Information">
-            <Text style={styles.text}>
-              • To facilitate blood donation matches{'\n'}
-              • To maintain your user profile{'\n'}
-              • To send notifications about blood requests{'\n'}
-            </Text>
-          </Section>
+      <Section title="How we use your information">
+        <Bullets items={[
+          'To facilitate blood donation matches',
+          'To maintain your user profile',
+          'To send notifications about blood requests',
+        ]} />
+      </Section>
 
-          <Section title="Data Security">
-            <Text style={styles.text}>
-              We implement appropriate security measures to protect your personal information from unauthorized access, alteration, or disclosure.
-            </Text>
-          </Section>
+      <Section title="Data security">
+        <Text variant="body">
+          We implement appropriate security measures to protect your personal information from unauthorized access, alteration, or disclosure.
+        </Text>
+      </Section>
 
-          <Section title="Data Sharing">
-            <Text style={styles.text}>
-              We only share your information with:{'\n'}
-              • Other users when you create or respond to blood requests{'\n'}
-              • Service providers who assist in our operations{'\n'}
-              • Law enforcement when required by law
-            </Text>
-          </Section>
+      <Section title="Data sharing">
+        <Text variant="body" style={styles.intro}>We only share your information with:</Text>
+        <Bullets items={[
+          'Other users when you create or respond to blood requests',
+          'Service providers who assist in our operations',
+          'Law enforcement when required by law',
+        ]} />
+      </Section>
 
-          <Section title="Your Rights">
-            <Text style={styles.text}>
-              You have the right to:{'\n'}
-              • Access your personal information{'\n'}
-              • Correct inaccurate information{'\n'}
-              • Opt-out of communications
-            </Text>
-          </Section>
+      <Section title="Your rights">
+        <Text variant="body" style={styles.intro}>You have the right to:</Text>
+        <Bullets items={[
+          'Access your personal information',
+          'Correct inaccurate information',
+          'Opt out of communications',
+        ]} />
+      </Section>
 
-          <Section title="Contact Us">
-            <Text style={styles.text}>
-              If you have any questions about this Privacy Policy, please contact us at:{'\n'}
-              pilgrimfathers@gmail.com
-            </Text>
-          </Section>
+      <Section title="Contact us">
+        <Text variant="body">
+          If you have any questions about this privacy policy, contact us at pilgrimfathers@gmail.com.
+        </Text>
+      </Section>
 
-          <Text style={styles.lastUpdated}>Last updated: {new Date().toLocaleDateString()}</Text>
-        </View>
-      </ScrollView>
-    </PageContainer>
+      <Text variant="caption" color={palette.inkFaint}>
+        Last updated: {new Date().toLocaleDateString()}
+      </Text>
+    </Screen>
   );
 }
 
-function Section({ title, children }: { title: string, children: React.ReactNode }) {
+function Bullets({ items }: { items: string[] }) {
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
+    <View style={styles.bullets}>
+      {items.map(item => (
+        <View key={item} style={styles.bullet}>
+          <View style={styles.dot} />
+          <Text variant="body" style={styles.flex}>{item}</Text>
+        </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  intro: {
+    marginBottom: space.sm,
+  },
+  bullets: {
+    gap: space.sm,
+  },
+  bullet: {
+    flexDirection: 'row',
+    gap: space.md,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.blood,
+    marginTop: 9,
+  },
+  flex: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    marginTop: HEADER_OFFSET,
   },
-  container: {
-    flex: 1,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
-    alignSelf: 'center',
-    width: '100%',
-    padding: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#E53935',
-  },
-  section: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
-  text: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#666',
-  },
-  lastUpdated: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 24,
-    marginBottom: 40,
-  },
-}); 
+});

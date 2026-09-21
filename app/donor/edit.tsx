@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { COLORS } from '@/src/constants';
 import { UserProfile } from '@/src/types';
 import { coversDistrict, getUser, isVolunteer, logDonation } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
-import BackButton from '@/src/components/BackButton';
+import { palette, radius, space } from '@/src/theme';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
+import EmptyState from '@/src/components/ui/EmptyState';
+import Screen from '@/src/components/ui/Screen';
+import Text from '@/src/components/ui/Text';
 
 // Volunteers add donors who don't use the app, or edit any donor they manage.
 export default function EditDonorScreen() {
@@ -27,13 +27,20 @@ export default function EditDonorScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (!me || loading) return <LoadingSpinner />;
+  const title = id ? (donor ? `Edit ${donor.name}` : 'Edit donor') : 'Add donor';
+
+  if (!me || loading) {
+    return (
+      <Screen back title={title}>
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
+  }
   if (!isVolunteer(me)) {
     return (
-      <PageContainer>
-        <BackButton />
-        <Text style={styles.empty}>Only volunteers can manage donors.</Text>
-      </PageContainer>
+      <Screen back title={title}>
+        <EmptyState icon="account-lock-outline" title="Only volunteers can manage donors" />
+      </Screen>
     );
   }
 
@@ -92,65 +99,37 @@ export default function EditDonorScreen() {
       router.replace({ pathname: '/donor/[id]', params: { id: ref.id } });
     } catch (error) {
       console.error('Error saving donor:', error);
-      showMessage('Error', 'Failed to save donor');
+      showMessage('Could not save donor', 'Check your connection and try again.');
     }
   };
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper} contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{donor ? `Edit ${donor.name}` : 'Add donor'}</Text>
-          {!donor && (
-            <Text style={styles.subtitle}>
-              For donors who don't use the app. People who sign up themselves appear automatically.
-            </Text>
-          )}
-          <DonorForm
-            initial={donor ?? { district: me.volunteerDistricts?.[0] ?? me.district }}
-            showLastDonation={!donor}
-            showNotes
-            submitLabel={donor ? 'Save changes' : 'Add donor'}
-            onSubmit={handleSubmit}
-          />
+    <Screen back title={title}>
+      {!donor && (
+        <View style={styles.note}>
+          <Text variant="body" color={palette.info}>
+            For donors who don't use the app. People who sign up themselves appear automatically.
+          </Text>
         </View>
-      </ScrollView>
-    </PageContainer>
+      )}
+      <DonorForm
+        initial={donor ?? { district: me.volunteerDistricts?.[0] ?? me.district }}
+        showLastDonation={!donor}
+        showNotes
+        submitLabel={donor ? 'Save changes' : 'Add donor'}
+        onSubmit={handleSubmit}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.background,
+  loading: {
+    paddingVertical: space.xxl,
   },
-  container: {
-    padding: 16,
-    paddingTop: HEADER_OFFSET,
-    paddingBottom: 40,
-    maxWidth: 800,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: COLORS.muted,
-    marginBottom: 16,
-  },
-  empty: {
-    textAlign: 'center',
-    color: COLORS.muted,
-    marginTop: 120,
+  note: {
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: palette.infoTint,
   },
 });

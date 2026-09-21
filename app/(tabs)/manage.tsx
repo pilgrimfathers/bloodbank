@@ -1,21 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, RefreshControl, Platform, Switch,
+  ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Switch, TextInput, View,
 } from 'react-native';
 import { collection, getDocs, query, where, QueryConstraint } from 'firebase/firestore';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { BLOOD_TYPES, BloodType, COLORS, COMPATIBLE_DONORS, KERALA_DISTRICTS } from '@/src/constants';
+import { BLOOD_TYPES, BloodType, COMPATIBLE_DONORS, KERALA_DISTRICTS } from '@/src/constants';
 import { UserProfile } from '@/src/types';
 import { isVolunteer, mapUser } from '@/src/utils/data';
 import { getEligibility } from '@/src/utils/eligibility';
+import { fonts, palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import EligibilityBadge from '@/src/components/EligibilityBadge';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
+import BloodMark from '@/src/components/ui/BloodMark';
+import EmptyState from '@/src/components/ui/EmptyState';
+import { ListRow } from '@/src/components/ui/List';
+import Pill from '@/src/components/ui/Pill';
+import Screen, { HeaderButton } from '@/src/components/ui/Screen';
+import Text from '@/src/components/ui/Text';
 
 type EligibilityFilter = 'all' | 'eligible' | 'cooling';
+
+const ELIGIBILITY_LABELS: Record<EligibilityFilter, string> = {
+  all: 'All',
+  eligible: 'Can donate',
+  cooling: 'Cooling off',
+};
 
 export default function ManageDonorsScreen() {
   const { profile } = useCurrentUser();
@@ -99,13 +111,23 @@ export default function ManageDonorsScreen() {
       .map(({ donor }) => donor);
   }, [donors, search, eligibility]);
 
-  if (!profile) return <LoadingSpinner />;
+  if (!profile) {
+    return (
+      <Screen title="Donors">
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
+  }
 
   if (!isVolunteer(profile)) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyText}>This section is only for volunteers.</Text>
-      </View>
+      <Screen title="Donors">
+        <EmptyState
+          icon="account-lock-outline"
+          title="Only volunteers can see donors"
+          message="Ask an admin if you help coordinate donations."
+        />
+      </Screen>
     );
   }
 
@@ -116,80 +138,106 @@ export default function ManageDonorsScreen() {
     });
   };
 
-  const renderDonor = ({ item }: { item: UserProfile }) => (
-    <TouchableOpacity style={styles.card} onPress={() => openDonor(item)}>
-      <View style={styles.cardHeader}>
-        <View style={styles.bloodTypeContainer}>
-          <Text style={styles.bloodType}>{item.bloodType || '?'}</Text>
-        </View>
-        <View style={styles.cardTitle}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.meta}>
-            {[item.area, item.district].filter(Boolean).join(', ') || 'No district set'}
-          </Text>
-        </View>
-        <EligibilityBadge lastDonation={item.lastDonation} />
+  const renderDonor = ({ item, index }: { item: UserProfile; index: number }) => {
+    const eligible = getEligibility(item.lastDonation).eligible;
+    const active = eligible && item.isDonor && item.status !== 'inactive';
+    const place = [item.area, item.district].filter(Boolean).join(', ') || 'No district set';
+
+    return (
+      <View style={[
+        styles.item,
+        index === 0 && styles.first,
+        index === visibleDonors.length - 1 && styles.last,
+        index > 0 && styles.divider,
+      ]}>
+        <ListRow
+          leading={<BloodMark bloodType={item.bloodType} muted={!active} />}
+          title={item.name}
+          subtitle={`${place}\n${item.phoneNumber || 'No phone number'}`}
+          trailing={
+            <View style={styles.meta}>
+              <EligibilityBadge lastDonation={item.lastDonation} />
+              {item.role === 'volunteer' && <Pill label="Volunteer" tone="info" />}
+              {item.role === 'admin' && <Pill label="Admin" tone="info" />}
+              {!item.verified && <Pill label="Unverified" tone="muted" />}
+              {!item.isDonor && <Pill label="Unavailable" tone="turmeric" />}
+              {item.status === 'inactive' && <Pill label="Inactive" tone="muted" />}
+              {item.hasAccount === false && <Pill label="No app" tone="kasavu" />}
+            </View>
+          }
+          chevron={false}
+          onPress={() => openDonor(item)}
+        />
       </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.meta}>{item.phoneNumber}</Text>
-        <View style={styles.flags}>
-          {item.role && item.role !== 'donor' && <Flag text={item.role.toUpperCase()} color="#1565c0" />}
-          {!item.verified && <Flag text="UNVERIFIED" color="#999" />}
-          {!item.isDonor && <Flag text="UNAVAILABLE" color={COLORS.warning} />}
-          {item.status === 'inactive' && <Flag text="INACTIVE" color="#333" />}
-          {item.hasAccount === false && <Flag text="NO APP" color="#6a1b9a" />}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Donors</Text>
-          <Text style={styles.subtitle}>
-            {allowedDistricts ? `Managing ${allowedDistricts.join(', ')}` : 'Managing all of Kerala'}
-          </Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => setShowFilters(!showFilters)}>
-            <MaterialCommunityIcons name="filter-variant" size={22} color={COLORS.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addButton} onPress={() => router.push('/donor/edit')}>
-            <MaterialCommunityIcons name="account-plus" size={22} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <Screen
+      title="Donors"
+      subtitle={allowedDistricts ? `Managing ${allowedDistricts.join(', ')}` : 'Managing all of Kerala'}
+      right={
+        <>
+          <HeaderButton
+            icon={showFilters ? 'filter-variant-remove' : 'filter-variant'}
+            label={showFilters ? 'Hide filters' : 'Show filters'}
+            onPress={() => setShowFilters(!showFilters)}
+          />
+          <HeaderButton icon="account-plus" label="Add donor" onPress={() => router.push('/donor/edit')} />
+        </>
+      }
+      scroll={false}
+      contentStyle={styles.noGap}
+    >
       <FlatList
         data={visibleDonors}
         keyExtractor={item => item.id}
         renderItem={renderDonor}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[palette.blood]} />}
         contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          <View>
-            {params.requestId && (
+          <View style={styles.header}>
+            {!!params.requestId && (
               <View style={styles.banner}>
-                <MaterialCommunityIcons name="information" size={20} color="#1565c0" />
-                <Text style={styles.bannerText}>
+                <MaterialCommunityIcons name="information-outline" size={22} color={palette.info} />
+                <Text variant="body" color={palette.info} style={styles.flex}>
                   Finding donors for a {params.bloodType} request. Open a donor to log their donation against it.
                 </Text>
-                <TouchableOpacity onPress={() => router.setParams({ requestId: '', bloodType: '', district: '' })}>
-                  <MaterialCommunityIcons name="close" size={20} color="#1565c0" />
-                </TouchableOpacity>
+                <Pressable
+                  onPress={() => router.setParams({ requestId: '', bloodType: '', district: '' })}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Stop finding donors for this request"
+                >
+                  <MaterialCommunityIcons name="close" size={22} color={palette.info} />
+                </Pressable>
               </View>
             )}
-            <TextInput
-              style={styles.search}
-              placeholder="Search name, phone or area"
-              value={search}
-              onChangeText={setSearch}
-            />
+
+            <View style={styles.search}>
+              <MaterialCommunityIcons name="magnify" size={22} color={palette.inkFaint} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search name, phone or area"
+                placeholderTextColor={palette.inkFaint}
+                selectionColor={palette.blood}
+                value={search}
+                onChangeText={setSearch}
+                accessibilityLabel="Search donors"
+              />
+              {!!search && (
+                <Pressable onPress={() => setSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear search">
+                  <MaterialCommunityIcons name="close-circle" size={20} color={palette.inkFaint} />
+                </Pressable>
+              )}
+            </View>
+
             {showFilters && (
-              <View style={styles.filters}>
+              <View>
                 <ChipSelect
+                  horizontal
                   label="District"
                   options={allowedDistricts ?? KERALA_DISTRICTS}
                   value={district}
@@ -198,211 +246,144 @@ export default function ManageDonorsScreen() {
                   onClear={() => setDistrict(null)}
                 />
                 <ChipSelect
+                  horizontal
                   label="Blood type"
                   options={BLOOD_TYPES}
                   value={bloodType}
                   onChange={setBloodType}
-                  allLabel="Any"
+                  allLabel="All"
                   onClear={() => setBloodType(null)}
                 />
                 {bloodType && (
                   <View style={styles.switchRow}>
-                    <Text style={styles.switchLabel}>
-                      Include compatible donors ({COMPATIBLE_DONORS[bloodType as BloodType].join(', ')})
-                    </Text>
+                    <View style={styles.flex}>
+                      <Text variant="bodyStrong">Include compatible donors</Text>
+                      <Text variant="caption" color={palette.inkMuted}>
+                        {COMPATIBLE_DONORS[bloodType as BloodType].join(', ')} can give to {bloodType}
+                      </Text>
+                    </View>
                     <Switch
                       value={includeCompatible}
                       onValueChange={setIncludeCompatible}
-                      trackColor={{ true: COLORS.primary }}
+                      trackColor={{ false: palette.line, true: palette.leaf }}
+                      thumbColor="#fff"
                     />
                   </View>
                 )}
                 <ChipSelect
+                  horizontal
                   label="Eligibility"
                   options={['all', 'eligible', 'cooling']}
                   value={eligibility}
                   onChange={value => setEligibility(value as EligibilityFilter)}
+                  format={value => ELIGIBILITY_LABELS[value as EligibilityFilter]}
                 />
               </View>
             )}
-            <Text style={styles.count}>
-              {loading ? 'Loading…' : `${visibleDonors.length} of ${donors.length} donors`}
+
+            <Text variant="caption" color={palette.inkMuted} style={styles.count}>
+              {loading ? 'Loading donors' : `Showing ${visibleDonors.length} of ${donors.length} donors`}
             </Text>
           </View>
         }
-        ListEmptyComponent={loading ? null : <Text style={styles.emptyText}>No donors match these filters.</Text>}
+        ListEmptyComponent={loading ? (
+          <ActivityIndicator color={palette.blood} style={styles.loading} />
+        ) : (
+          <EmptyState
+            icon="account-search-outline"
+            title="No donors match these filters"
+            message="Try another district or blood type, or add a donor who doesn't use the app."
+            action={{ label: 'Add donor', onPress: () => router.push('/donor/edit') }}
+          />
+        )}
       />
-    </View>
-  );
-}
-
-function Flag({ text, color }: { text: string; color: string }) {
-  return (
-    <View style={[styles.flag, { borderColor: color }]}>
-      <Text style={[styles.flagText, { color }]}>{text}</Text>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  noGap: {
+    gap: 0,
+    paddingTop: 0,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
-    paddingVertical: 20,
-    backgroundColor: 'white',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  subtitle: {
-    color: COLORS.muted,
-    marginTop: 2,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingTop: space.lg,
   },
   list: {
-    padding: 16,
-    maxWidth: 800,
-    width: '100%',
-    alignSelf: 'center',
+    paddingBottom: space.xxl,
   },
   banner: {
     flexDirection: 'row',
-    gap: 8,
-    backgroundColor: '#e3f2fd',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  bannerText: {
-    flex: 1,
-    color: '#1565c0',
+    alignItems: 'flex-start',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: palette.infoTint,
+    marginBottom: space.lg,
   },
   search: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    backgroundColor: 'white',
-    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    borderWidth: 1.5,
+    borderColor: palette.line,
+    borderRadius: radius.sm,
+    backgroundColor: palette.surface,
+    paddingHorizontal: space.md,
+    marginBottom: space.lg,
   },
-  filters: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+  searchInput: {
+    flex: 1,
+    paddingVertical: space.md,
+    fontSize: 16,
+    fontFamily: fonts.regular,
+    color: palette.ink,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
-  },
-  switchLabel: {
-    flex: 1,
-    color: COLORS.muted,
+    gap: space.md,
+    padding: space.md,
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.line,
+    marginBottom: space.lg,
   },
   count: {
-    color: COLORS.muted,
-    marginBottom: 8,
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  cardTitle: {
-    flex: 1,
-  },
-  bloodTypeContainer: {
-    backgroundColor: COLORS.primary,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bloodType: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  name: {
-    fontSize: 17,
-    fontWeight: '600',
+    marginBottom: space.sm,
   },
   meta: {
-    color: COLORS.muted,
-    marginTop: 2,
+    alignItems: 'flex-end',
+    gap: space.xs,
   },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-    flexWrap: 'wrap',
-    gap: 8,
+  // Rows share one rounded surface, like List, but stay virtualised.
+  item: {
+    backgroundColor: palette.surface,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: palette.line,
   },
-  flags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+  first: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
+    overflow: 'hidden',
   },
-  flag: {
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  last: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: radius.md,
+    borderBottomRightRadius: radius.md,
+    overflow: 'hidden',
   },
-  flagText: {
-    fontSize: 10,
-    fontWeight: 'bold',
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.line,
   },
-  emptyText: {
-    textAlign: 'center',
-    color: COLORS.muted,
-    marginTop: 24,
+  loading: {
+    paddingVertical: space.xl,
   },
 });

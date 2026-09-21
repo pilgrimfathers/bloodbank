@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { auth } from '@/src/config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import BackButton from '@/src/components/BackButton';
-import PageContainer from '@/src/components/PageContainer';
+import { showMessage } from '@/src/utils/dialog';
+import { palette, space } from '@/src/theme';
+import Field from '@/src/components/Field';
+import Button from '@/src/components/ui/Button';
+import Screen from '@/src/components/ui/Screen';
+import Text from '@/src/components/ui/Text';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -26,157 +31,80 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showMessage('Missing details', 'Enter your email and password.');
       return;
     }
 
+    setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
       // No need to manually navigate here as the auth state change will trigger the useEffect
     } catch (error: any) {
-      let errorMessage = 'An error occurred during login';
-      
+      let errorMessage = 'Could not log in. Check your connection and try again.';
+
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
+          errorMessage = 'That email address is not valid.';
           break;
         case 'auth/user-not-found':
-          errorMessage = 'No user found with this email';
+          errorMessage = 'No account uses this email. Create an account instead.';
           break;
         case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
+        case 'auth/invalid-credential':
+          errorMessage = 'The email or password is incorrect.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many attempts. Wait a few minutes and try again.';
           break;
       }
-      
-      Alert.alert('Error', errorMessage);
+
+      showMessage('Could not log in', errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <PageContainer style={styles.container}>
-      <View style={styles.formContainer}>
-        <BackButton />
-        <Image 
-          source={require('../../assets/images/icon.png')}
-          style={[styles.icon, { width: 100, height: 100 }]}
-        />
-        <Text style={styles.title}>Blood Bank</Text>
-        <Text style={styles.subtitle}>Welcome back!</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
+    <Screen back title="Log in" subtitle="Welcome back">
+      <View>
+        <Field
+          label="Email"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
         />
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
+        <Field
+          label="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="password"
         />
-        
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleLogin}
-        >
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.linkContainer}>
-          <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/privacy-policy')}>
-            <Text style={styles.linkText}>Privacy Policy</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.linkButton} onPress={() => router.push('/(auth)/register')}>
-            <Text style={styles.linkText}>
-              New to Blood Bank? <Text style={styles.linkTextBold}>Create an account</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <Button label="Log in" onPress={handleLogin} loading={loading} />
       </View>
-    </PageContainer>
+
+      <View style={styles.links}>
+        <Pressable onPress={() => router.push('/(auth)/register')} accessibilityRole="link" hitSlop={8}>
+          <Text variant="body" color={palette.inkMuted} style={styles.center}>
+            New here? <Text variant="bodyStrong" color={palette.blood}>Create an account</Text>
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => router.push('/(auth)/privacy-policy')} accessibilityRole="link" hitSlop={8}>
+          <Text variant="label" color={palette.inkMuted} style={styles.center}>Privacy policy</Text>
+        </Pressable>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
+  links: {
+    gap: space.lg,
+    alignItems: 'center',
   },
-  formContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    maxWidth: 400,
-    width: '100%',
-    alignSelf: 'center',
-  },
-  icon: {
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-    color: '#E53935',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 32,
+  center: {
     textAlign: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
-    backgroundColor: '#f8f8f8',
-  },
-  button: {
-    backgroundColor: '#E53935',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  linkContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-    gap: 16,
-  },
-  linkButton: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  linkTextBold: {
-    color: '#E53935',
-    fontWeight: 'bold',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 1,
-  },
-}); 
+});

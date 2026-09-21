@@ -1,23 +1,28 @@
 import { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Platform } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { COLORS, KERALA_DISTRICTS } from '@/src/constants';
+import { KERALA_DISTRICTS } from '@/src/constants';
 import { Donation, UserProfile, UserRole } from '@/src/types';
 import { coversDistrict, deleteDonation, getDonations, getUser } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { formatDate } from '@/src/utils/format';
-import BackButton from '@/src/components/BackButton';
+import { palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import DonationList from '@/src/components/DonationList';
-import EligibilityBadge from '@/src/components/EligibilityBadge';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
+import DonorCard from '@/src/components/DonorCard';
+import Button from '@/src/components/ui/Button';
+import EmptyState from '@/src/components/ui/EmptyState';
+import { List, ListRow } from '@/src/components/ui/List';
+import Pill from '@/src/components/ui/Pill';
+import Screen from '@/src/components/ui/Screen';
+import Section from '@/src/components/ui/Section';
+import Text from '@/src/components/ui/Text';
 
 const ROLES: UserRole[] = ['donor', 'volunteer', 'admin'];
+const ROLE_LABELS: Record<UserRole, string> = { donor: 'Donor', volunteer: 'Volunteer', admin: 'Admin' };
 
 export default function DonorDetailScreen() {
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
@@ -37,7 +42,7 @@ export default function DonorDetailScreen() {
       setDonations(await getDonations(id));
     } catch (error) {
       console.error('Error loading donor:', error);
-      showMessage('Error', 'Failed to load donor details');
+      showMessage('Could not load donor', 'Check your connection and try again.');
     }
   };
 
@@ -47,13 +52,18 @@ export default function DonorDetailScreen() {
 
   if (notFound) {
     return (
-      <PageContainer>
-        <BackButton />
-        <Text style={styles.empty}>Donor not found.</Text>
-      </PageContainer>
+      <Screen back title="Donor">
+        <EmptyState icon="account-question-outline" title="This donor no longer exists" />
+      </Screen>
     );
   }
-  if (!donor || !me) return <LoadingSpinner />;
+  if (!donor || !me) {
+    return (
+      <Screen back title="Donor">
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
+  }
 
   const canManage = coversDistrict(me, donor.district);
   const isAdmin = me.role === 'admin';
@@ -65,7 +75,7 @@ export default function DonorDetailScreen() {
       if (message) showMessage('Saved', message);
     } catch (error) {
       console.error('Error updating donor:', error);
-      showMessage('Error', 'Failed to update donor');
+      showMessage('Could not update donor', 'Check your connection and try again.');
     }
   };
 
@@ -76,6 +86,7 @@ export default function DonorDetailScreen() {
       deactivating
         ? `${donor.name} will be hidden from eligible donor searches.`
         : `${donor.name} will show up in donor searches again.`,
+      deactivating ? 'Deactivate' : 'Reactivate',
     );
     if (ok) await update({ status: deactivating ? 'inactive' : 'active' });
   };
@@ -88,95 +99,102 @@ export default function DonorDetailScreen() {
       await load();
     } catch (error) {
       console.error('Error deleting donation:', error);
-      showMessage('Error', 'Failed to delete donation');
+      showMessage('Could not delete donation', 'Check your connection and try again.');
     }
   };
 
   const phone = donor.phoneNumber?.replace(/\D/g, '').slice(-10);
+  const place = [donor.area, donor.district].filter(Boolean).join(', ') || 'No district set';
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView style={styles.wrapper} contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.bloodTypeContainer}>
-            <Text style={styles.bloodType}>{donor.bloodType}</Text>
-          </View>
-          <Text style={styles.name}>{donor.name}</Text>
-          <Text style={styles.meta}>
-            {[donor.area, donor.district].filter(Boolean).join(', ') || 'No district set'}
-          </Text>
-          <View style={styles.tags}>
-            <Tag text={(donor.role ?? 'donor').toUpperCase()} color="#1565c0" />
-            <Tag text={donor.verified ? 'VERIFIED' : 'UNVERIFIED'} color={donor.verified ? COLORS.success : '#999'} />
-            {!donor.isDonor && <Tag text="UNAVAILABLE" color={COLORS.warning} />}
-            {donor.status === 'inactive' && <Tag text="INACTIVE" color="#333" />}
-            {donor.hasAccount === false && <Tag text="NO APP" color="#6a1b9a" />}
-          </View>
+    <Screen
+      back
+      title={donor.name}
+      subtitle={place}
+      hero={
+        <DonorCard
+          bloodType={donor.bloodType}
+          lastDonation={donor.lastDonation}
+          donationCount={donor.donationCount ?? donations.length}
+        />
+      }
+    >
+      <View style={styles.pills}>
+        <Pill label={ROLE_LABELS[donor.role ?? 'donor']} tone="info" />
+        <Pill label={donor.verified ? 'Verified' : 'Unverified'} tone={donor.verified ? 'leaf' : 'muted'} />
+        {!donor.isDonor && <Pill label="Unavailable" tone="turmeric" />}
+        {donor.status === 'inactive' && <Pill label="Inactive" tone="muted" />}
+        {donor.hasAccount === false && <Pill label="No app" tone="kasavu" />}
+      </View>
+
+      {phone && (
+        <View style={styles.row}>
+          <Button icon="phone" label="Call" onPress={() => Linking.openURL(`tel:${phone}`)} style={styles.flex} />
+          <Button
+            icon="whatsapp"
+            label="WhatsApp"
+            variant="secondary"
+            color={palette.leaf}
+            onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
+            style={styles.flex}
+          />
         </View>
+      )}
 
-        <EligibilityBadge lastDonation={donor.lastDonation} variant="card" />
+      <List>
+        <ListRow icon="phone-outline" title={donor.phoneNumber || 'No phone number'} subtitle="Phone" />
+        {donor.email && <ListRow icon="email-outline" title={donor.email} subtitle="Email" />}
+        <ListRow icon="home-outline" title={donor.address || 'Not added'} subtitle="Address" />
+        <ListRow icon="medical-bag" title={donor.medicalConditions || 'None noted'} subtitle="Medical conditions" />
+        {donor.notes && <ListRow icon="note-text-outline" title={donor.notes} subtitle="Volunteer notes" />}
+        <ListRow icon="calendar-blank-outline" title={formatDate(donor.createdAt)} subtitle="Added on" />
+      </List>
 
-        {phone && (
-          <View style={styles.contactRow}>
-            <ActionButton icon="phone" label="Call" onPress={() => Linking.openURL(`tel:${phone}`)} />
-            <ActionButton
-              icon="whatsapp"
-              label="WhatsApp"
-              color="#25D366"
-              onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
-            />
-          </View>
-        )}
-
-        <View style={styles.card}>
-          <Info label="Phone" value={donor.phoneNumber} />
-          {donor.email && <Info label="Email" value={donor.email} />}
-          <Info label="Address" value={donor.address} />
-          <Info label="Medical conditions" value={donor.medicalConditions} />
-          <Info label="Total donations" value={String(donor.donationCount ?? donations.length)} />
-          {donor.notes && <Info label="Volunteer notes" value={donor.notes} />}
-          <Info label="Added on" value={formatDate(donor.createdAt)} />
-        </View>
-
-        {canManage && (
-          <View style={styles.actions}>
-            <ActionButton
-              icon="water-plus"
-              label="Log donation"
-              onPress={() => router.push({
-                pathname: '/donation/new',
-                params: { donorId: donor.id, ...(requestId && { requestId }) },
-              })}
-            />
-            <ActionButton
-              icon="pencil"
+      {canManage && (
+        <View style={styles.manage}>
+          <Button
+            icon="water-plus"
+            label="Log donation"
+            onPress={() => router.push({
+              pathname: '/donation/new',
+              params: { donorId: donor.id, ...(requestId && { requestId }) },
+            })}
+          />
+          <View style={styles.row}>
+            <Button
+              icon="pencil-outline"
               label="Edit"
+              variant="secondary"
               onPress={() => router.push({ pathname: '/donor/edit', params: { id: donor.id } })}
+              style={styles.flex}
             />
-            <ActionButton
-              icon={donor.verified ? 'shield-off' : 'shield-check'}
+            <Button
+              icon={donor.verified ? 'shield-off-outline' : 'shield-check-outline'}
               label={donor.verified ? 'Unverify' : 'Verify'}
-              color={COLORS.success}
+              variant="secondary"
+              color={palette.leaf}
               onPress={() => update({ verified: !donor.verified })}
-            />
-            <ActionButton
-              icon={donor.status === 'inactive' ? 'account-check' : 'account-off'}
-              label={donor.status === 'inactive' ? 'Reactivate' : 'Deactivate'}
-              color="#333"
-              onPress={toggleActive}
+              style={styles.flex}
             />
           </View>
-        )}
+          <Button
+            icon={donor.status === 'inactive' ? 'account-check-outline' : 'account-off-outline'}
+            label={donor.status === 'inactive' ? 'Reactivate donor' : 'Deactivate donor'}
+            variant="secondary"
+            color={palette.inkMuted}
+            onPress={toggleActive}
+          />
+        </View>
+      )}
 
-        {isAdmin && donor.id !== me.id && donor.hasAccount !== false && (
-          <RoleEditor donor={donor} onSave={update} />
-        )}
+      {isAdmin && donor.id !== me.id && donor.hasAccount !== false && (
+        <RoleEditor donor={donor} onSave={update} />
+      )}
 
-        <Text style={styles.sectionTitle}>Donation history</Text>
+      <Section title="Donation history">
         <DonationList donations={donations} onDelete={canManage ? handleDeleteDonation : undefined} />
-      </ScrollView>
-    </PageContainer>
+      </Section>
+    </Screen>
   );
 }
 
@@ -186,222 +204,111 @@ function RoleEditor({ donor, onSave }: {
 }) {
   const [role, setRole] = useState<UserRole>(donor.role ?? 'donor');
   const [districts, setDistricts] = useState<string[]>(donor.volunteerDistricts ?? []);
+  const [saving, setSaving] = useState(false);
 
   const toggleDistrict = (district: string) => {
     setDistricts(prev => prev.includes(district) ? prev.filter(d => d !== district) : [...prev, district]);
   };
 
+  const save = async () => {
+    setSaving(true);
+    await onSave(
+      { role, volunteerDistricts: role === 'volunteer' ? districts : [] },
+      `${donor.name} is now ${role === 'admin' ? 'an admin' : `a ${role}`}.`,
+    );
+    setSaving(false);
+  };
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>Access (admin only)</Text>
-      <ChipSelect options={ROLES} value={role} onChange={value => setRole(value as UserRole)} />
-      {role === 'volunteer' && (
-        <>
-          <Text style={styles.meta}>Districts this volunteer manages (none selected = all of Kerala)</Text>
-          <View style={styles.districtGrid}>
-            {KERALA_DISTRICTS.map(district => {
-              const selected = districts.includes(district);
-              return (
-                <TouchableOpacity
-                  key={district}
-                  style={[styles.districtChip, selected && styles.districtChipSelected]}
-                  onPress={() => toggleDistrict(district)}
-                >
-                  <Text style={[styles.districtText, selected && styles.districtTextSelected]}>{district}</Text>
-                </TouchableOpacity>
-              );
-            })}
+    <Section title="Access">
+      <View style={styles.panel}>
+        <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
+          Only admins can change this.
+        </Text>
+        <ChipSelect
+          label="Role"
+          options={ROLES}
+          value={role}
+          onChange={value => setRole(value as UserRole)}
+          format={value => ROLE_LABELS[value as UserRole]}
+        />
+        {role === 'volunteer' && (
+          <View style={styles.districts}>
+            <Text variant="label" color={palette.inkMuted}>Districts they manage</Text>
+            <Text variant="caption" color={palette.inkFaint} style={styles.panelHint}>
+              Leave all unselected to cover the whole of Kerala.
+            </Text>
+            <View style={styles.chips}>
+              {KERALA_DISTRICTS.map(district => {
+                const selected = districts.includes(district);
+                return (
+                  <Pressable
+                    key={district}
+                    onPress={() => toggleDistrict(district)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                  >
+                    <Text variant="label" color={selected ? '#fff' : palette.ink}>{district}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </>
-      )}
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => onSave(
-          { role, volunteerDistricts: role === 'volunteer' ? districts : [] },
-          `${donor.name} is now ${role === 'admin' ? 'an admin' : `a ${role}`}.`,
         )}
-      >
-        <Text style={styles.saveButtonText}>Save access</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-function Tag({ text, color }: { text: string; color: string }) {
-  return (
-    <View style={[styles.tag, { borderColor: color }]}>
-      <Text style={[styles.tagText, { color }]}>{text}</Text>
-    </View>
-  );
-}
-
-function Info({ label, value }: { label: string; value?: string }) {
-  return (
-    <View style={styles.info}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || '-'}</Text>
-    </View>
-  );
-}
-
-function ActionButton({ icon, label, onPress, color = COLORS.primary }: {
-  icon: string;
-  label: string;
-  onPress: () => void;
-  color?: string;
-}) {
-  return (
-    <TouchableOpacity style={[styles.actionButton, { backgroundColor: color }]} onPress={onPress}>
-      <MaterialCommunityIcons name={icon as any} size={18} color="white" />
-      <Text style={styles.actionText}>{label}</Text>
-    </TouchableOpacity>
+        <Button label="Save access" color={palette.info} loading={saving} onPress={save} />
+      </View>
+    </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  loading: {
+    paddingVertical: space.xxl,
+  },
+  flex: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
-  container: {
-    padding: 16,
-    paddingTop: HEADER_OFFSET,
-    paddingBottom: 40,
-    maxWidth: 800,
-    width: '100%',
-    alignSelf: 'center',
-    gap: 16,
-  },
-  header: {
-    alignItems: 'center',
-  },
-  bloodTypeContainer: {
-    backgroundColor: COLORS.primary,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  bloodType: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  meta: {
-    color: COLORS.muted,
-    marginTop: 4,
-  },
-  tags: {
+  pills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 12,
+    gap: space.sm,
   },
-  tag: {
+  row: {
+    flexDirection: 'row',
+    gap: space.md,
+  },
+  manage: {
+    gap: space.md,
+  },
+  panel: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    borderColor: palette.line,
+    padding: space.lg,
   },
-  tagText: {
-    fontSize: 11,
-    fontWeight: 'bold',
+  panelHint: {
+    marginBottom: space.md,
   },
-  contactRow: {
-    flexDirection: 'row',
-    gap: 12,
+  districts: {
+    marginBottom: space.lg,
   },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  info: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  infoLabel: {
-    color: COLORS.muted,
-    fontSize: 13,
-  },
-  infoValue: {
-    fontSize: 16,
-    marginTop: 2,
-  },
-  actions: {
+  chips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: space.sm,
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  chip: {
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md + 2,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: palette.line,
+    backgroundColor: palette.surface,
   },
-  actionText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  districtGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginVertical: 12,
-  },
-  districtChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#1565c0',
-  },
-  districtChipSelected: {
-    backgroundColor: '#1565c0',
-  },
-  districtText: {
-    color: '#1565c0',
-  },
-  districtTextSelected: {
-    color: 'white',
-  },
-  saveButton: {
-    backgroundColor: '#1565c0',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  empty: {
-    textAlign: 'center',
-    color: COLORS.muted,
-    marginTop: 120,
+  chipSelected: {
+    backgroundColor: palette.info,
+    borderColor: palette.info,
   },
 });

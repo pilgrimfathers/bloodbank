@@ -35,12 +35,3 @@ export const COMPATIBLE_DONORS: Record<BloodType, BloodType[]> = {
 
 // Minimum gap between two donations by the same donor.
 export const COOLOFF_MONTHS = 6;
-
-export const COLORS = {
-  primary: '#E53935',
-  success: '#2e7d32',
-  warning: '#ef6c00',
-  muted: '#666',
-  border: '#ddd',
-  background: '#f5f5f5',
-};
