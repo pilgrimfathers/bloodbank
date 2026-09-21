@@ -3,7 +3,7 @@ import {
   DocumentSnapshot, QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
-import { Donation, UserProfile } from '../types';
+import { BloodRequest, Donation, UserProfile } from '../types';
 import { toDate } from './format';
 
 export function mapUser(snap: DocumentSnapshot | QueryDocumentSnapshot): UserProfile {
@@ -15,6 +15,15 @@ export function mapUser(snap: DocumentSnapshot | QueryDocumentSnapshot): UserPro
     createdAt: toDate(data.createdAt) ?? undefined,
     updatedAt: toDate(data.updatedAt) ?? undefined,
   } as UserProfile;
+}
+
+export function mapRequest(snap: DocumentSnapshot | QueryDocumentSnapshot): BloodRequest {
+  const data = snap.data() ?? {};
+  return {
+    ...data,
+    id: snap.id,
+    createdAt: toDate(data.createdAt)!,
+  } as BloodRequest;
 }
 
 export function mapDonation(snap: QueryDocumentSnapshot): Donation {

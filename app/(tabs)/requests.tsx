@@ -1,34 +1,43 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
-import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
-import { firestore } from '@/src/config/firebase';
-import { BloodRequest } from '@/src/types';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { router, useFocusEffect } from 'expo-router';
+import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { KERALA_DISTRICTS } from '@/src/constants';
+import { BloodRequest } from '@/src/types';
+import { mapRequest } from '@/src/utils/data';
+import { palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
+import RequestRow from '@/src/components/RequestRow';
+import EmptyState from '@/src/components/ui/EmptyState';
+import Screen, { HeaderButton } from '@/src/components/ui/Screen';
+
+type StatusFilter = 'open' | 'all';
 
 export default function RequestsScreen() {
   const { profile } = useCurrentUser();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [district, setDistrict] = useState<string | null>(profile?.district ?? null);
+  const [status, setStatus] = useState<StatusFilter>('open');
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchRequests = async () => {
     try {
       const q = query(collection(firestore, 'bloodRequests'), orderBy('createdAt', 'desc'), limit(200));
-      const querySnapshot = await getDocs(q);
-      const requestsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      })) as BloodRequest[];
-      setRequests(requestsData);
+      const snap = await getDocs(q);
+      setRequests(snap.docs.map(mapRequest));
     } catch (error) {
       console.error('Error fetching requests:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useFocusEffect(useCallback(() => {
+    fetchRequests();
+  }, []));
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -36,231 +45,107 @@ export default function RequestsScreen() {
     setRefreshing(false);
   };
 
-  useFocusEffect(useCallback(() => {
-    fetchRequests();
-  }, []));
-
   // Filtered client-side to avoid needing a district+createdAt composite index.
-  const visibleRequests = useMemo(
-    () => district ? requests.filter(r => r.district === district) : requests,
-    [requests, district],
-  );
-
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'high': return '#E53935';
-      case 'medium': return '#FB8C00';
-      case 'low': return '#43A047';
-      default: return '#757575';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open': return '#43A047';
-      case 'fulfilled': case 'closed': return 'green';
-      default: return '#757575';
-    }
-  };
-
-  const renderRequest = ({ item }: { item: BloodRequest }) => (
-    <TouchableOpacity 
-      style={styles.requestCard}
-      onPress={() => router.push(`/request/${item.id}` as any)}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.bloodTypeContainer}>
-          <Text style={styles.bloodType}>{item.bloodType}</Text>
-        </View>
-        <View style={styles.badges}>
-          <View style={[styles.urgencyBadge, { backgroundColor: getUrgencyColor(item.urgency) }]}>
-            <Text style={styles.badgeText}>{item.urgency.toUpperCase()}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.badgeText}>{item.status.toUpperCase()}</Text>
-          </View>
-        </View>
-      </View>
-
-      <Text style={styles.hospital}>{item.hospital}</Text>
-      <Text style={styles.patientName}>Patient: {item.patientName}</Text>
-      <Text style={styles.location}>{[item.location, item.district].filter(Boolean).join(', ')}</Text>
-      
-      <View style={styles.footer}>
-        <Text style={styles.units}>{item.units} units needed</Text>
-        <View style={styles.dateContainer}>
-          <Text style={styles.requesterName}>by {item.requesterName}</Text>
-          <Text style={styles.date}>{item.createdAt.toLocaleDateString()}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+  const visible = useMemo(
+    () => requests.filter(r =>
+      (!district || r.district === district) && (status === 'all' || r.status === 'open')
+    ),
+    [requests, district, status],
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Blood Requests</Text>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => router.push('/request/new')}
-        >
-          <MaterialCommunityIcons name="plus" size={24} color="white" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.listContainer}>
-        <FlatList
-            data={visibleRequests}
-            ListHeaderComponent={
-              <ChipSelect
-                horizontal
-                options={KERALA_DISTRICTS}
-                value={district}
-                onChange={setDistrict}
-                allLabel="All Kerala"
-                onClear={() => setDistrict(null)}
-              />
-            }
-            ListEmptyComponent={
-              <Text style={styles.empty}>No requests{district ? ` in ${district}` : ''} yet.</Text>
-            }
-            renderItem={renderRequest}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.list}
-            refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-        />
-      </View>
-    </View>
+    <Screen
+      title="Blood requests"
+      subtitle={district ? `Showing ${district}` : 'Showing all of Kerala'}
+      right={<HeaderButton icon="plus" label="Request blood" onPress={() => router.push('/request/new')} />}
+      scroll={false}
+      contentStyle={styles.noGap}
+    >
+      <FlatList
+        data={visible}
+        keyExtractor={item => item.id}
+        renderItem={({ item, index }) => (
+          <View style={[
+            styles.item,
+            index === 0 && styles.first,
+            index === visible.length - 1 && styles.last,
+            index > 0 && styles.divider,
+          ]}>
+            <RequestRow request={item} />
+          </View>
+        )}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[palette.blood]} />}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.filters}>
+            <ChipSelect
+              horizontal
+              options={KERALA_DISTRICTS}
+              value={district}
+              onChange={setDistrict}
+              allLabel="All Kerala"
+              onClear={() => setDistrict(null)}
+            />
+            <ChipSelect
+              horizontal
+              options={['open', 'all']}
+              value={status}
+              onChange={value => setStatus(value as StatusFilter)}
+              format={value => (value === 'open' ? 'Open only' : 'Include closed')}
+            />
+          </View>
+        }
+        ListEmptyComponent={loading ? (
+          <ActivityIndicator color={palette.blood} style={styles.loading} />
+        ) : (
+          <EmptyState
+            icon="water-check"
+            title={`No ${status === 'open' ? 'open ' : ''}requests${district ? ` in ${district}` : ''}`}
+            message="Try another district, or post a request if someone needs blood."
+            action={{ label: 'Request blood', onPress: () => router.push('/request/new') }}
+          />
+        )}
+      />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  noGap: {
+    gap: 0,
+    paddingTop: 0,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
-    paddingVertical: 24,
-    backgroundColor: 'white',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  addButton: {
-    backgroundColor: '#E53935',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+  filters: {
+    paddingTop: space.lg,
   },
   list: {
-    padding: 16,
+    paddingBottom: space.xxl,
   },
-  listContainer: {
-    flex: 1,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
-    alignSelf: 'center',
-    width: '100%',
-    padding: 20,
+  // Rows share one rounded surface, like List, but stay virtualised.
+  item: {
+    backgroundColor: palette.surface,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: palette.line,
   },
-  requestCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  first: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: radius.md,
+    borderTopRightRadius: radius.md,
+    overflow: 'hidden',
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+  last: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: radius.md,
+    borderBottomRightRadius: radius.md,
+    overflow: 'hidden',
   },
-  bloodTypeContainer: {
-    backgroundColor: '#E53935',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
+  divider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: palette.line,
   },
-  bloodType: {
-    color: 'white',
-    fontWeight: 'bold',
+  loading: {
+    paddingVertical: space.xl,
   },
-  urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  urgencyText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  hospital: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  patientName: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  location: {
-    color: '#666',
-    marginBottom: 12,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  units: {
-    color: '#E53935',
-    fontWeight: '500',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  requesterName: {
-    color: '#666',
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-  date: {
-    color: '#666',
-    fontSize: 12,
-  },
-  badges: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  badgeText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 24,
-  },
-}); 
+});

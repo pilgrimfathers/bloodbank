@@ -1,326 +1,250 @@
-import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, RefreshControl } from 'react-native';
-import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { firestore, auth } from '@/src/config/firebase';
-import { BloodRequest, Donation } from '@/src/types';
+import { auth, firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { coversDistrict, isVolunteer, mapDonation } from '@/src/utils/data';
-import { showMessage } from '@/src/utils/dialog';
+import { BloodRequest, Donation } from '@/src/types';
+import { coversDistrict, isVolunteer, mapDonation, mapRequest } from '@/src/utils/data';
+import { confirmAction, showMessage } from '@/src/utils/dialog';
+import { formatDate, timeAgo } from '@/src/utils/format';
+import { palette, radius, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
-import BackButton from '@/src/components/BackButton';
+import BloodMark from '@/src/components/ui/BloodMark';
+import Button from '@/src/components/ui/Button';
+import EmptyState from '@/src/components/ui/EmptyState';
+import { List, ListRow } from '@/src/components/ui/List';
+import Pill, { Tone } from '@/src/components/ui/Pill';
+import Screen from '@/src/components/ui/Screen';
+import Section from '@/src/components/ui/Section';
+import Text from '@/src/components/ui/Text';
+
+const URGENCY: Record<BloodRequest['urgency'], { label: string; tone: Tone }> = {
+  high: { label: 'Urgent', tone: 'blood' },
+  medium: { label: 'Needed soon', tone: 'turmeric' },
+  low: { label: 'Planned', tone: 'muted' },
+};
+
+const STATUS: Record<BloodRequest['status'], { label: string; tone: Tone }> = {
+  open: { label: 'Open', tone: 'info' },
+  fulfilled: { label: 'Fulfilled', tone: 'leaf' },
+  closed: { label: 'Closed', tone: 'muted' },
+};
 
 export default function RequestDetails() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useCurrentUser();
   const [request, setRequest] = useState<BloodRequest | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [notFound, setNotFound] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [updating, setUpdating] = useState(false);
+
+  const fetchRequest = async () => {
+    try {
+      const snap = await getDoc(doc(firestore, 'bloodRequests', id));
+      if (!snap.exists()) {
+        setNotFound(true);
+        return;
+      }
+      setRequest(mapRequest(snap));
+
+      if (isVolunteer(profile)) {
+        const donationSnap = await getDocs(query(collection(firestore, 'donations'), where('requestId', '==', id)));
+        setDonations(donationSnap.docs.map(mapDonation));
+      }
+    } catch (error) {
+      console.error('Error fetching request:', error);
+      showMessage('Could not load request', 'Check your connection and pull down to try again.');
+    }
+  };
 
   useFocusEffect(useCallback(() => {
     fetchRequest();
   }, [id, profile?.role]));
 
-  const fetchRequest = async () => {
-    try {
-      const docRef = doc(firestore, 'bloodRequests', id as string);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        setRequest({
-          id: docSnap.id,
-          ...docSnap.data(),
-          createdAt: docSnap.data().createdAt?.toDate(),
-        } as BloodRequest);
-      }
-
-      if (isVolunteer(profile)) {
-        const snap = await getDocs(query(collection(firestore, 'donations'), where('requestId', '==', id)));
-        setDonations(snap.docs.map(mapDonation));
-      }
-    } catch (error) {
-      console.error('Error fetching request:', error);
-      showMessage('Error', 'Failed to load request details');
-    }
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchRequest();
+    setRefreshing(false);
   };
 
-  const handleStatusUpdate = async (newStatus: 'fulfilled' | 'closed') => {
+  const updateStatus = async (status: 'fulfilled' | 'closed') => {
+    const ok = await confirmAction(
+      status === 'fulfilled' ? 'Mark as fulfilled?' : 'Close this request?',
+      status === 'fulfilled'
+        ? 'The patient has the blood they need. Donors will stop seeing this request.'
+        : 'Donors will stop seeing this request. Use this if it is no longer needed.',
+      status === 'fulfilled' ? 'Mark fulfilled' : 'Close request',
+    );
+    if (!ok) return;
+
+    setUpdating(true);
     try {
-      const requestRef = doc(firestore, 'bloodRequests', id as string);
-      const updateData: any = { 
-        status: newStatus,
-        updatedAt: new Date()
-      };
-
-      // Donors are credited through donation records, not on the request itself.
-      if (newStatus === 'fulfilled') {
-        updateData.fulfilledAt = new Date();
-      }
-
-      await updateDoc(requestRef, updateData);
+      await updateDoc(doc(firestore, 'bloodRequests', id), {
+        status,
+        updatedAt: new Date(),
+        // Donors are credited through donation records, not on the request itself.
+        ...(status === 'fulfilled' && { fulfilledAt: new Date() }),
+      });
       router.back();
     } catch (error) {
       console.error('Error updating request:', error);
-      showMessage('Error', 'Failed to update request status');
+      showMessage('Could not update request', 'Check your connection and try again.');
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await fetchRequest();
-    } catch (error) {
-      console.error('Error refreshing request:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [id]);
+  if (notFound) {
+    return (
+      <Screen back title="Blood request">
+        <EmptyState icon="file-question-outline" title="This request no longer exists" />
+      </Screen>
+    );
+  }
 
   if (!request) {
-    return <LoadingSpinner />;
+    return (
+      <Screen back title="Blood request">
+        <ActivityIndicator color={palette.blood} style={styles.loading} />
+      </Screen>
+    );
   }
 
   const isOwner = auth.currentUser?.uid === request.requesterId;
   const isManager = coversDistrict(profile, request.district);
-  const canUpdate = isOwner || isManager;
+  const canUpdate = (isOwner || isManager) && request.status === 'open';
+  const phone = request.contactNumber?.replace(/\D/g, '').slice(-10);
+  const place = [request.location, request.district].filter(Boolean).join(', ');
+  const unitsLabel = `${request.units} ${request.units === 1 ? 'unit' : 'units'}`;
 
   return (
-    <PageContainer>
-      <BackButton />
-      <ScrollView 
-        style={styles.wrapper}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <View style={styles.bloodTypeContainer}>
-                <Text style={styles.bloodType}>{request.bloodType}</Text>
-              </View>
-              <View style={styles.dateContainer}>
-                <Text style={styles.requesterName}>by {request.requesterName}</Text>
-                <Text style={styles.date}>
-                  {request.createdAt.toLocaleDateString()}
-                </Text>
-              </View>
-            </View>
+    <Screen
+      back
+      title="Blood request"
+      subtitle={`Posted ${timeAgo(request.createdAt)} by ${request.requesterName}`}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    >
+      <View style={styles.summary}>
+        <BloodMark bloodType={request.bloodType} size="lg" muted={request.status !== 'open'} />
+        <View style={styles.summaryText}>
+          <Text variant="title">{unitsLabel} of {request.bloodType}</Text>
+          <Text variant="body" color={palette.inkMuted}>for {request.patientName}</Text>
+          <View style={styles.pills}>
+            <Pill {...STATUS[request.status]} />
+            {request.status === 'open' && <Pill {...URGENCY[request.urgency]} />}
           </View>
-
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailsCard}>
-              <DetailItem icon="account" label="Patient" value={request.patientName} />
-              <DetailItem icon="account-circle" label="Requester" value={request.requesterName} />
-              <DetailItem icon="hospital" label="Hospital" value={request.hospital} />
-              <DetailItem icon="map-marker" label="Location" value={[request.location, request.district].filter(Boolean).join(', ')} />
-              <DetailItem icon="water" label="Units Needed" value={`${request.units} units`} />
-              <DetailItem icon="phone" label="Contact" value={request.contactNumber} />
-              <DetailItem 
-                icon="alert" 
-                label="Urgency" 
-                value={request.urgency.toUpperCase()}
-                color={request.urgency === 'high' ? '#c62828' : request.urgency === 'medium' ? '#ef6c00' : '#2e7d32'}
-              />
-              <DetailItem 
-                icon="information" 
-                label="Status" 
-                value={request.status.toUpperCase()}
-                color={request.status === 'open' ? '#2e7d32' : '#666'}
-                isLast
-              />
-            </View>
-          </View>
-
-          {isManager && request.status === 'open' && (
-            <TouchableOpacity
-              style={styles.findButton}
-              onPress={() => router.push({
-                pathname: '/(tabs)/manage',
-                params: { bloodType: request.bloodType, district: request.district ?? '', requestId: request.id },
-              })}
-            >
-              <MaterialCommunityIcons name="account-search" size={20} color="white" />
-              <Text style={styles.actionButtonText}>Find eligible donors</Text>
-            </TouchableOpacity>
-          )}
-
-          {canUpdate && request.status === 'open' && (
-            <View style={styles.actionContainer}>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: '#43A047' }]}
-                onPress={() => handleStatusUpdate('fulfilled')}
-              >
-                <MaterialCommunityIcons name="check-circle" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Fulfill</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: '#666' }]}
-                onPress={() => handleStatusUpdate('closed')}
-              >
-                <MaterialCommunityIcons name="close-circle" size={20} color="white" />
-                <Text style={styles.actionButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {isManager && (
-            <View style={styles.donations}>
-              <Text style={styles.sectionTitle}>Donations for this request ({donations.length}/{request.units})</Text>
-              <DonationList donations={donations} />
-            </View>
-          )}
         </View>
-      </ScrollView>
-    </PageContainer>
-  );
-}
-
-function DetailItem({ icon, label, value, color, isLast }: { 
-  icon: string, 
-  label: string, 
-  value: string, 
-  color?: string,
-  isLast?: boolean 
-}) {
-  return (
-    <View style={[
-      styles.detailItem, 
-      isLast && { borderBottomWidth: 0 }
-    ]}>
-      <MaterialCommunityIcons name={icon as any} size={24} color={color || '#666'} />
-      <View style={styles.detailContent}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={[styles.detailValue, color ? { color } : null]}>{value}</Text>
       </View>
-    </View>
+
+      {phone && request.status === 'open' && (
+        <View style={styles.actions}>
+          <Button
+            icon="phone"
+            label="Call"
+            onPress={() => Linking.openURL(`tel:${phone}`)}
+            style={styles.flex}
+          />
+          <Button
+            icon="whatsapp"
+            label="WhatsApp"
+            variant="secondary"
+            color={palette.leaf}
+            onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
+            style={styles.flex}
+          />
+        </View>
+      )}
+
+      <List>
+        <ListRow icon="hospital-building" title={request.hospital} subtitle={place || undefined} />
+        <ListRow icon="phone-outline" title={request.contactNumber || 'No contact number'} subtitle="Contact" />
+        <ListRow icon="calendar-blank-outline" title={formatDate(request.createdAt)} subtitle="Posted" />
+      </List>
+
+      {isManager && request.status === 'open' && (
+        <Button
+          icon="account-search"
+          label="Find eligible donors"
+          color={palette.info}
+          onPress={() => router.push({
+            pathname: '/(tabs)/manage',
+            params: { bloodType: request.bloodType, district: request.district ?? '', requestId: request.id },
+          })}
+        />
+      )}
+
+      {isManager && (
+        <Section title={`Donations logged (${donations.length} of ${request.units})`}>
+          <View style={styles.progressTrack}>
+            <View style={[
+              styles.progressFill,
+              { width: `${Math.min(100, (donations.length / Math.max(1, request.units)) * 100)}%` },
+            ]} />
+          </View>
+          <DonationList donations={donations} />
+        </Section>
+      )}
+
+      {canUpdate && (
+        <View style={styles.actions}>
+          <Button
+            icon="check-circle-outline"
+            label="Mark fulfilled"
+            color={palette.leaf}
+            loading={updating}
+            onPress={() => updateStatus('fulfilled')}
+            style={styles.flex}
+          />
+          <Button
+            label="Close"
+            variant="secondary"
+            color={palette.inkMuted}
+            disabled={updating}
+            onPress={() => updateStatus('closed')}
+            style={styles.flex}
+          />
+        </View>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-    marginTop: HEADER_OFFSET,
+  loading: {
+    paddingVertical: space.xxl,
   },
-  container: {
-    flex: 1,
-    maxWidth: Platform.OS === 'web' ? 800 : '100%',
-    alignSelf: 'center',
-    width: '100%',
-  },
-  header: {
-    backgroundColor: 'transparent',
-    borderRadius: Platform.OS === 'web' ? 12 : 0,
-    marginTop: Platform.OS === 'web' ? 20 : 0,
-  },
-  headerContent: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  bloodTypeContainer: {
-    backgroundColor: '#E53935',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  bloodType: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  dateContainer: {
+  summary: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: space.lg,
   },
-  requesterName: {
-    color: '#666',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  date: {
-    color: '#666',
-    fontSize: 16,
-  },
-  detailsContainer: {
-    padding: 10,
-  },
-  detailsCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  detailContent: {
-    marginLeft: 16,
+  summaryText: {
     flex: 1,
   },
-  detailLabel: {
-    color: '#666',
-    fontSize: 14,
-  },
-  detailValue: {
-    color: '#000',
-    fontSize: 16,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  actionContainer: {
+  pills: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    padding: 20,
+    gap: space.sm,
+    marginTop: space.sm,
   },
-  actionButton: {
+  actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    minWidth: 100,
-    justifyContent: 'center',
+    gap: space.md,
   },
-  findButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#1565c0',
-    padding: 12,
-    borderRadius: 20,
-    marginHorizontal: 20,
-    marginTop: 10,
+  flex: {
+    flex: 1,
   },
-  donations: {
-    padding: 20,
+  progressTrack: {
+    height: 8,
+    borderRadius: radius.pill,
+    backgroundColor: palette.line,
+    overflow: 'hidden',
+    marginBottom: space.md,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
+  progressFill: {
+    height: '100%',
+    backgroundColor: palette.leaf,
   },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-}); 
+});

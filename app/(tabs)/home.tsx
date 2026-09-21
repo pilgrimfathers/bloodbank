@@ -1,345 +1,174 @@
-import { View, Text, StyleSheet, ScrollView, Platform, RefreshControl, TouchableOpacity } from 'react-native';
-import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit, getCountFromServer } from 'firebase/firestore';
-import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { router, useFocusEffect } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import EligibilityBadge from '@/src/components/EligibilityBadge';
 import { BloodRequest } from '@/src/types';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import QuoteCarousel from '@/src/components/QuoteCarousel';
-import SkeletonLoader from '@/src/components/SkeletonLoader';
+import { mapRequest } from '@/src/utils/data';
+import { palette, radius, space } from '@/src/theme';
+import DonorCard from '@/src/components/DonorCard';
+import RequestRow from '@/src/components/RequestRow';
+import EmptyState from '@/src/components/ui/EmptyState';
+import { List } from '@/src/components/ui/List';
+import Screen from '@/src/components/ui/Screen';
+import Section from '@/src/components/ui/Section';
+import Text from '@/src/components/ui/Text';
 
 export default function HomeScreen() {
-  const [loading, setLoading] = useState(true);
-  const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([]);
-  const [stats, setStats] = useState({
-    totalRequests: 0,
-    urgentRequests: 0,
-  });
   const { profile } = useCurrentUser();
+  const [requests, setRequests] = useState<BloodRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchRequests = async () => {
     try {
-      setLoading(true);
-      // Query for all open requests, ordered by creation date
-      const recentQuery = query(
+      const snap = await getDocs(query(
         collection(firestore, 'bloodRequests'),
         where('status', '==', 'open'),
         orderBy('createdAt', 'desc'),
-        limit(5)
-      );
-      
-      // Query for urgent requests count
-      const urgentQuery = query(
-        collection(firestore, 'bloodRequests'),
-        where('urgency', '==', 'high'),
-        where('status', '==', 'open')
-      );
-      
-      const openQuery = query(
-        collection(firestore, 'bloodRequests'),
-        where('status', '==', 'open')
-      );
-
-      const [recentSnapshot, urgentSnapshot, openCount] = await Promise.all([
-        getDocs(recentQuery),
-        getCountFromServer(urgentQuery),
-        getCountFromServer(openQuery),
-      ]);
-
-      const recentData = recentSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-      })) as BloodRequest[];
-      
-      setRecentRequests(recentData);
-      setStats({
-        totalRequests: openCount.data().count,
-        urgentRequests: urgentSnapshot.data().count,
-      });
+        limit(30),
+      ));
+      setRequests(snap.docs.map(mapRequest));
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching requests:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency) {
-      case 'high':
-        return '#c62828';
-      case 'medium':
-        return '#ef6c00';
-      default:
-        return '#2e7d32';
-    }
+  useFocusEffect(useCallback(() => {
+    fetchRequests();
+  }, []));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchRequests();
+    setRefreshing(false);
   };
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await fetchData();
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
-
-  if (loading) {
-    return <SkeletonLoader />;
-  }
+  // Prefer requests in the donor's own district; fall back to all of Kerala.
+  const nearby = profile?.district ? requests.filter(r => r.district === profile.district) : [];
+  const shown = (nearby.length ? nearby : requests).slice(0, 5);
+  const scope = nearby.length ? profile!.district : 'Kerala';
+  const firstName = profile?.name?.split(' ')[0] ?? '';
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+    <Screen
+      title={firstName ? `Hello, ${firstName}` : 'Hello'}
+      subtitle={profile?.district ? `${profile.district}, Kerala` : 'Kerala'}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      hero={profile && (
+        <DonorCard
+          bloodType={profile.bloodType}
+          lastDonation={profile.lastDonation}
+          donationCount={profile.donationCount ?? 0}
+        />
+      )}
     >
-      <View style={styles.greeting}>
-        <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>Hello, {profile?.name ?? ''}</Text>
-          <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
-        </View>
-        <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
+      {profile && !profile.district && (
+        <Pressable style={styles.notice} onPress={() => router.push('/profile/edit')} accessibilityRole="button">
+          <MaterialCommunityIcons name="map-marker-plus" size={24} color={palette.turmeric} />
+          <Text variant="body" style={styles.flex}>
+            Add your district so volunteers can call you for requests nearby.
+          </Text>
+          <MaterialCommunityIcons name="chevron-right" size={22} color={palette.turmeric} />
+        </Pressable>
+      )}
+
+      <View style={styles.actions}>
+        <ActionTile
+          icon="water-plus"
+          title="Request blood"
+          text="For a patient who needs it"
+          onPress={() => router.push('/request/new')}
+          filled
+        />
+        <ActionTile
+          icon="hand-heart"
+          title="I donated"
+          text="Log it to start your cool-off"
+          onPress={() => router.push('/donation/new')}
+        />
       </View>
 
-      <View style={styles.contentContainer}>
-        {profile && !profile.district && (
-          <TouchableOpacity style={styles.notice} onPress={() => router.push('/profile/edit')}>
-            <MaterialCommunityIcons name="map-marker-alert" size={24} color="#ef6c00" />
-            <Text style={styles.noticeText}>Add your district so volunteers can reach you for nearby requests. Tap to update.</Text>
-          </TouchableOpacity>
+      <Section
+        title={`Open requests in ${scope}`}
+        action={{ label: 'See all', onPress: () => router.navigate('/(tabs)/requests') }}
+      >
+        {loading ? (
+          <ActivityIndicator color={palette.blood} style={styles.loading} />
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon="water-check"
+            title="No open requests right now"
+            message="When someone needs blood, it shows up here."
+          />
+        ) : (
+          <List>
+            {shown.map(request => <RequestRow key={request.id} request={request} />)}
+          </List>
         )}
-        {profile && (
-          <View style={styles.eligibility}>
-            <EligibilityBadge lastDonation={profile.lastDonation} variant="card" />
-          </View>
-        )}
-      </View>
-      <QuoteCarousel />
-      <View style={styles.contentContainer}>
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalRequests}</Text>
-            <Text style={styles.statLabel}>Open Requests</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.urgentRequests}</Text>
-            <Text style={styles.statLabel}>Urgent Needs</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{profile?.donationCount ?? 0}</Text>
-            <Text style={styles.statLabel}>My Donations</Text>
-          </View>
-        </View>
+      </Section>
+    </Screen>
+  );
+}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Blood Requests</Text>
-          {recentRequests.length === 0 ? (
-            <Text style={styles.noRequests}>No requests found</Text>
-          ) : (
-            recentRequests.map(request => (
-              <View key={request.id} style={styles.requestCard}>
-                <View style={styles.requestHeader}>
-                  <View style={styles.bloodTypeContainer}>
-                    <Text style={styles.bloodType}>{request.bloodType}</Text>
-                  </View>
-                  <View style={[
-                    styles.urgencyBadge,
-                    { backgroundColor: getUrgencyColor(request.urgency) }
-                  ]}>
-                    <Text style={styles.urgencyText}>
-                      {request.urgency.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.hospital}>{request.hospital}</Text>
-                <Text style={styles.patientName}>Patient: {request.patientName}</Text>
-                <Text style={styles.location}>{[request.location, request.district].filter(Boolean).join(', ')}</Text>
-                <View style={styles.requestFooter}>
-                  <Text style={styles.units}>{request.units} units needed</Text>
-                  <View style={styles.dateContainer}>
-                    <Text style={styles.requesterName}>by {request.requesterName}</Text>
-                    <Text style={styles.date}>{request.createdAt.toLocaleDateString()}</Text>
-                  </View>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-      </View>
-    </ScrollView>
+function ActionTile({ icon, title, text, onPress, filled }: {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  title: string;
+  text: string;
+  onPress: () => void;
+  filled?: boolean;
+}) {
+  const fg = filled ? '#fff' : palette.ink;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => [styles.tile, filled && styles.tileFilled, pressed && { opacity: 0.85 }]}
+    >
+      <MaterialCommunityIcons name={icon} size={26} color={filled ? '#fff' : palette.blood} />
+      <Text variant="bodyStrong" color={fg} style={styles.tileTitle}>{title}</Text>
+      <Text variant="caption" color={filled ? 'rgba(255,255,255,0.8)' : palette.inkMuted}>{text}</Text>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  contentContainer: {
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 0,
-  },
-  greeting: {
-    paddingHorizontal: Platform.OS === 'web' ? '20%' : 24,
-    paddingVertical: 24,
-    backgroundColor: 'white',
-  },
-  greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  greetingText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  greetingSubtext: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 4,
   },
   notice: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#fff3e0',
-    margin: 16,
-    marginBottom: 0,
-    padding: 16,
-    borderRadius: 12,
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: palette.turmericTint,
   },
-  noticeText: {
+  actions: {
+    flexDirection: 'row',
+    gap: space.md,
+  },
+  tile: {
     flex: 1,
-    color: '#ef6c00',
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.line,
   },
-  eligibility: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
+  tileFilled: {
+    backgroundColor: palette.bloodDark,
+    borderColor: palette.bloodDark,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 16,
+  tileTitle: {
+    marginTop: space.sm,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  loading: {
+    paddingVertical: space.xl,
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#E53935',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  section: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  requestCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  requestHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  bloodTypeContainer: {
-    backgroundColor: '#E53935',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  bloodType: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  urgencyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  urgencyText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  hospital: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  patientName: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  location: {
-    color: '#666',
-    marginBottom: 8,
-  },
-  requestFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  units: {
-    color: '#E53935',
-    fontWeight: '500',
-  },
-  date: {
-    color: '#666',
-    fontSize: 12,
-  },
-  noRequests: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  requesterName: {
-    color: '#666',
-    fontSize: 12,
-    fontStyle: 'italic',
-  },
-}); 
+});

@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { isVolunteer } from '@/src/utils/data';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fonts, palette } from '@/src/theme';
 
 export default function TabsLayout() {
   const { profile } = useCurrentUser();
@@ -11,14 +12,17 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{
     headerShown: false,
-    // Tab screens have no header, so keep their content below the status bar.
-    sceneStyle: { paddingTop: insets.top, backgroundColor: '#fff' },
-    tabBarActiveTintColor: '#E53935',
-    tabBarInactiveTintColor: '#666',
+    sceneStyle: { backgroundColor: palette.paper },
+    tabBarActiveTintColor: palette.blood,
+    tabBarInactiveTintColor: palette.inkFaint,
     tabBarStyle: {
-        backgroundColor: '#fff',
+        backgroundColor: palette.surface,
         borderTopWidth: 0,
-        elevation: 10,
+        elevation: 12,
+        shadowColor: palette.ink,
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: -4 },
         // Grow with the home indicator / gesture bar instead of a fixed height.
         height: 64 + insets.bottom,
         paddingTop: 8,
@@ -28,6 +32,7 @@ export default function TabsLayout() {
     },
     tabBarLabelStyle: {
         fontSize: 12,
+        fontFamily: fonts.medium,
         marginTop: 2,
     },
     }}>

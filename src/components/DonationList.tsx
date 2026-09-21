@@ -1,8 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { COLORS } from '../constants';
-import { Donation } from '../types';
-import { formatDate } from '../utils/format';
+import { palette } from '@/src/theme';
+import { Donation } from '@/src/types';
+import { formatDate } from '@/src/utils/format';
+import EmptyState from './ui/EmptyState';
+import { List, ListRow } from './ui/List';
 
 type Props = {
   donations: Donation[];
@@ -11,67 +13,32 @@ type Props = {
 
 export default function DonationList({ donations, onDelete }: Props) {
   if (donations.length === 0) {
-    return <Text style={styles.empty}>No donations recorded yet.</Text>;
+    return <EmptyState icon="water-outline" title="No donations recorded yet" />;
   }
 
   return (
-    <View style={styles.card}>
-      {donations.map((donation, index) => (
-        <View key={donation.id} style={[styles.row, index === donations.length - 1 && styles.lastRow]}>
-          <MaterialCommunityIcons name="water" size={24} color={COLORS.primary} />
-          <View style={styles.content}>
-            <Text style={styles.date}>{formatDate(donation.date)}</Text>
-            <Text style={styles.meta}>
-              {donation.hospital || 'Hospital not recorded'}
-              {donation.recordedByName ? ` · logged by ${donation.recordedByName}` : ''}
-            </Text>
-          </View>
-          {onDelete && (
-            <TouchableOpacity onPress={() => onDelete(donation)} hitSlop={8}>
-              <MaterialCommunityIcons name="delete-outline" size={22} color="#999" />
-            </TouchableOpacity>
+    <List>
+      {donations.map(donation => (
+        <ListRow
+          key={donation.id}
+          icon="water"
+          title={formatDate(donation.date)}
+          subtitle={[
+            donation.hospital || 'Hospital not recorded',
+            donation.recordedByName && `Logged by ${donation.recordedByName}`,
+          ].filter(Boolean).join('\n')}
+          trailing={onDelete && (
+            <Pressable
+              onPress={() => onDelete(donation)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete donation on ${formatDate(donation.date)}`}
+            >
+              <MaterialCommunityIcons name="delete-outline" size={22} color={palette.inkFaint} />
+            </Pressable>
           )}
-        </View>
+        />
       ))}
-    </View>
+    </List>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  lastRow: {
-    borderBottomWidth: 0,
-  },
-  content: {
-    flex: 1,
-  },
-  date: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: COLORS.muted,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  empty: {
-    color: COLORS.muted,
-  },
-});
