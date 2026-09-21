@@ -1,15 +1,15 @@
 import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
 import { useCallback, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { auth } from '../config/firebase';
+import { auth } from '@/src/config/firebase';
 import { router, useFocusEffect } from 'expo-router';
-import { Donation } from '../types';
-import { useCurrentUser } from '../context/UserContext';
-import { getDonations } from '../utils/data';
-import { showMessage } from '../utils/dialog';
-import DonationList from '../components/DonationList';
-import EligibilityBadge from '../components/EligibilityBadge';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { Donation } from '@/src/types';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { getDonations } from '@/src/utils/data';
+import { showMessage } from '@/src/utils/dialog';
+import DonationList from '@/src/components/DonationList';
+import EligibilityBadge from '@/src/components/EligibilityBadge';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
 
 export default function ProfileScreen() {
   const { profile } = useCurrentUser();

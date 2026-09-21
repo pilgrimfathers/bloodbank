@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { auth, firestore } from '../config/firebase';
+import { auth, firestore } from '@/src/config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { BloodRequest } from '../types';
-import PageContainer from '../components/PageContainer';
-import BackButton from '../components/BackButton';
-import ChipSelect from '../components/ChipSelect';
-import { useCurrentUser } from '../context/UserContext';
-import { BLOOD_TYPES, KERALA_DISTRICTS } from '../constants';
-import { showMessage } from '../utils/dialog';
+import { BloodRequest } from '@/src/types';
+import PageContainer from '@/src/components/PageContainer';
+import BackButton from '@/src/components/BackButton';
+import ChipSelect from '@/src/components/ChipSelect';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { BLOOD_TYPES, KERALA_DISTRICTS } from '@/src/constants';
+import { showMessage } from '@/src/utils/dialog';
 
 const urgencyLevels = ['low', 'medium', 'high'] as const;
 

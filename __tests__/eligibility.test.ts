@@ -1,5 +1,5 @@
-import { addMonths, getEligibility, nextEligibleDate } from '../app/utils/eligibility';
-import { normalizePhone, parseDateInput } from '../app/utils/format';
+import { addMonths, getEligibility, nextEligibleDate } from '../src/utils/eligibility';
+import { normalizePhone, parseDateInput } from '../src/utils/format';
 
 describe('addMonths', () => {
   it('adds calendar months', () => {

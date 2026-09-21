@@ -1,6 +1,6 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { UserProvider, useCurrentUser } from './context/UserContext';
+import { UserProvider, useCurrentUser } from '@/src/context/UserContext';
 
 const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile'];
 
@@ -27,24 +27,21 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!isAuthenticated ? (
-        // Auth Stack
-        <>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-        </>
-      ) : (
-        // Main App Stack
-        <>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="request/[id]" />
-          <Stack.Screen name="request/new" />
-          <Stack.Screen name="donor/[id]" />
-          <Stack.Screen name="donor/edit" />
-          <Stack.Screen name="donation/new" />
-          <Stack.Screen name="profile/edit" />
-        </>
-      )}
+      {/* Auth Stack */}
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      {/* Main App Stack */}
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="request/[id]" />
+        <Stack.Screen name="request/new" />
+        <Stack.Screen name="donor/[id]" />
+        <Stack.Screen name="donor/edit" />
+        <Stack.Screen name="donation/new" />
+        <Stack.Screen name="profile/edit" />
+      </Stack.Protected>
     </Stack>
   );
 }

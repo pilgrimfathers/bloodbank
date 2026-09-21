@@ -2,14 +2,14 @@ import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { auth, firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import { COLORS } from '../constants';
-import { showMessage } from '../utils/dialog';
-import BackButton from '../components/BackButton';
-import DonorForm, { DonorFormValues } from '../components/DonorForm';
-import LoadingSpinner from '../components/LoadingSpinner';
-import PageContainer from '../components/PageContainer';
+import { auth, firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { COLORS } from '@/src/constants';
+import { showMessage } from '@/src/utils/dialog';
+import BackButton from '@/src/components/BackButton';
+import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
+import PageContainer from '@/src/components/PageContainer';
 
 export default function EditProfileScreen() {
   const { profile } = useCurrentUser();

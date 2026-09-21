@@ -2,16 +2,16 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, Refresh
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useState, useCallback } from 'react';
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { firestore, auth } from '../config/firebase';
-import { BloodRequest, Donation } from '../types';
-import { useCurrentUser } from '../context/UserContext';
-import { coversDistrict, isVolunteer, mapDonation } from '../utils/data';
-import { showMessage } from '../utils/dialog';
-import DonationList from '../components/DonationList';
+import { firestore, auth } from '@/src/config/firebase';
+import { BloodRequest, Donation } from '@/src/types';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { coversDistrict, isVolunteer, mapDonation } from '@/src/utils/data';
+import { showMessage } from '@/src/utils/dialog';
+import DonationList from '@/src/components/DonationList';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import LoadingSpinner from '../components/LoadingSpinner';
-import PageContainer from '../components/PageContainer';
-import BackButton from '../components/BackButton';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
+import PageContainer from '@/src/components/PageContainer';
+import BackButton from '@/src/components/BackButton';
 
 export default function RequestDetails() {
   const { id } = useLocalSearchParams();

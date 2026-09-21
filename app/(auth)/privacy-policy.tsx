@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
-import PageContainer from '../components/PageContainer';
-import BackButton from '../components/BackButton';
+import PageContainer from '@/src/components/PageContainer';
+import BackButton from '@/src/components/BackButton';
 
 export default function PrivacyPolicyScreen() {
   return (

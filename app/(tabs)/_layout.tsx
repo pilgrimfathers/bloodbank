@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useCurrentUser } from '../context/UserContext';
-import { isVolunteer } from '../utils/data';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { isVolunteer } from '@/src/utils/data';
 
 export default function TabsLayout() {
   const { profile } = useCurrentUser();

@@ -2,16 +2,16 @@ import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import { COLORS } from '../constants';
-import { UserProfile } from '../types';
-import { coversDistrict, getUser, isVolunteer, logDonation } from '../utils/data';
-import { confirmAction, showMessage } from '../utils/dialog';
-import BackButton from '../components/BackButton';
-import DonorForm, { DonorFormValues } from '../components/DonorForm';
-import LoadingSpinner from '../components/LoadingSpinner';
-import PageContainer from '../components/PageContainer';
+import { firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { COLORS } from '@/src/constants';
+import { UserProfile } from '@/src/types';
+import { coversDistrict, getUser, isVolunteer, logDonation } from '@/src/utils/data';
+import { confirmAction, showMessage } from '@/src/utils/dialog';
+import BackButton from '@/src/components/BackButton';
+import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
+import PageContainer from '@/src/components/PageContainer';
 
 // Volunteers add donors who don't use the app, or edit any donor they manage.
 export default function EditDonorScreen() {

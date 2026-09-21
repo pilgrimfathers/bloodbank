@@ -3,19 +3,19 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Platform
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { doc, updateDoc } from 'firebase/firestore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import { COLORS, KERALA_DISTRICTS } from '../constants';
-import { Donation, UserProfile, UserRole } from '../types';
-import { coversDistrict, deleteDonation, getDonations, getUser } from '../utils/data';
-import { confirmAction, showMessage } from '../utils/dialog';
-import { formatDate } from '../utils/format';
-import BackButton from '../components/BackButton';
-import ChipSelect from '../components/ChipSelect';
-import DonationList from '../components/DonationList';
-import EligibilityBadge from '../components/EligibilityBadge';
-import LoadingSpinner from '../components/LoadingSpinner';
-import PageContainer from '../components/PageContainer';
+import { firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { COLORS, KERALA_DISTRICTS } from '@/src/constants';
+import { Donation, UserProfile, UserRole } from '@/src/types';
+import { coversDistrict, deleteDonation, getDonations, getUser } from '@/src/utils/data';
+import { confirmAction, showMessage } from '@/src/utils/dialog';
+import { formatDate } from '@/src/utils/format';
+import BackButton from '@/src/components/BackButton';
+import ChipSelect from '@/src/components/ChipSelect';
+import DonationList from '@/src/components/DonationList';
+import EligibilityBadge from '@/src/components/EligibilityBadge';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
+import PageContainer from '@/src/components/PageContainer';
 
 const ROLES: UserRole[] = ['donor', 'volunteer', 'admin'];
 

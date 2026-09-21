@@ -46,7 +46,7 @@ After changing `firestore.rules` or `firestore.indexes.json`, deploy with `fireb
 2. Configure Firebase
    - Create a Firebase project
    - Enable Authentication and Firestore
-   - Update the Firebase config in `app/config/firebase.ts`
+   - Register a Web app and put its config in `.env` as `EXPO_PUBLIC_FIREBASE_*`
 
 3. Start the development server
    ```bash
@@ -64,33 +64,21 @@ You can run the app in:
 ## Project Structure
 
 ```
-app/
-├── (auth)/          # Authentication screens
-│   ├── _layout.tsx  # Auth layout configuration
-│   ├── login.tsx    # Login screen
-│   └── register.tsx # Registration screen
-├── (tabs)/          # Main app tabs
-│   ├── _layout.tsx  # Tabs layout configuration
-│   ├── home.tsx     # Home screen
-│   ├── messages.tsx # Messages screen
-│   ├── profile.tsx  # User profile
-│   ├── requests.tsx # Blood requests
-│   └── search.tsx   # Search functionality
-├── request/         # Request-related screens
-│   ├── [id].tsx    # Request details screen
-│   └── new.tsx     # New request screen
-├── components/      # Reusable components
-│   ├── BackButton.tsx
-│   ├── LoadingSpinner.tsx
-│   ├── PageContainer.tsx
-│   ├── QuoteCarousel.tsx
-│   └── SkeletonLoader.tsx
-├── config/          # App configuration
-│   └── firebase.ts  # Firebase configuration
-├── types/          # TypeScript definitions
-│   └── index.ts    # Type definitions
-├── _layout.tsx     # Root layout configuration
-└── index.tsx       # Landing screen
+app/                # Screens only (expo-router treats every file here as a route)
+├── (auth)/          # Login, register, privacy policy
+├── (tabs)/          # Home, requests, donors (volunteers), profile
+├── request/         # Request details, new request
+├── donor/           # Donor details, add/edit donor (volunteers)
+├── donation/        # Log a donation
+├── profile/         # Edit own profile
+└── _layout.tsx      # Root layout, auth-guarded stacks
+src/
+├── components/      # Shared UI
+├── config/          # Firebase setup
+├── constants/       # Districts, blood types, cool-off period
+├── context/         # Current user provider
+├── types/           # Type definitions
+└── utils/           # Data access, eligibility, formatting
 ```
 
 ## Learn more

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { auth, firestore } from '../config/firebase';
+import { auth, firestore } from '@/src/config/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import BackButton from '../components/BackButton';
-import DonorForm, { DonorFormValues } from '../components/DonorForm';
-import { showMessage } from '../utils/dialog';
-import { logDonation } from '../utils/data';
-import { UserProfile } from '../types';
+import BackButton from '@/src/components/BackButton';
+import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
+import { showMessage } from '@/src/utils/dialog';
+import { logDonation } from '@/src/utils/data';
+import { UserProfile } from '@/src/types';
 
 type Step = 'account' | 'details';
 

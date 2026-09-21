@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
-import { firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import { COLORS, COOLOFF_MONTHS } from '../constants';
-import { Donation, UserProfile } from '../types';
-import { coversDistrict, getDonations, getUser, logDonation } from '../utils/data';
-import { confirmAction, showMessage } from '../utils/dialog';
-import { addMonths } from '../utils/eligibility';
-import { formatDate, parseDateInput, toDateInput } from '../utils/format';
-import BackButton from '../components/BackButton';
-import EligibilityBadge from '../components/EligibilityBadge';
-import Field from '../components/Field';
-import LoadingSpinner from '../components/LoadingSpinner';
-import PageContainer from '../components/PageContainer';
+import { firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { COLORS, COOLOFF_MONTHS } from '@/src/constants';
+import { Donation, UserProfile } from '@/src/types';
+import { coversDistrict, getDonations, getUser, logDonation } from '@/src/utils/data';
+import { confirmAction, showMessage } from '@/src/utils/dialog';
+import { addMonths } from '@/src/utils/eligibility';
+import { formatDate, parseDateInput, toDateInput } from '@/src/utils/format';
+import BackButton from '@/src/components/BackButton';
+import EligibilityBadge from '@/src/components/EligibilityBadge';
+import Field from '@/src/components/Field';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
+import PageContainer from '@/src/components/PageContainer';
 
 // Logs a donation for the current user, or for any donor a volunteer manages.
 export default function NewDonationScreen() {

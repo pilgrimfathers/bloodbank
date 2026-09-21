@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import { router } from 'expo-router';
-import { auth } from '../config/firebase';
+import { auth } from '@/src/config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import BackButton from '../components/BackButton';
+import BackButton from '@/src/components/BackButton';
 
 export default function Login() {
   const [email, setEmail] = useState('');

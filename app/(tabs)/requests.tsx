@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
-import { firestore } from '../config/firebase';
-import { BloodRequest } from '../types';
+import { firestore } from '@/src/config/firebase';
+import { BloodRequest } from '@/src/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
-import { useCurrentUser } from '../context/UserContext';
-import { KERALA_DISTRICTS } from '../constants';
-import ChipSelect from '../components/ChipSelect';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { KERALA_DISTRICTS } from '@/src/constants';
+import ChipSelect from '@/src/components/ChipSelect';
 
 export default function RequestsScreen() {
   const { profile } = useCurrentUser();

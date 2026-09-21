@@ -5,15 +5,15 @@ import {
 import { collection, getDocs, query, where, QueryConstraint } from 'firebase/firestore';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import { BLOOD_TYPES, BloodType, COLORS, COMPATIBLE_DONORS, KERALA_DISTRICTS } from '../constants';
-import { UserProfile } from '../types';
-import { isVolunteer, mapUser } from '../utils/data';
-import { getEligibility } from '../utils/eligibility';
-import ChipSelect from '../components/ChipSelect';
-import EligibilityBadge from '../components/EligibilityBadge';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import { BLOOD_TYPES, BloodType, COLORS, COMPATIBLE_DONORS, KERALA_DISTRICTS } from '@/src/constants';
+import { UserProfile } from '@/src/types';
+import { isVolunteer, mapUser } from '@/src/utils/data';
+import { getEligibility } from '@/src/utils/eligibility';
+import ChipSelect from '@/src/components/ChipSelect';
+import EligibilityBadge from '@/src/components/EligibilityBadge';
+import LoadingSpinner from '@/src/components/LoadingSpinner';
 
 type EligibilityFilter = 'all' | 'eligible' | 'cooling';
 

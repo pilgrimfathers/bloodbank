@@ -2,13 +2,13 @@ import { View, Text, StyleSheet, ScrollView, Platform, RefreshControl, Touchable
 import { useEffect, useState, useCallback } from 'react';
 import { collection, query, where, getDocs, orderBy, limit, getCountFromServer } from 'firebase/firestore';
 import { router } from 'expo-router';
-import { firestore } from '../config/firebase';
-import { useCurrentUser } from '../context/UserContext';
-import EligibilityBadge from '../components/EligibilityBadge';
-import { BloodRequest } from '../types';
+import { firestore } from '@/src/config/firebase';
+import { useCurrentUser } from '@/src/context/UserContext';
+import EligibilityBadge from '@/src/components/EligibilityBadge';
+import { BloodRequest } from '@/src/types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import QuoteCarousel from '../components/QuoteCarousel';
-import SkeletonLoader from '../components/SkeletonLoader';
+import QuoteCarousel from '@/src/components/QuoteCarousel';
+import SkeletonLoader from '@/src/components/SkeletonLoader';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
