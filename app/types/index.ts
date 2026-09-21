@@ -1,12 +1,44 @@
+export type UserRole = 'donor' | 'volunteer' | 'admin';
+
 export type UserProfile = {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   bloodType: string;
   phoneNumber: string;
+  district?: string;
+  area?: string;
   address: string;
-  lastDonation?: Date;
+  medicalConditions?: string;
+  lastDonation?: Date | null;
+  donationCount?: number;
+  // Donor is willing to be contacted for donations.
   isDonor: boolean;
+  role?: UserRole;
+  // Districts a volunteer manages. Empty or missing means all of Kerala.
+  volunteerDistricts?: string[];
+  verified?: boolean;
+  status?: 'active' | 'inactive';
+  // False for donors added by a volunteer who don't use the app.
+  hasAccount?: boolean;
+  notes?: string;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type Donation = {
+  id: string;
+  donorId: string;
+  donorName: string;
+  bloodType: string;
+  district?: string;
+  date: Date;
+  hospital?: string;
+  requestId?: string | null;
+  recordedBy: string;
+  recordedByName?: string;
+  createdAt: Date;
 };
 
 export type BloodRequest = {
@@ -18,8 +50,9 @@ export type BloodRequest = {
   units: number;
   urgency: 'high' | 'medium' | 'low';
   hospital: string;
+  district?: string;
   location: string;
   status: 'open' | 'fulfilled' | 'closed';
   createdAt: Date;
   contactNumber: string;
-}; 
+};

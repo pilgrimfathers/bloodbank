@@ -5,33 +5,109 @@ service cloud.firestore {
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    // Users collection
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return me().get('role', 'donor');
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && myRole() == 'admin';
+    }
+
+    function isVolunteer() {
+      return isAuthenticated() && myRole() in ['volunteer', 'admin'];
+    }
+
+    function myDistricts() {
+      return me().get('volunteerDistricts', []);
+    }
+
+    // Admins, and volunteers with no districts assigned, manage all of Kerala.
+    function managesAll() {
+      return isAdmin() || (isVolunteer() && myDistricts().size() == 0);
+    }
+
+    function managesDistrict(district) {
+      return managesAll() || (isVolunteer() && district in myDistricts());
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    // Users collection: donors, volunteers and admins, plus donors without the app
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow update: if isAuthenticated() && isOwner(userId);
-      allow delete: if false; // Prevent user deletion
+      // Fields only volunteers/admins may set on someone's profile.
+      function staffOnlyFields() {
+        return ['role', 'volunteerDistricts', 'verified', 'status', 'notes', 'createdBy', 'hasAccount'];
+      }
+
+      // District-limited volunteers must always query by district.
+      allow read: if isAuthenticated() && (
+        isOwner(userId) ||
+        managesAll() ||
+        (isVolunteer() && resource.data.district in myDistricts())
+      );
+
+      allow create: if isAuthenticated() && (
+        // Self sign-up always starts as an unverified donor
+        (isOwner(userId) &&
+         request.resource.data.get('role', 'donor') == 'donor' &&
+         request.resource.data.get('verified', false) == false &&
+         !request.resource.data.keys().hasAny(['volunteerDistricts', 'notes'])) ||
+        // Volunteers add donors who don't use the app
+        (managesDistrict(request.resource.data.get('district', '')) &&
+         request.resource.data.role == 'donor' &&
+         request.resource.data.hasAccount == false)
+      );
+
+      allow update: if isAuthenticated() && (
+        (isOwner(userId) && !changedKeys().hasAny(staffOnlyFields())) ||
+        isAdmin() ||
+        // Volunteers manage plain donors in their districts, but can't change roles
+        (managesDistrict(resource.data.get('district', '')) &&
+         managesDistrict(request.resource.data.get('district', '')) &&
+         resource.data.get('role', 'donor') == 'donor' &&
+         !changedKeys().hasAny(['role', 'volunteerDistricts']))
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Donation history; users.lastDonation is kept in sync by the app
+    match /donations/{donationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.donorId == request.auth.uid || isVolunteer()
+      );
+      allow create: if isAuthenticated() &&
+                   request.resource.data.recordedBy == request.auth.uid && (
+        request.resource.data.donorId == request.auth.uid ||
+        managesDistrict(request.resource.data.get('district', ''))
+      );
+      allow update: if false;
+      allow delete: if isAuthenticated() && managesDistrict(resource.data.get('district', ''));
     }
 
     // Blood requests collection
     match /bloodRequests/{requestId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && 
+      allow create: if isAuthenticated() &&
                    request.resource.data.requesterId == request.auth.uid &&
                    request.resource.data.status == 'open';
-      allow update: if isAuthenticated() && (
-        // Allow owners to update their requests
+      allow update: if isAuthenticated() &&
+                   request.resource.data.requesterId == resource.data.requesterId && (
         isOwner(resource.data.requesterId) ||
-        // Allow updates for fulfilling requests (donors)
-        (resource.data.status == 'open' && 
-         request.resource.data.status in ['fulfilled', 'closed'])
+        managesDistrict(resource.data.get('district', ''))
       );
-      allow delete: if false; // Prevent request deletion
+      allow delete: if isAdmin();
     }
   }
-} 
+}

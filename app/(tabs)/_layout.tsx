@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Platform, View } from 'react-native';
-import PageContainer from '../components/PageContainer';
+import { useCurrentUser } from '../context/UserContext';
+import { isVolunteer } from '../utils/data';
 
 export default function TabsLayout() {
+  const { profile } = useCurrentUser();
+
   return (
     <Tabs screenOptions={{
     headerShown: false,
@@ -14,10 +16,8 @@ export default function TabsLayout() {
         borderTopWidth: 0,
         elevation: 10,
         height: 80,
-        position: 'absolute',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        overflow: 'visible',
     },
     tabBarLabelStyle: {
         fontSize: 12,
@@ -29,65 +29,28 @@ export default function TabsLayout() {
         name="home"
         options={{
         title: 'Home',
-        tabBarIcon: ({ color, size }) => (
+        tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="home" size={28} color={color} />
-        ),
-        }}
-    />
-    <Tabs.Screen
-        name="search"
-        options={{
-        title: 'Search',
-        tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="magnify" size={28} color={color} />
-        ),
-        }}
-    />
-    <Tabs.Screen
-        name="add"
-        options={{
-        title: '',
-        tabBarIcon: ({ color, size }) => (
-            <View style={{
-            width: 60,
-            height: 60,
-            backgroundColor: '#E53935',
-            borderRadius: 30,
-            justifyContent: 'center',
-            alignItems: 'center',
-            marginBottom: 20,
-            }}>
-            <MaterialCommunityIcons name="plus" size={30} color="#fff" />
-            </View>
         ),
         }}
     />
     <Tabs.Screen
         name="requests"
         options={{
-        title: '',
-        tabBarIcon: ({ color, size }) => (
-            <View style={{
-            width: Platform.OS === 'web' ? 100 : 80,
-            height: 80,
-            backgroundColor: '#E53935',
-            borderRadius: 30,
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 10,
-            marginBottom: Platform.OS === 'web' ? 20 : 0,
-            }}>
-            <MaterialCommunityIcons name="water" size={30} color="#fff" />
-            </View>
+        title: 'Requests',
+        tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="water" size={28} color={color} />
         ),
         }}
     />
     <Tabs.Screen
-        name="messages"
+        name="manage"
         options={{
-        title: 'Messages',
-        tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="message" size={28} color={color} />
+        title: 'Donors',
+        // Hidden from the tab bar unless the user is a volunteer or admin.
+        href: isVolunteer(profile) ? '/(tabs)/manage' : null,
+        tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="account-group" size={28} color={color} />
         ),
         }}
     />
@@ -95,11 +58,11 @@ export default function TabsLayout() {
         name="profile"
         options={{
         title: 'Profile',
-        tabBarIcon: ({ color, size }) => (
+        tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="account" size={28} color={color} />
         ),
         }}
     />
     </Tabs>
   );
-} 
+}

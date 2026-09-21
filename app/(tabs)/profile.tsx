@@ -1,38 +1,26 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
-import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView } from 'react-native';
+import { useCallback, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { auth, firestore } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { router } from 'expo-router';
-import { UserProfile } from '../types';
+import { auth } from '../config/firebase';
+import { router, useFocusEffect } from 'expo-router';
+import { Donation } from '../types';
+import { useCurrentUser } from '../context/UserContext';
+import { getDonations } from '../utils/data';
+import { showMessage } from '../utils/dialog';
+import DonationList from '../components/DonationList';
+import EligibilityBadge from '../components/EligibilityBadge';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { profile } = useCurrentUser();
+  const [donations, setDonations] = useState<Donation[]>([]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      const userId = auth.currentUser?.uid;
-      if (!userId) return;
-
-      const docRef = doc(firestore, 'users', userId);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        setProfile({
-          id: docSnap.id,
-          ...docSnap.data(),
-          lastDonation: docSnap.data().lastDonation?.toDate(),
-        } as UserProfile);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
+  useFocusEffect(useCallback(() => {
+    if (!profile?.id) return;
+    getDonations(profile.id)
+      .then(setDonations)
+      .catch(error => console.error('Error fetching donations:', error));
+  }, [profile?.id, profile?.lastDonation?.getTime()]));
 
   const handleLogout = async () => {
     try {
@@ -40,7 +28,7 @@ export default function ProfileScreen() {
       router.replace('/(auth)/login');
       // _layout.tsx will handle navigation due to auth state change
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      showMessage('Error', 'Failed to logout');
     }
   };
 
@@ -49,45 +37,74 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={styles.avatarContainer}>
           <MaterialCommunityIcons name="account-circle" size={80} color="#E53935" />
         </View>
         <Text style={styles.name}>{profile.name}</Text>
-        <View style={styles.bloodTypeBadge}>
-          <Text style={styles.bloodType}>{profile.bloodType}</Text>
+        <View style={styles.badges}>
+          <View style={styles.bloodTypeBadge}>
+            <Text style={styles.bloodType}>{profile.bloodType}</Text>
+          </View>
+          {profile.role && profile.role !== 'donor' && (
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>{profile.role.toUpperCase()}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <EligibilityBadge lastDonation={profile.lastDonation} variant="card" />
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/donation/new')}>
+            <MaterialCommunityIcons name="water-plus" size={20} color="white" />
+            <Text style={styles.primaryButtonText}>I donated</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/profile/edit')}>
+            <MaterialCommunityIcons name="pencil" size={20} color="#E53935" />
+            <Text style={styles.secondaryButtonText}>Edit profile</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.infoSection}>
         <InfoItem icon="email" label="Email" value={profile.email} />
         <InfoItem icon="phone" label="Phone" value={profile.phoneNumber} />
-        <InfoItem icon="map-marker" label="Address" value={profile.address} />
-        {profile.lastDonation && (
-          <InfoItem 
-            icon="calendar" 
-            label="Last Donation" 
-            value={profile.lastDonation.toLocaleDateString()} 
-          />
-        )}
+        <InfoItem
+          icon="map-marker"
+          label="District"
+          value={[profile.area, profile.district].filter(Boolean).join(', ') || 'Not set, please edit your profile'}
+        />
+        <InfoItem icon="home" label="Address" value={profile.address} />
+        <InfoItem
+          icon="hand-heart"
+          label="Availability"
+          value={profile.isDonor ? 'Available to donate' : 'Not available right now'}
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My donations ({donations.length})</Text>
+        <DonationList donations={donations} />
       </View>
 
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <MaterialCommunityIcons name="logout" size={24} color="white" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
-function InfoItem({ icon, label, value }: { icon: string, label: string, value: string }) {
+function InfoItem({ icon, label, value }: { icon: string, label: string, value?: string }) {
   return (
     <View style={styles.infoItem}>
       <MaterialCommunityIcons name={icon as any} size={24} color="#666" />
       <View style={styles.infoContent}>
         <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
+        <Text style={styles.infoValue}>{value || '-'}</Text>
       </View>
     </View>
   );
@@ -98,6 +115,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     marginTop: Platform.OS === 'ios' ? 60 : 0,
+  },
+  content: {
+    paddingBottom: 32,
   },
   header: {
     backgroundColor: 'white',
@@ -120,6 +140,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
   },
+  badges: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   bloodTypeBadge: {
     backgroundColor: '#E53935',
     paddingHorizontal: 16,
@@ -130,6 +154,60 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  roleBadge: {
+    backgroundColor: '#1565c0',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  roleText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  section: {
+    paddingHorizontal: Platform.OS === 'web' ? '20%' : 16,
+    paddingTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  primaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#E53935',
+    padding: 12,
+    borderRadius: 8,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E53935',
+    padding: 12,
+    borderRadius: 8,
+  },
+  secondaryButtonText: {
+    color: '#E53935',
+    fontWeight: 'bold',
   },
   infoSection: {
     backgroundColor: 'white',
@@ -160,13 +238,14 @@ const styles = StyleSheet.create({
   logoutButton: {
     backgroundColor: '#E53935',
     margin: 16,
+    marginTop: 32,
     padding: 16,
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    width: Platform.OS === 'web' ? '20%' : '30%',
-    marginHorizontal: 'auto',
+    alignSelf: 'center',
+    paddingHorizontal: 32,
   },
   logoutText: {
     color: 'white',
@@ -174,4 +253,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
-}); 
+});

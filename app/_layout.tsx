@@ -1,27 +1,20 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
-import React, { useEffect, useState, useCallback } from 'react';
-import { auth } from './config/firebase';
+import React, { useEffect } from 'react';
+import { UserProvider, useCurrentUser } from './context/UserContext';
 
-export default function RootLayout() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [initializing, setInitializing] = useState(true);
+const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile'];
+
+function RootNavigator() {
+  const { authUser, initializing } = useCurrentUser();
+  const isAuthenticated = !!authUser;
   const segments = useSegments();
   const router = useRouter();
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      setIsAuthenticated(!!user);
-      setInitializing(false);
-    });
-
-    return unsubscribe;
-  }, []);
 
   useEffect(() => {
     if (initializing) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inProtectedRoute = segments[0] === '(tabs)' || segments[0] === 'request';
+    const inProtectedRoute = PROTECTED_SEGMENTS.includes(segments[0]);
 
     if (!isAuthenticated && inProtectedRoute) {
       router.replace('/(auth)/login');
@@ -46,8 +39,20 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="request/[id]" />
           <Stack.Screen name="request/new" />
+          <Stack.Screen name="donor/[id]" />
+          <Stack.Screen name="donor/edit" />
+          <Stack.Screen name="donation/new" />
+          <Stack.Screen name="profile/edit" />
         </>
       )}
     </Stack>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <UserProvider>
+      <RootNavigator />
+    </UserProvider>
   );
 }

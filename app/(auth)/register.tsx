@@ -1,102 +1,80 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { auth, firestore } from '../config/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import BackButton from '../components/BackButton';
+import DonorForm, { DonorFormValues } from '../components/DonorForm';
+import { showMessage } from '../utils/dialog';
+import { logDonation } from '../utils/data';
+import { UserProfile } from '../types';
 
-const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-
-type Step = 'account' | 'personal' | 'medical';
+type Step = 'account' | 'details';
 
 export default function Register() {
   const [step, setStep] = useState<Step>('account');
-  const [formData, setFormData] = useState({
+  const [account, setAccount] = useState({
     email: '',
     password: '',
     confirmPassword: '',
-    name: '',
-    phoneNumber: '',
-    address: '',
-    bloodType: '',
-    lastDonation: '',
-    medicalConditions: '',
   });
 
   const handleNext = () => {
-    if (step === 'account') {
-      if (!formData.email || !formData.password || !formData.confirmPassword) {
-        Alert.alert('Error', 'Please fill in all fields');
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
-        return;
-      }
-      setStep('personal');
-    } else if (step === 'personal') {
-      if (!formData.name || !formData.phoneNumber) {
-        Alert.alert('Error', 'Please fill in all required fields');
-        return;
-      }
-      setStep('medical');
+    if (!account.email || !account.password || !account.confirmPassword) {
+      showMessage('Error', 'Please fill in all fields');
+      return;
     }
+    if (account.password.length < 6) {
+      showMessage('Error', 'Password must be at least 6 characters long');
+      return;
+    }
+    if (account.password !== account.confirmPassword) {
+      showMessage('Error', 'Passwords do not match');
+      return;
+    }
+    setStep('details');
   };
 
-  const handleBack = () => {
-    if (step === 'personal') setStep('account');
-    if (step === 'medical') setStep('personal');
-  };
-
-  const handleRegister = async () => {
+  const handleRegister = async (values: DonorFormValues) => {
     try {
-      // Validation checks
-      if (!formData.email || !formData.password || !formData.confirmPassword) {
-        Alert.alert('Error', 'Please fill in all required fields');
-        return;
-      }
-
-      // Password validation
-      if (formData.password.length < 6) {
-        Alert.alert('Error', 'Password must be at least 6 characters long');
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
-        return;
-      }
-
-      if (!formData.bloodType) {
-        Alert.alert('Error', 'Please select your blood type');
-        return;
-      }
-
       const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        formData.email, 
-        formData.password
+        auth,
+        account.email.trim(),
+        account.password
       );
+      const uid = userCredential.user.uid;
 
       await updateProfile(userCredential.user, {
-        displayName: formData.name
+        displayName: values.name
       });
 
-      await setDoc(doc(firestore, 'users', userCredential.user.uid), {
-        name: formData.name,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        address: formData.address,
-        bloodType: formData.bloodType,
-        lastDonation: formData.lastDonation ? new Date(formData.lastDonation) : null,
-        medicalConditions: formData.medicalConditions,
-        isDonor: true,
+      const { lastDonation, notes, ...details } = values;
+      const profile = {
+        ...details,
+        email: account.email.trim(),
+        role: 'donor',
+        verified: false,
+        status: 'active',
+        hasAccount: true,
+        lastDonation: null,
+        donationCount: 0,
+        createdBy: uid,
         createdAt: new Date(),
-      });
+        updatedAt: new Date(),
+      };
+      await setDoc(doc(firestore, 'users', uid), profile);
 
+      // A self-reported past donation still starts the cool-off period.
+      if (lastDonation) {
+        await logDonation(
+          { ...profile, id: uid } as UserProfile,
+          { date: lastDonation, hospital: 'Self-reported at registration' },
+          { id: uid, name: values.name },
+        );
+      }
     } catch (error: any) {
       let errorMessage = 'Registration failed';
-      
+
       // Handle specific Firebase Auth errors
       switch (error.code) {
         case 'auth/email-already-in-use':
@@ -117,103 +95,8 @@ export default function Register() {
         default:
           console.error('Registration error:', error);
       }
-      
-      Alert.alert('Error', errorMessage);
-    }
-  };
 
-  const renderStep = () => {
-    switch (step) {
-      case 'account':
-        return (
-          <>
-            <Text style={styles.stepTitle}>Create your account</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(text) => setFormData({...formData, email: text})}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={(text) => setFormData({...formData, password: text})}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({...formData, confirmPassword: text})}
-              secureTextEntry
-            />
-          </>
-        );
-      case 'personal':
-        return (
-          <>
-            <Text style={styles.stepTitle}>Personal Information</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              value={formData.name}
-              onChangeText={(text) => setFormData({...formData, name: text})}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              value={formData.phoneNumber}
-              onChangeText={(text) => setFormData({...formData, phoneNumber: text})}
-              keyboardType="phone-pad"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Address"
-              value={formData.address}
-              onChangeText={(text) => setFormData({...formData, address: text})}
-              multiline
-            />
-          </>
-        );
-      case 'medical':
-        return (
-          <>
-            <Text style={styles.stepTitle}>Medical Information</Text>
-            <View style={styles.bloodTypeContainer}>
-              {bloodTypes.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={[
-                    styles.bloodTypeButton,
-                    formData.bloodType === type && styles.bloodTypeSelected
-                  ]}
-                  onPress={() => setFormData({...formData, bloodType: type})}
-                >
-                  <Text style={[
-                    styles.bloodTypeText,
-                    formData.bloodType === type && styles.bloodTypeTextSelected
-                  ]}>{type}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Last Donation Date (Optional)"
-              value={formData.lastDonation}
-              onChangeText={(text) => setFormData({...formData, lastDonation: text})}
-            />
-            <TextInput
-              style={[styles.input, { height: 100 }]}
-              placeholder="Medical Conditions (Optional)"
-              value={formData.medicalConditions}
-              onChangeText={(text) => setFormData({...formData, medicalConditions: text})}
-              multiline
-            />
-          </>
-        );
+      showMessage('Error', errorMessage);
     }
   };
 
@@ -225,32 +108,50 @@ export default function Register() {
         <View style={styles.stepIndicator}>
           <View style={[styles.stepDot, step === 'account' && styles.activeStep]} />
           <View style={styles.stepLine} />
-          <View style={[styles.stepDot, step === 'personal' && styles.activeStep]} />
-          <View style={styles.stepLine} />
-          <View style={[styles.stepDot, step === 'medical' && styles.activeStep]} />
+          <View style={[styles.stepDot, step === 'details' && styles.activeStep]} />
         </View>
-        
-        {renderStep()}
 
-        <View style={styles.buttonContainer}>
-          {step !== 'account' && (
-            <TouchableOpacity 
-              style={[styles.button, styles.secondaryButton]} 
-              onPress={handleBack}
+        {step === 'account' ? (
+          <>
+            <Text style={styles.stepTitle}>Create your account</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={account.email}
+              onChangeText={(text) => setAccount({...account, email: text})}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={account.password}
+              onChangeText={(text) => setAccount({...account, password: text})}
+              secureTextEntry
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              value={account.confirmPassword}
+              onChangeText={(text) => setAccount({...account, confirmPassword: text})}
+              secureTextEntry
+            />
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Next</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.stepTitle}>Donor details</Text>
+            <DonorForm showLastDonation submitLabel="Register" onSubmit={handleRegister} />
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={() => setStep('account')}
             >
               <Text style={[styles.buttonText, styles.secondaryButtonText]}>Back</Text>
             </TouchableOpacity>
-          )}
-          
-          <TouchableOpacity 
-            style={[styles.button, step === 'medical' && styles.finalButton]} 
-            onPress={step === 'medical' ? handleRegister : handleNext}
-          >
-            <Text style={styles.buttonText}>
-              {step === 'medical' ? 'Register' : 'Next'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </>
+        )}
       </View>
     </ScrollView>
   );
@@ -263,7 +164,8 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 20,
-    maxWidth: 400,
+    paddingBottom: 60,
+    maxWidth: 480,
     width: '100%',
     alignSelf: 'center',
   },
@@ -311,45 +213,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f8f8f8',
   },
-  bloodTypeContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  bloodTypeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E53935',
-  },
-  bloodTypeSelected: {
-    backgroundColor: '#E53935',
-  },
-  bloodTypeText: {
-    color: '#E53935',
-  },
-  bloodTypeTextSelected: {
-    color: 'white',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginTop: 24,
-  },
   button: {
-    flex: 1,
     backgroundColor: '#E53935',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: 8,
   },
   secondaryButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#E53935',
+    marginTop: 12,
   },
   buttonText: {
     color: 'white',
@@ -358,15 +233,5 @@ const styles = StyleSheet.create({
   },
   secondaryButtonText: {
     color: '#E53935',
-  },
-  backButton: {
-    backgroundColor: 'transparent',
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 1,
-  },
-  finalButton: {
-    flex: 1,
   },
 });

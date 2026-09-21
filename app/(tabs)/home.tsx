@@ -1,7 +1,10 @@
-import { View, Text, StyleSheet, ScrollView, Platform, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, RefreshControl, TouchableOpacity } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
-import { firestore, auth } from '../config/firebase';
+import { collection, query, where, getDocs, orderBy, limit, getCountFromServer } from 'firebase/firestore';
+import { router } from 'expo-router';
+import { firestore } from '../config/firebase';
+import { useCurrentUser } from '../context/UserContext';
+import EligibilityBadge from '../components/EligibilityBadge';
 import { BloodRequest } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import QuoteCarousel from '../components/QuoteCarousel';
@@ -9,25 +12,21 @@ import SkeletonLoader from '../components/SkeletonLoader';
 
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState('');
   const [recentRequests, setRecentRequests] = useState<BloodRequest[]>([]);
   const [stats, setStats] = useState({
     totalRequests: 0,
     urgentRequests: 0,
-    myDonations: 0,
   });
+  const { profile } = useCurrentUser();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
-    fetchUserName();
   }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const userId = auth.currentUser?.uid;
-      
       // Query for all open requests, ordered by creation date
       const recentQuery = query(
         collection(firestore, 'bloodRequests'),
@@ -42,18 +41,16 @@ export default function HomeScreen() {
         where('urgency', '==', 'high'),
         where('status', '==', 'open')
       );
-
-      // Query for user's donations
-      const donationsQuery = query(
-        collection(firestore, 'bloodRequests'),
-        where('donorId', '==', userId),
-        where('status', '==', 'fulfilled')
-      );
       
-      const [recentSnapshot, urgentSnapshot, donationsSnapshot] = await Promise.all([
+      const openQuery = query(
+        collection(firestore, 'bloodRequests'),
+        where('status', '==', 'open')
+      );
+
+      const [recentSnapshot, urgentSnapshot, openCount] = await Promise.all([
         getDocs(recentQuery),
-        getDocs(urgentQuery),
-        getDocs(donationsQuery)
+        getCountFromServer(urgentQuery),
+        getCountFromServer(openQuery),
       ]);
 
       const recentData = recentSnapshot.docs.map(doc => ({
@@ -64,28 +61,13 @@ export default function HomeScreen() {
       
       setRecentRequests(recentData);
       setStats({
-        totalRequests: recentData.length,
-        urgentRequests: urgentSnapshot.size,
-        myDonations: donationsSnapshot.size,
+        totalRequests: openCount.data().count,
+        urgentRequests: urgentSnapshot.data().count,
       });
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchUserName = async () => {
-    try {
-      const userId = auth.currentUser?.uid;
-      if (!userId) return;
-
-      const userDoc = await getDoc(doc(firestore, 'users', userId));
-      if (userDoc.exists()) {
-        setUserName(userDoc.data().name);
-      }
-    } catch (error) {
-      console.error('Error fetching user name:', error);
     }
   };
 
@@ -103,10 +85,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        fetchData(),
-        fetchUserName()
-      ]);
+      await fetchData();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
@@ -127,25 +106,38 @@ export default function HomeScreen() {
     >
       <View style={styles.greeting}>
         <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>Hello, {userName}</Text>
+          <Text style={styles.greetingText}>Hello, {profile?.name ?? ''}</Text>
           <MaterialCommunityIcons name="hand-wave" size={28} color="#DEB887" />
         </View>
         <Text style={styles.greetingSubtext}>Thank you for being a lifesaver!</Text>
       </View>
 
+      <View style={styles.contentContainer}>
+        {profile && !profile.district && (
+          <TouchableOpacity style={styles.notice} onPress={() => router.push('/profile/edit')}>
+            <MaterialCommunityIcons name="map-marker-alert" size={24} color="#ef6c00" />
+            <Text style={styles.noticeText}>Add your district so volunteers can reach you for nearby requests. Tap to update.</Text>
+          </TouchableOpacity>
+        )}
+        {profile && (
+          <View style={styles.eligibility}>
+            <EligibilityBadge lastDonation={profile.lastDonation} variant="card" />
+          </View>
+        )}
+      </View>
       <QuoteCarousel />
       <View style={styles.contentContainer}>
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{stats.totalRequests}</Text>
-            <Text style={styles.statLabel}>Total Requests</Text>
+            <Text style={styles.statLabel}>Open Requests</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{stats.urgentRequests}</Text>
             <Text style={styles.statLabel}>Urgent Needs</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.myDonations}</Text>
+            <Text style={styles.statValue}>{profile?.donationCount ?? 0}</Text>
             <Text style={styles.statLabel}>My Donations</Text>
           </View>
         </View>
@@ -172,7 +164,7 @@ export default function HomeScreen() {
                 </View>
                 <Text style={styles.hospital}>{request.hospital}</Text>
                 <Text style={styles.patientName}>Patient: {request.patientName}</Text>
-                <Text style={styles.location}>{request.location}</Text>
+                <Text style={styles.location}>{[request.location, request.district].filter(Boolean).join(', ')}</Text>
                 <View style={styles.requestFooter}>
                   <Text style={styles.units}>{request.units} units needed</Text>
                   <View style={styles.dateContainer}>
@@ -217,6 +209,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginTop: 4,
+  },
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#fff3e0',
+    margin: 16,
+    marginBottom: 0,
+    padding: 16,
+    borderRadius: 12,
+  },
+  noticeText: {
+    flex: 1,
+    color: '#ef6c00',
+  },
+  eligibility: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   statsContainer: {
     flexDirection: 'row',

@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { auth, firestore } from '../config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { BloodRequest } from '../types';
 import PageContainer from '../components/PageContainer';
 import BackButton from '../components/BackButton';
+import ChipSelect from '../components/ChipSelect';
+import { useCurrentUser } from '../context/UserContext';
+import { BLOOD_TYPES, KERALA_DISTRICTS } from '../constants';
+import { showMessage } from '../utils/dialog';
 
-const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const urgencyLevels = ['low', 'medium', 'high'] as const;
 
 export default function NewRequestScreen() {
+  const { profile } = useCurrentUser();
   const [formData, setFormData] = useState({
+    district: profile?.district ?? '',
     bloodType: '',
     units: '',
     urgency: '' as typeof urgencyLevels[number],
@@ -23,14 +28,14 @@ export default function NewRequestScreen() {
 
   const handleSubmit = async () => {
     try {
-      if (!formData.bloodType || !formData.units || !formData.urgency || !formData.hospital || !formData.location || !formData.patientName) {
-        Alert.alert('Error', 'Please fill in all required fields');
+      if (!formData.bloodType || !formData.units || !formData.urgency || !formData.hospital || !formData.district || !formData.location || !formData.patientName) {
+        showMessage('Error', 'Please fill in all required fields');
         return;
       }
 
       const user = auth.currentUser;
       if (!user) {
-        Alert.alert('Error', 'You must be logged in to create a request');
+        showMessage('Error', 'You must be logged in to create a request');
         return;
       }
 
@@ -42,6 +47,7 @@ export default function NewRequestScreen() {
         units: parseInt(formData.units),
         urgency: formData.urgency,
         hospital: formData.hospital,
+        district: formData.district,
         location: formData.location,
         status: 'open',
         createdAt: new Date(),
@@ -49,11 +55,11 @@ export default function NewRequestScreen() {
       };
 
       await addDoc(collection(firestore, 'bloodRequests'), request);
-      Alert.alert('Success', 'Blood request created successfully');
+      showMessage('Success', 'Blood request created successfully');
       router.back();
     } catch (error) {
       console.error('Error creating request:', error);
-      Alert.alert('Error', 'Failed to create blood request');
+      showMessage('Error', 'Failed to create blood request');
     }
   };
 
@@ -73,7 +79,7 @@ export default function NewRequestScreen() {
             />
 
             <View style={styles.bloodTypeContainer}>
-              {bloodTypes.map((type) => (
+              {BLOOD_TYPES.map((type) => (
                 <TouchableOpacity
                   key={type}
                   style={[
@@ -125,9 +131,16 @@ export default function NewRequestScreen() {
               onChangeText={(text) => setFormData({...formData, hospital: text})}
             />
 
+            <ChipSelect
+              label="District"
+              options={KERALA_DISTRICTS}
+              value={formData.district || null}
+              onChange={(district) => setFormData({...formData, district})}
+            />
+
             <TextInput
               style={styles.input}
-              placeholder="Location"
+              placeholder="Area / town"
               value={formData.location}
               onChangeText={(text) => setFormData({...formData, location: text})}
             />

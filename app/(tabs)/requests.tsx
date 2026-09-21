@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 import { firestore } from '../config/firebase';
 import { BloodRequest } from '../types';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCurrentUser } from '../context/UserContext';
+import { KERALA_DISTRICTS } from '../constants';
+import ChipSelect from '../components/ChipSelect';
 
 export default function RequestsScreen() {
+  const { profile } = useCurrentUser();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
+  const [district, setDistrict] = useState<string | null>(profile?.district ?? null);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchRequests = async () => {
     try {
-      const q = query(collection(firestore, 'bloodRequests'), orderBy('createdAt', 'desc'));
+      const q = query(collection(firestore, 'bloodRequests'), orderBy('createdAt', 'desc'), limit(200));
       const querySnapshot = await getDocs(q);
       const requestsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
@@ -31,9 +36,15 @@ export default function RequestsScreen() {
     setRefreshing(false);
   };
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchRequests();
-  }, []);
+  }, []));
+
+  // Filtered client-side to avoid needing a district+createdAt composite index.
+  const visibleRequests = useMemo(
+    () => district ? requests.filter(r => r.district === district) : requests,
+    [requests, district],
+  );
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -73,7 +84,7 @@ export default function RequestsScreen() {
 
       <Text style={styles.hospital}>{item.hospital}</Text>
       <Text style={styles.patientName}>Patient: {item.patientName}</Text>
-      <Text style={styles.location}>{item.location}</Text>
+      <Text style={styles.location}>{[item.location, item.district].filter(Boolean).join(', ')}</Text>
       
       <View style={styles.footer}>
         <Text style={styles.units}>{item.units} units needed</Text>
@@ -99,7 +110,20 @@ export default function RequestsScreen() {
 
       <View style={styles.listContainer}>
         <FlatList
-            data={requests}
+            data={visibleRequests}
+            ListHeaderComponent={
+              <ChipSelect
+                horizontal
+                options={KERALA_DISTRICTS}
+                value={district}
+                onChange={setDistrict}
+                allLabel="All Kerala"
+                onClear={() => setDistrict(null)}
+              />
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>No requests{district ? ` in ${district}` : ''} yet.</Text>
+            }
             renderItem={renderRequest}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.list}
@@ -234,5 +258,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  empty: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 24,
   },
 }); 

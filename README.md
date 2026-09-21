@@ -1,16 +1,33 @@
 # Blood Bank App 🩸
 
-A cross-platform mobile application built with Expo and React Native that connects blood donors with those in need.
+A cross-platform app built with Expo and React Native that connects blood donors across Kerala with those in need, and lets volunteers manage the donor registry.
 
 ## Features
 
 - 🔐 Secure authentication with Firebase
-- 👤 User profiles for donors and requesters
-- 🏥 Create and manage blood donation requests
-- 🔍 Search and filter blood requests
+- 🗺️ Kerala-wide: donors and requests are tagged by district
+- 🩸 Donation history with a 6-month cool-off (configurable via `COOLOFF_MONTHS` in `app/constants`)
+- 🙋 Volunteer console: search donors by district, blood type (incl. compatible types) and eligibility; call/WhatsApp; log donations; verify/deactivate donors; add donors who don't use the app
+- 🏥 Create and manage blood requests, find eligible donors for a request
 - 📱 Cross-platform support (iOS, Android, Web)
-- 📍 Location-based request tracking
-- 📊 Real-time status updates
+
+## Roles
+
+| Role | Can do |
+|------|--------|
+| `donor` | Default on sign-up. Edit own profile, log own donations, create requests |
+| `volunteer` | Everything a donor can, plus manage donors in their `volunteerDistricts` (empty = all of Kerala) |
+| `admin` | Everything, plus promote users to volunteer/admin and assign districts |
+
+Roles are enforced in `firestore.rules`. To create the first admin, open your user document in the Firebase console (`users/<your uid>`) and set `role` to `admin`. After that, promote volunteers from the app (Donors tab → open user → Access).
+
+## Data model
+
+- `users/{id}`: profile, `district`, `role`, `lastDonation`, `donationCount`. Donors added by volunteers have `hasAccount: false`.
+- `donations/{id}`: one record per donation (`donorId`, `date`, `hospital`, `requestId`, `recordedBy`). Logging or deleting a donation keeps `users.lastDonation` in sync.
+- `bloodRequests/{id}`: requests, tagged with `district`.
+
+After changing `firestore.rules`, publish them: paste into Firebase console → Firestore → Rules, or run `firebase deploy --only firestore:rules` (needs a `firebase.json` pointing at the file).
 
 ## Tech Stack
 

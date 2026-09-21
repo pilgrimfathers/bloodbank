@@ -1,9 +1,13 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform, ScrollView, RefreshControl } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, ScrollView, RefreshControl } from 'react-native';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { firestore, auth } from '../config/firebase';
-import { BloodRequest } from '../types';
+import { BloodRequest, Donation } from '../types';
+import { useCurrentUser } from '../context/UserContext';
+import { coversDistrict, isVolunteer, mapDonation } from '../utils/data';
+import { showMessage } from '../utils/dialog';
+import DonationList from '../components/DonationList';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PageContainer from '../components/PageContainer';
@@ -11,12 +15,14 @@ import BackButton from '../components/BackButton';
 
 export default function RequestDetails() {
   const { id } = useLocalSearchParams();
+  const { profile } = useCurrentUser();
   const [request, setRequest] = useState<BloodRequest | null>(null);
+  const [donations, setDonations] = useState<Donation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     fetchRequest();
-  }, [id]);
+  }, [id, profile?.role]));
 
   const fetchRequest = async () => {
     try {
@@ -30,9 +36,14 @@ export default function RequestDetails() {
           createdAt: docSnap.data().createdAt?.toDate(),
         } as BloodRequest);
       }
+
+      if (isVolunteer(profile)) {
+        const snap = await getDocs(query(collection(firestore, 'donations'), where('requestId', '==', id)));
+        setDonations(snap.docs.map(mapDonation));
+      }
     } catch (error) {
       console.error('Error fetching request:', error);
-      Alert.alert('Error', 'Failed to load request details');
+      showMessage('Error', 'Failed to load request details');
     }
   };
 
@@ -43,10 +54,9 @@ export default function RequestDetails() {
         status: newStatus,
         updatedAt: new Date()
       };
-      
-      // If request is being fulfilled, add donor information
+
+      // Donors are credited through donation records, not on the request itself.
       if (newStatus === 'fulfilled') {
-        updateData.donorId = auth.currentUser?.uid;
         updateData.fulfilledAt = new Date();
       }
 
@@ -54,7 +64,7 @@ export default function RequestDetails() {
       router.back();
     } catch (error) {
       console.error('Error updating request:', error);
-      Alert.alert('Error', 'Failed to update request status');
+      showMessage('Error', 'Failed to update request status');
     }
   };
 
@@ -74,6 +84,8 @@ export default function RequestDetails() {
   }
 
   const isOwner = auth.currentUser?.uid === request.requesterId;
+  const isManager = coversDistrict(profile, request.district);
+  const canUpdate = isOwner || isManager;
 
   return (
     <PageContainer>
@@ -104,7 +116,7 @@ export default function RequestDetails() {
               <DetailItem icon="account" label="Patient" value={request.patientName} />
               <DetailItem icon="account-circle" label="Requester" value={request.requesterName} />
               <DetailItem icon="hospital" label="Hospital" value={request.hospital} />
-              <DetailItem icon="map-marker" label="Location" value={request.location} />
+              <DetailItem icon="map-marker" label="Location" value={[request.location, request.district].filter(Boolean).join(', ')} />
               <DetailItem icon="water" label="Units Needed" value={`${request.units} units`} />
               <DetailItem icon="phone" label="Contact" value={request.contactNumber} />
               <DetailItem 
@@ -123,7 +135,20 @@ export default function RequestDetails() {
             </View>
           </View>
 
-          {isOwner && request.status === 'open' && (
+          {isManager && request.status === 'open' && (
+            <TouchableOpacity
+              style={styles.findButton}
+              onPress={() => router.push({
+                pathname: '/(tabs)/manage',
+                params: { bloodType: request.bloodType, district: request.district ?? '', requestId: request.id },
+              })}
+            >
+              <MaterialCommunityIcons name="account-search" size={20} color="white" />
+              <Text style={styles.actionButtonText}>Find eligible donors</Text>
+            </TouchableOpacity>
+          )}
+
+          {canUpdate && request.status === 'open' && (
             <View style={styles.actionContainer}>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: '#43A047' }]}
@@ -140,6 +165,13 @@ export default function RequestDetails() {
                 <MaterialCommunityIcons name="close-circle" size={20} color="white" />
                 <Text style={styles.actionButtonText}>Close</Text>
               </TouchableOpacity>
+            </View>
+          )}
+
+          {isManager && (
+            <View style={styles.donations}>
+              <Text style={styles.sectionTitle}>Donations for this request ({donations.length}/{request.units})</Text>
+              <DonationList donations={donations} />
             </View>
           )}
         </View>
@@ -266,6 +298,25 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minWidth: 100,
     justifyContent: 'center',
+  },
+  findButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#1565c0',
+    padding: 12,
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginTop: 10,
+  },
+  donations: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
   actionButtonText: {
     color: 'white',
