@@ -14,7 +14,7 @@ import BackButton from '@/src/components/BackButton';
 import EligibilityBadge from '@/src/components/EligibilityBadge';
 import Field from '@/src/components/Field';
 import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 
 // Logs a donation for the current user, or for any donor a volunteer manages.
 export default function NewDonationScreen() {
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 80 : 100,
+    paddingTop: HEADER_OFFSET,
     maxWidth: 800,
     width: '100%',
     alignSelf: 'center',

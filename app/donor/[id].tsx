@@ -15,7 +15,7 @@ import ChipSelect from '@/src/components/ChipSelect';
 import DonationList from '@/src/components/DonationList';
 import EligibilityBadge from '@/src/components/EligibilityBadge';
 import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 
 const ROLES: UserRole[] = ['donor', 'volunteer', 'admin'];
 
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 80 : 100,
+    paddingTop: HEADER_OFFSET,
     paddingBottom: 40,
     maxWidth: 800,
     width: '100%',

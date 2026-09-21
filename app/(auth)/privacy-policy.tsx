@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 import BackButton from '@/src/components/BackButton';
 
 export default function PrivacyPolicyScreen() {
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginTop: 100,
+    marginTop: HEADER_OFFSET,
   },
   container: {
     flex: 1,

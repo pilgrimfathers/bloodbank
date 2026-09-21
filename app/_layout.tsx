@@ -1,5 +1,6 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
 import { UserProvider, useCurrentUser } from '@/src/context/UserContext';
 
 const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile'];
@@ -49,6 +50,8 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <UserProvider>
+      {/* Screens are always light, so keep status bar icons dark even in dark mode. */}
+      <StatusBar style="dark" />
       <RootNavigator />
     </UserProvider>
   );

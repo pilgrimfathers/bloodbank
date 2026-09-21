@@ -9,7 +9,7 @@ import { showMessage } from '@/src/utils/dialog';
 import BackButton from '@/src/components/BackButton';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
 import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 
 export default function EditProfileScreen() {
   const { profile } = useCurrentUser();
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    paddingTop: Platform.OS === 'web' ? 80 : 100,
+    paddingTop: HEADER_OFFSET,
     paddingBottom: 40,
     maxWidth: 800,
     width: '100%',

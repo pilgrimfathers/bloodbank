@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { auth } from '@/src/config/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import BackButton from '@/src/components/BackButton';
+import PageContainer from '@/src/components/PageContainer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -52,7 +53,7 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
+    <PageContainer style={styles.container}>
       <View style={styles.formContainer}>
         <BackButton />
         <Image 
@@ -100,7 +101,7 @@ export default function Login() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </PageContainer>
   );
 }
 

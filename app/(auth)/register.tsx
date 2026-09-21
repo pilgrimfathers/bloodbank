@@ -4,6 +4,7 @@ import { auth, firestore } from '@/src/config/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import BackButton from '@/src/components/BackButton';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
 import { showMessage } from '@/src/utils/dialog';
 import { logDonation } from '@/src/utils/data';
@@ -101,59 +102,61 @@ export default function Register() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <PageContainer>
       <BackButton />
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Blood Bank</Text>
-        <View style={styles.stepIndicator}>
-          <View style={[styles.stepDot, step === 'account' && styles.activeStep]} />
-          <View style={styles.stepLine} />
-          <View style={[styles.stepDot, step === 'details' && styles.activeStep]} />
+      <ScrollView style={styles.container}>
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Blood Bank</Text>
+          <View style={styles.stepIndicator}>
+            <View style={[styles.stepDot, step === 'account' && styles.activeStep]} />
+            <View style={styles.stepLine} />
+            <View style={[styles.stepDot, step === 'details' && styles.activeStep]} />
+          </View>
+  
+          {step === 'account' ? (
+            <>
+              <Text style={styles.stepTitle}>Create your account</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={account.email}
+                onChangeText={(text) => setAccount({...account, email: text})}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={account.password}
+                onChangeText={(text) => setAccount({...account, password: text})}
+                secureTextEntry
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                value={account.confirmPassword}
+                onChangeText={(text) => setAccount({...account, confirmPassword: text})}
+                secureTextEntry
+              />
+              <TouchableOpacity style={styles.button} onPress={handleNext}>
+                <Text style={styles.buttonText}>Next</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Text style={styles.stepTitle}>Donor details</Text>
+              <DonorForm showLastDonation submitLabel="Register" onSubmit={handleRegister} />
+              <TouchableOpacity
+                style={[styles.button, styles.secondaryButton]}
+                onPress={() => setStep('account')}
+              >
+                <Text style={[styles.buttonText, styles.secondaryButtonText]}>Back</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
-
-        {step === 'account' ? (
-          <>
-            <Text style={styles.stepTitle}>Create your account</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={account.email}
-              onChangeText={(text) => setAccount({...account, email: text})}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={account.password}
-              onChangeText={(text) => setAccount({...account, password: text})}
-              secureTextEntry
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              value={account.confirmPassword}
-              onChangeText={(text) => setAccount({...account, confirmPassword: text})}
-              secureTextEntry
-            />
-            <TouchableOpacity style={styles.button} onPress={handleNext}>
-              <Text style={styles.buttonText}>Next</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.stepTitle}>Donor details</Text>
-            <DonorForm showLastDonation submitLabel="Register" onSubmit={handleRegister} />
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={() => setStep('account')}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>Back</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </PageContainer>
   );
 }
 
@@ -164,6 +167,7 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 20,
+    paddingTop: HEADER_OFFSET,
     paddingBottom: 60,
     maxWidth: 480,
     width: '100%',

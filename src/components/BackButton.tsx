@@ -19,7 +19,7 @@ export default function BackButton() {
 const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
-    top: 40,
+    top: 8,
     left: 20,
     zIndex: 1,
     padding: 8,

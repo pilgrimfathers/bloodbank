@@ -10,7 +10,7 @@ import { showMessage } from '@/src/utils/dialog';
 import DonationList from '@/src/components/DonationList';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import LoadingSpinner from '@/src/components/LoadingSpinner';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 import BackButton from '@/src/components/BackButton';
 
 export default function RequestDetails() {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginTop: Platform.OS === 'web' ? 80 : 95,
+    marginTop: HEADER_OFFSET,
   },
   container: {
     flex: 1,

@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    marginTop: Platform.OS === 'ios' ? 60 : 0,
   },
   centered: {
     flex: 1,

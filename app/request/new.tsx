@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { auth, firestore } from '@/src/config/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { BloodRequest } from '@/src/types';
-import PageContainer from '@/src/components/PageContainer';
+import PageContainer, { HEADER_OFFSET } from '@/src/components/PageContainer';
 import BackButton from '@/src/components/BackButton';
 import ChipSelect from '@/src/components/ChipSelect';
 import { useCurrentUser } from '@/src/context/UserContext';
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginTop: 100,
+    marginTop: HEADER_OFFSET,
   },
   container: {
     flex: 1,
