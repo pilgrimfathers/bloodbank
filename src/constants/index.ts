@@ -35,3 +35,9 @@ export const COMPATIBLE_DONORS: Record<BloodType, BloodType[]> = {
 
 // Minimum gap between two donations by the same donor.
 export const COOLOFF_MONTHS = 6;
+
+// Moves `first` to the front so a pre-selected chip is visible in a scrolling row.
+export function withFirst<T extends string>(options: readonly T[], first?: string | null): T[] {
+  if (!first || !options.includes(first as T)) return [...options];
+  return [first as T, ...options.filter(option => option !== first)];
+}

@@ -4,7 +4,7 @@ import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { router, useFocusEffect } from 'expo-router';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { KERALA_DISTRICTS } from '@/src/constants';
+import { KERALA_DISTRICTS, withFirst } from '@/src/constants';
 import { BloodRequest } from '@/src/types';
 import { mapRequest } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
@@ -81,7 +81,7 @@ export default function RequestsScreen() {
           <View style={styles.filters}>
             <ChipSelect
               horizontal
-              options={KERALA_DISTRICTS}
+              options={withFirst(KERALA_DISTRICTS, profile?.district)}
               value={district}
               onChange={setDistrict}
               allLabel="All Kerala"

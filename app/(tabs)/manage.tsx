@@ -7,7 +7,7 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { BLOOD_TYPES, BloodType, COMPATIBLE_DONORS, KERALA_DISTRICTS } from '@/src/constants';
+import { BLOOD_TYPES, BloodType, COMPATIBLE_DONORS, KERALA_DISTRICTS, withFirst } from '@/src/constants';
 import { UserProfile } from '@/src/types';
 import { isVolunteer, mapUser } from '@/src/utils/data';
 import { getEligibility } from '@/src/utils/eligibility';
@@ -239,7 +239,7 @@ export default function ManageDonorsScreen() {
                 <ChipSelect
                   horizontal
                   label="District"
-                  options={allowedDistricts ?? KERALA_DISTRICTS}
+                  options={withFirst(allowedDistricts ?? KERALA_DISTRICTS, defaultDistrict ?? profile?.district)}
                   value={district}
                   onChange={setDistrict}
                   allLabel={allowedDistricts ? undefined : 'All Kerala'}
