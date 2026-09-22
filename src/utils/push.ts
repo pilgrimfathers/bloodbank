@@ -39,8 +39,10 @@ export async function registerPushToken(uid: string) {
     if (!Device.isDevice) return;
     await ensureAndroidChannel();
 
-    let { status } = await Notifications.getPermissionsAsync();
-    if (status === 'undetermined') {
+    // Android 13+ reports "denied" before the first request, so rely on
+    // canAskAgain rather than "undetermined" to decide whether to prompt.
+    let { status, canAskAgain } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted' && canAskAgain) {
       ({ status } = await Notifications.requestPermissionsAsync());
     }
     if (status !== 'granted') return;
