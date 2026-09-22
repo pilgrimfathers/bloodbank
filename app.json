@@ -10,7 +10,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bloodbankkgq.app",
-      "buildNumber": "2",
       "icon": "./assets/images/ios/AppIcon~ios-marketing.png"
     },
     "android": {
@@ -19,8 +18,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.bloodbankkgq.app",
-      "googleServicesFile": "./google-services.json",
-      "versionCode": 2
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "server",
