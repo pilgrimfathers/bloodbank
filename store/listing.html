@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blood Bank Kerala: Play Store listing images</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@400;500;600;700;800&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0&display=block" rel="stylesheet">
+<style>
+/* Tokens mirror src/theme.ts in the app. */
+:root {
+  --blood: #A3142B; --blood-dark: #7C0E20; --blood-deep: #5E0A18; --blood-tint: #F8E7E9;
+  --ink: #2B1B1E; --ink-muted: #6E5F61; --ink-faint: #A3979A;
+  --kasavu: #B8913A; --kasavu-ink: #8A6A22; --kasavu-tint: #F6EFDF;
+  --leaf: #2E7D50; --leaf-tint: #E4F1E9; --turmeric: #C26A12; --turmeric-tint: #FBEEDD;
+  --info: #2F5D8A; --info-tint: #E6EEF6;
+  --paper: #F1E9E5; --surface: #fff; --line: #E6DBD6; --muted-tint: #EFEAE7;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #333; font-family: 'Anek Malayalam', sans-serif; color: var(--ink); padding: 40px; display: flex; flex-wrap: wrap; gap: 40px; }
+.icon { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; direction: ltr; -webkit-font-smoothing: antialiased; font-feature-settings: 'liga'; }
+
+/* ---------- Store canvas (1080 x 1920) ---------- */
+.canvas { width: 1080px; height: 1920px; position: relative; overflow: hidden; flex: none; }
+.canvas.red { background: var(--blood); color: #fff; }
+.canvas.paper { background: var(--paper); }
+.canvas.deep { background: var(--blood-deep); color: #fff; }
+.caption { position: absolute; top: 120px; left: 96px; right: 96px; }
+.caption h2 { font-size: 84px; line-height: 1.02; font-weight: 800; letter-spacing: -2.5px; }
+.caption p { margin-top: 28px; font-size: 38px; line-height: 1.3; font-weight: 500; opacity: .82; max-width: 820px; }
+.canvas.paper .caption p { color: var(--ink-muted); opacity: 1; }
+/* Faint blood-group texture, the brand signature. */
+.texture { position: absolute; right: -40px; bottom: 60px; font-size: 230px; font-weight: 800; letter-spacing: -10px; line-height: .86; text-align: right; color: rgba(255,255,255,.07); }
+.canvas.paper .texture { color: rgba(163,20,43,.06); }
+
+/* ---------- Phone ---------- */
+.phone { position: absolute; left: 50%; top: 560px; width: 880px; height: 1920px; margin-left: -440px; border-radius: 96px; background: #141013; padding: 18px; box-shadow: 0 50px 120px rgba(40,5,12,.45); }
+.phone .glass { width: 844px; height: 1880px; border-radius: 80px; overflow: hidden; position: relative; background: var(--paper); }
+/* App screens are laid out at 412dp and scaled to fill the glass. */
+.screen { width: 412px; height: 918px; color: var(--ink); transform: scale(2.0485); transform-origin: top left; position: relative; overflow: hidden; background: var(--paper); font-size: 16px; }
+.phone .punch { position: absolute; top: 34px; left: 50%; width: 30px; height: 30px; margin-left: -15px; border-radius: 50%; background: #0c0a0b; z-index: 5; }
+
+/* ---------- App UI (dp units) ---------- */
+.status { height: 34px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; color: #fff; }
+.status .icons { display: flex; gap: 4px; align-items: center; }
+.status .icons .icon { font-size: 16px; }
+.band { background: var(--blood); color: #fff; padding: 12px 16px 24px; border-radius: 0 0 20px 20px; }
+.band.hero { padding-bottom: 72px; }
+.bar { display: flex; align-items: center; gap: 12px; }
+.bar .titles { flex: 1; }
+.bar h1 { font-size: 26px; font-weight: 700; line-height: 32px; letter-spacing: -.3px; }
+.bar h1.sm { font-size: 19px; font-weight: 600; line-height: 24px; }
+.bar .sub { font-size: 13px; opacity: .78; }
+.round { width: 40px; height: 40px; border-radius: 20px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; }
+.round .icon { font-size: 22px; }
+.content { padding: 0 16px; display: flex; flex-direction: column; gap: 22px; }
+.content.top { padding-top: 22px; }
+.overlap { margin-top: -56px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: flex; gap: 16px; align-items: center; box-shadow: 0 6px 18px rgba(60,10,20,.06); }
+.ring { position: relative; width: 132px; height: 132px; flex: none; }
+.ring svg { position: absolute; inset: 0; }
+.ring .bt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 44px; font-weight: 800; color: var(--blood); letter-spacing: -1px; }
+.card h3 { font-size: 19px; font-weight: 600; }
+.muted { color: var(--ink-muted); }
+.caption-text { font-size: 13px; line-height: 18px; }
+.chip-count { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; background: var(--kasavu-tint); border-radius: 999px; padding: 4px 10px; font-size: 14px; font-weight: 500; }
+.chip-count .icon { font-size: 16px; color: var(--kasavu); }
+
+.tiles { display: flex; gap: 12px; }
+.tile { flex: 1; border-radius: 12px; padding: 16px; background: var(--surface); border: 1px solid var(--line); }
+.tile.filled { background: var(--blood-dark); border-color: var(--blood-dark); color: #fff; }
+.tile .icon { font-size: 26px; color: var(--blood); }
+.tile.filled .icon { color: #fff; }
+.tile b { display: block; margin-top: 8px; font-size: 16px; font-weight: 600; }
+.tile span.t { font-size: 13px; color: var(--ink-muted); }
+.tile.filled span.t { color: rgba(255,255,255,.8); }
+
+.section-h { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.section-h h4 { font-size: 19px; font-weight: 600; }
+.section-h a { font-size: 14px; font-weight: 500; color: var(--blood); }
+
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 56px; }
+.row + .row { border-top: 1px solid var(--line); }
+.row .txt { flex: 1; min-width: 0; }
+.row .txt b { display: block; font-size: 16px; font-weight: 600; line-height: 22px; }
+.row .txt span { display: block; font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+.row > .icon { font-size: 22px; color: var(--ink-muted); }
+.meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.mark { width: 52px; height: 52px; border-radius: 12px; background: var(--blood-tint); color: var(--blood); font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; flex: none; letter-spacing: -.5px; }
+.mark.sm { width: 44px; height: 44px; font-size: 17px; }
+.mark.lg { width: 72px; height: 72px; font-size: 28px; }
+.mark.muted { background: var(--muted-tint); color: var(--ink-muted); }
+.pill { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.pill.blood { background: var(--blood-tint); color: var(--blood); }
+.pill.leaf { background: var(--leaf-tint); color: var(--leaf); }
+.pill.turmeric { background: var(--turmeric-tint); color: var(--turmeric); }
+.pill.info { background: var(--info-tint); color: var(--info); }
+.pill.muted { background: var(--muted-tint); color: var(--ink-muted); }
+.pill.kasavu { background: var(--kasavu-tint); color: var(--kasavu-ink); }
+.time { font-size: 13px; color: var(--ink-faint); }
+
+.chips { display: flex; gap: 8px; overflow: hidden; }
+.chip { flex: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-size: 14px; font-weight: 500; }
+.chip.on { background: var(--blood); border-color: var(--blood); color: #fff; }
+.label { font-size: 14px; font-weight: 500; color: var(--ink-muted); margin-bottom: 8px; }
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px; padding: 11px 12px; color: var(--ink-faint); font-size: 16px; }
+.search .icon { font-size: 22px; }
+
+.btns { display: flex; gap: 12px; }
+.btn { flex: 1; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 16px; }
+.btn .icon { font-size: 20px; }
+.btn.primary { background: var(--blood); color: #fff; }
+.btn.outline-leaf { border: 1.5px solid var(--leaf); color: var(--leaf); }
+.btn.outline { border: 1.5px solid var(--blood); color: var(--blood); }
+
+.summary { display: flex; align-items: center; gap: 16px; }
+.summary h2 { font-size: 26px; font-weight: 700; line-height: 30px; }
+.progress { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin-bottom: 12px; }
+.progress div { height: 100%; background: var(--leaf); }
+
+.tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: var(--surface); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 16px rgba(43,27,30,.08); display: flex; padding: 10px 6px 0; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 500; color: var(--ink-faint); }
+.tab .icon { font-size: 28px; }
+.tab.on { color: var(--blood); }
+
+/* Lock screen */
+.lock { position: absolute; inset: 0; background: radial-gradient(120% 70% at 30% 10%, #C2213B 0%, #7C0E20 55%, #3E0710 100%); color: #fff; }
+.lock .clock { text-align: center; margin-top: 70px; }
+.lock .clock b { display: block; font-size: 96px; font-weight: 600; letter-spacing: -3px; line-height: 1; }
+.lock .clock span { font-size: 17px; opacity: .85; }
+.notif { margin: 0 12px 10px; background: rgba(255,255,255,.94); color: var(--ink); border-radius: 24px; padding: 14px 16px; }
+.notif .app { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-muted); }
+.notif .app .logo { width: 18px; height: 18px; border-radius: 5px; background: var(--blood); color: #fff; display: flex; align-items: center; justify-content: center; }
+.notif .app .logo .icon { font-size: 13px; }
+.notif b { display: block; margin-top: 6px; font-size: 16px; font-weight: 700; }
+.notif p { font-size: 14px; color: var(--ink-muted); line-height: 19px; margin-top: 2px; }
+
+/* ---------- Feature graphic (1024 x 500) ---------- */
+.feature { width: 1024px; height: 500px; background: var(--blood); color: #fff; position: relative; overflow: hidden; flex: none; padding: 64px 72px; }
+.feature .brand { display: flex; align-items: center; gap: 12px; font-size: 30px; font-weight: 700; }
+.feature .brand .icon { font-size: 36px; }
+.feature h2 { margin-top: 56px; font-size: 66px; line-height: 1.02; font-weight: 800; letter-spacing: -2px; max-width: 560px; }
+.feature p { margin-top: 18px; font-size: 25px; opacity: .85; max-width: 520px; }
+.feature .fring { position: absolute; right: 90px; top: 95px; width: 310px; height: 310px; }
+.feature .fring .bt { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.feature .fring .bt b { font-size: 110px; font-weight: 800; letter-spacing: -4px; line-height: 1; }
+.feature .fring .bt span { font-size: 22px; font-weight: 600; opacity: .9; margin-top: 4px; }
+
+/* ---------- Store icon (512 x 512). Play applies its own rounded mask. ---------- */
+.appicon { width: 512px; height: 512px; background: radial-gradient(90% 90% at 30% 20%, #BD1F38 0%, #A3142B 55%, #7C0E20 100%); display: flex; align-items: center; justify-content: center; flex: none; }
+</style>
+</head>
+<body>
+
+<!-- Reusable ring: stroke color + progress set per use via inline attributes. -->
+
+<!-- ================= 1. Home ================= -->
+<section class="canvas red" id="shot-1">
+  <div class="texture">A+ B+<br>O+ AB+</div>
+  <div class="caption">
+    <h2>Know the day you can give again.</h2>
+    <p>Your blood group, your donations and a 6‑month cool‑off tracked for you.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="band hero" style="padding-top:0">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="bar" style="margin-top:12px"><div class="titles"><h1>Hello, Fathima</h1><div class="sub">Malappuram, Kerala</div></div></div>
+    </div>
+    <div class="content">
+      <div class="card overlap">
+        <div class="ring">
+          <svg width="132" height="132"><circle cx="66" cy="66" r="61.5" fill="none" stroke="#E6DBD6" stroke-width="9"/><circle cx="66" cy="66" r="61.5" fill="none" stroke="#C26A12" stroke-width="9" stroke-linecap="round" stroke-dasharray="386.4" stroke-dashoffset="135" transform="rotate(-90 66 66)"/></svg>
+          <div class="bt">B+</div>
+        </div>
+        <div>
+          <h3 style="color:var(--turmeric)">62 days to go</h3>
+          <div class="caption-text muted" style="margin-top:4px">Your body is refilling. You can give again on 24 Nov 2026.</div>
+          <div class="chip-count"><span class="icon">water_drop</span>7 donations</div>
+        </div>
+      </div>
+      <div class="tiles">
+        <div class="tile filled"><span class="icon">bloodtype</span><b>Request blood</b><span class="t">For a patient who needs it</span></div>
+        <div class="tile"><span class="icon">volunteer_activism</span><b>I donated</b><span class="t">Log it to start your cool-off</span></div>
+      </div>
+      <div>
+        <div class="section-h"><h4>Open requests in Malappuram</h4><a>See all</a></div>
+        <div class="list">
+          <div class="row"><div class="mark">O−</div><div class="txt"><b>District Hospital, Tirur</b><span>2 units for Ayisha Beevi<br>Tirur, Malappuram</span></div><div class="meta"><span class="pill blood">Urgent</span><span class="time">12m ago</span></div></div>
+          <div class="row"><div class="mark">B+</div><div class="txt"><b>Taluk Hospital, Perinthalmanna</b><span>1 unit for Joseph Chacko<br>Perinthalmanna, Malappuram</span></div><div class="meta"><span class="pill turmeric">Soon</span><span class="time">1h ago</span></div></div>
+          <div class="row"><div class="mark">A+</div><div class="txt"><b>General Hospital, Manjeri</b><span>3 units for Sreedevi Amma<br>Manjeri, Malappuram</span></div><div class="meta"><span class="pill muted">Planned</span><span class="time">3h ago</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar"><div class="tab on"><span class="icon">home</span>Home</div><div class="tab"><span class="icon">water_drop</span>Requests</div><div class="tab"><span class="icon">person</span>Profile</div></div>
+  </div></div></div>
+</section>
+
+<!-- ================= 2. Requests ================= -->
+<section class="canvas paper" id="shot-2">
+  <div class="texture">O− AB−<br>B− A−</div>
+  <div class="caption">
+    <h2>Every request, across all 14 districts.</h2>
+    <p>See who needs blood near you, how urgently, and at which hospital.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="band" style="padding-top:0">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="bar" style="margin-top:12px"><div class="titles"><h1>Blood requests</h1><div class="sub">Showing Ernakulam</div></div><div class="round"><span class="icon">add</span></div></div>
+    </div>
+    <div class="content top" style="gap:14px">
+      <div class="chips"><span class="chip">All Kerala</span><span class="chip on">Ernakulam</span><span class="chip">Thiruvananthapuram</span><span class="chip">Kollam</span></div>
+      <div class="chips"><span class="chip on">Open only</span><span class="chip">Include closed</span></div>
+      <div class="list">
+        <div class="row"><div class="mark">AB−</div><div class="txt"><b>General Hospital, Ernakulam</b><span>2 units for Merin Joseph<br>Kochi, Ernakulam</span></div><div class="meta"><span class="pill blood">Urgent</span><span class="time">5m ago</span></div></div>
+        <div class="row"><div class="mark">O+</div><div class="txt"><b>Government Medical College, Kalamassery</b><span>3 units for Muhammed Rafi<br>Kalamassery, Ernakulam</span></div><div class="meta"><span class="pill blood">Urgent</span><span class="time">40m ago</span></div></div>
+        <div class="row"><div class="mark">B+</div><div class="txt"><b>Taluk Hospital, Aluva</b><span>1 unit for Arjun Nair<br>Aluva, Ernakulam</span></div><div class="meta"><span class="pill turmeric">Soon</span><span class="time">2h ago</span></div></div>
+        <div class="row"><div class="mark">A−</div><div class="txt"><b>District Hospital, Muvattupuzha</b><span>2 units for Anna Mathew<br>Muvattupuzha, Ernakulam</span></div><div class="meta"><span class="pill turmeric">Soon</span><span class="time">4h ago</span></div></div>
+        <div class="row"><div class="mark">O−</div><div class="txt"><b>Taluk Hospital, Perumbavoor</b><span>1 unit for Shahid Kallingal<br>Perumbavoor, Ernakulam</span></div><div class="meta"><span class="pill muted">Planned</span><span class="time">1d ago</span></div></div>
+        <div class="row"><div class="mark muted">B−</div><div class="txt"><b>General Hospital, Ernakulam</b><span>2 units for Devika Menon<br>Kochi, Ernakulam</span></div><div class="meta"><span class="pill leaf">Fulfilled</span><span class="time">2d ago</span></div></div>
+      </div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="icon">home</span>Home</div><div class="tab on"><span class="icon">water_drop</span>Requests</div><div class="tab"><span class="icon">person</span>Profile</div></div>
+  </div></div></div>
+</section>
+
+<!-- ================= 3. Request detail ================= -->
+<section class="canvas red" id="shot-3">
+  <div class="texture">B+ O+<br>A+ AB+</div>
+  <div class="caption">
+    <h2>Call the family in one tap.</h2>
+    <p>Phone or WhatsApp straight from the request. No copying numbers.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="band" style="padding-top:0">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="bar" style="margin-top:12px"><div class="round"><span class="icon">arrow_back</span></div><div class="titles"><h1 class="sm">Blood request</h1><div class="sub">Posted 12m ago by Jobin Varghese</div></div></div>
+    </div>
+    <div class="content top">
+      <div class="summary">
+        <div class="mark lg">O−</div>
+        <div><h2>2 units of O−</h2><div class="muted">for Tomy Kurian</div><div style="margin-top:8px;display:flex;gap:8px"><span class="pill info">Open</span><span class="pill blood">Urgent</span></div></div>
+      </div>
+      <div class="btns"><div class="btn primary"><span class="icon">call</span>Call</div><div class="btn outline-leaf"><span class="icon">chat</span>WhatsApp</div></div>
+      <div class="list">
+        <div class="row"><span class="icon">local_hospital</span><div class="txt"><b>District Hospital, Kottayam</b><span>Kottayam</span></div></div>
+        <div class="row"><span class="icon">call</span><div class="txt"><b>98470 21453</b><span>Contact</span></div></div>
+        <div class="row"><span class="icon">calendar_month</span><div class="txt"><b>22 Sep 2026</b><span>Posted</span></div></div>
+      </div>
+      <div class="btn" style="background:var(--info);color:#fff;flex:none"><span class="icon">person_search</span>Find eligible donors</div>
+      <div>
+        <div class="section-h"><h4>Donations logged (1 of 2)</h4></div>
+        <div class="progress"><div style="width:50%"></div></div>
+        <div class="list"><div class="row"><span class="icon" style="color:var(--blood)">water_drop</span><div class="txt"><b>Vishnu Namboothiri</b><span>22 Sep 2026, logged by Anjali Krishnan</span></div></div></div>
+      </div>
+    </div>
+  </div></div></div>
+</section>
+
+<!-- ================= 4. Volunteer donor search ================= -->
+<section class="canvas paper" id="shot-4">
+  <div class="texture">AB− O+<br>B+ A+</div>
+  <div class="caption">
+    <h2>Volunteers find the right donor, fast.</h2>
+    <p>Filter by district, blood group and who can donate today.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="band" style="padding-top:0">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="bar" style="margin-top:12px"><div class="titles"><h1>Donors</h1><div class="sub">Managing Thrissur</div></div><div class="round"><span class="icon">tune</span></div><div class="round"><span class="icon">person_add</span></div></div>
+    </div>
+    <div class="content top" style="gap:14px">
+      <div class="search"><span class="icon">search</span>Search name, phone or area</div>
+      <div><div class="label">Blood type</div><div class="chips"><span class="chip">Any</span><span class="chip">A+</span><span class="chip on">O+</span><span class="chip">O−</span><span class="chip">B+</span><span class="chip">B−</span></div></div>
+      <div><div class="label">Eligibility</div><div class="chips"><span class="chip">All</span><span class="chip on">Can donate</span><span class="chip">Cooling off</span></div></div>
+      <div class="caption-text muted">Showing 5 of 38 donors</div>
+      <div class="list">
+        <div class="row"><div class="mark sm">O+</div><div class="txt"><b>Arjun Nair</b><span>Guruvayur, Thrissur<br>98950 44120</span></div><div class="meta"><span class="pill leaf">Can donate</span><span class="pill info">Volunteer</span></div></div>
+        <div class="row"><div class="mark sm">O+</div><div class="txt"><b>Fathima Nasrin</b><span>Kodungallur, Thrissur<br>94470 18263</span></div><div class="meta"><span class="pill leaf">Can donate</span></div></div>
+        <div class="row"><div class="mark sm">O−</div><div class="txt"><b>Jobin Varghese</b><span>Chalakudy, Thrissur<br>97445 30981</span></div><div class="meta"><span class="pill leaf">Can donate</span></div></div>
+        <div class="row"><div class="mark sm">O+</div><div class="txt"><b>Sreelakshmi Pillai</b><span>Irinjalakuda, Thrissur<br>96330 72514</span></div><div class="meta"><span class="pill leaf">Can donate</span><span class="pill kasavu">No app</span></div></div>
+        <div class="row"><div class="mark sm">O−</div><div class="txt"><b>Muhammed Rafi</b><span>Chavakkad, Thrissur<br>90480 66302</span></div><div class="meta"><span class="pill leaf">Can donate</span></div></div>
+      </div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="icon">home</span>Home</div><div class="tab"><span class="icon">water_drop</span>Requests</div><div class="tab on"><span class="icon">groups</span>Donors</div><div class="tab"><span class="icon">person</span>Profile</div></div>
+  </div></div></div>
+</section>
+
+<!-- ================= 5. Notifications ================= -->
+<section class="canvas deep" id="shot-5">
+  <div class="texture">B+ B+<br>B+ B+</div>
+  <div class="caption">
+    <h2>Alerted when your blood group is needed.</h2>
+    <p>Volunteers approve every request before donors are notified.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="lock">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="clock"><b>9:41</b><span>Tuesday, 22 September</span></div>
+      <div style="margin-top:64px">
+        <div class="notif"><div class="app"><span class="logo"><span class="icon">water_drop</span></span>Blood Bank Kerala · now</div><b>B+ blood needed in Kozhikode</b><p>2 units at Government Medical College, Kozhikode. Tap to see the request and call the family.</p></div>
+        <div class="notif"><div class="app"><span class="logo"><span class="icon">water_drop</span></span>Blood Bank Kerala · 2d</div><b>You can donate again</b><p>Your 6-month cool-off is over. Thank you for keeping someone alive.</p></div>
+        <div class="notif"><div class="app"><span class="logo"><span class="icon">water_drop</span></span>Blood Bank Kerala · 1w</div><b>Blood donation camp on Sunday</b><p>Town Hall, Kannur, 9 am to 1 pm. Bring a friend.</p></div>
+      </div>
+    </div>
+  </div></div></div>
+</section>
+
+<!-- ================= 6. Profile ================= -->
+<section class="canvas paper" id="shot-6">
+  <div class="texture">A+ O−<br>AB+ B−</div>
+  <div class="caption">
+    <h2>Every donation, remembered.</h2>
+    <p>Your history, your availability and your details in one place.</p>
+  </div>
+  <div class="phone"><div class="punch"></div><div class="glass"><div class="screen">
+    <div class="band hero" style="padding-top:0">
+      <div class="status"><span>9:41</span><span class="icons"><span class="icon">signal_cellular_alt</span><span class="icon">wifi</span><span class="icon">battery_full</span></span></div>
+      <div class="bar" style="margin-top:12px"><div class="titles"><h1>Anna Mathew</h1><div class="sub">Pathanamthitta, Kerala</div></div></div>
+    </div>
+    <div class="content">
+      <div class="card overlap">
+        <div class="ring">
+          <svg width="132" height="132"><circle cx="66" cy="66" r="61.5" fill="none" stroke="#E6DBD6" stroke-width="9"/><circle cx="66" cy="66" r="61.5" fill="none" stroke="#2E7D50" stroke-width="9" stroke-linecap="round" stroke-dasharray="386.4" stroke-dashoffset="0" transform="rotate(-90 66 66)"/></svg>
+          <div class="bt">A+</div>
+        </div>
+        <div>
+          <h3 style="color:var(--leaf)">Ready to donate</h3>
+          <div class="caption-text muted" style="margin-top:4px">Last gave on 14 Feb 2026</div>
+          <div class="chip-count"><span class="icon">water_drop</span>12 donations</div>
+        </div>
+      </div>
+      <div class="btns"><div class="btn primary"><span class="icon">volunteer_activism</span>I donated</div><div class="btn outline"><span class="icon">edit</span>Edit profile</div></div>
+      <div>
+        <div class="section-h"><h4>Donation history (12)</h4></div>
+        <div class="list">
+          <div class="row"><span class="icon" style="color:var(--blood)">water_drop</span><div class="txt"><b>14 Feb 2026</b><span>General Hospital, Pathanamthitta</span></div></div>
+          <div class="row"><span class="icon" style="color:var(--blood)">water_drop</span><div class="txt"><b>2 Aug 2025</b><span>District Hospital, Kozhencherry<br>Logged by Anjali Krishnan</span></div></div>
+          <div class="row"><span class="icon" style="color:var(--blood)">water_drop</span><div class="txt"><b>18 Jan 2025</b><span>Taluk Hospital, Adoor</span></div></div>
+          <div class="row"><span class="icon" style="color:var(--blood)">water_drop</span><div class="txt"><b>6 Jul 2024</b><span>General Hospital, Pathanamthitta</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tabbar"><div class="tab"><span class="icon">home</span>Home</div><div class="tab"><span class="icon">water_drop</span>Requests</div><div class="tab on"><span class="icon">person</span>Profile</div></div>
+  </div></div></div>
+</section>
+
+<!-- ================= Feature graphic ================= -->
+<section class="feature" id="feature">
+  <div class="brand"><span class="icon">water_drop</span>Blood Bank Kerala</div>
+  <h2>The right donor, one call away.</h2>
+  <p>Donors, requests and volunteers across all 14 districts.</p>
+  <div class="fring">
+    <svg width="310" height="310"><circle cx="155" cy="155" r="140" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="20"/><circle cx="155" cy="155" r="140" fill="none" stroke="#fff" stroke-width="20" stroke-linecap="round" stroke-dasharray="879.6" stroke-dashoffset="300" transform="rotate(-90 155 155)"/></svg>
+    <div class="bt"><b>O+</b><span>62 days to go</span></div>
+  </div>
+</section>
+
+<!-- ================= App icon ================= -->
+<section class="appicon" id="icon">
+  <svg width="300" height="300" viewBox="0 0 64 64"><path d="M32 6c-1.1 0-2.1.6-2.7 1.5C23.6 16.1 14 28.3 14 38.5 14 48.2 22 56 32 56s18-7.8 18-17.5C50 28.3 40.4 16.1 34.7 7.5 34.1 6.6 33.1 6 32 6z" fill="#fff"/><path d="M24.5 39.5c0 4.4 3.4 8 7.5 8" fill="none" stroke="#A3142B" stroke-width="3.2" stroke-linecap="round"/></svg>
+</section>
+
+</body>
+</html>
