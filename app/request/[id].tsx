@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, Switch, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { auth, firestore } from '@/src/config/firebase';
@@ -18,6 +18,8 @@ import Pill, { Tone } from '@/src/components/ui/Pill';
 import Screen from '@/src/components/ui/Screen';
 import Section from '@/src/components/ui/Section';
 import Text from '@/src/components/ui/Text';
+import { callNotifyApi } from '@/src/utils/push';
+import { NOTIFY_ENDPOINTS, NotifyResult, RequestDonorsBody } from '@/shared/notifications';
 
 const URGENCY: Record<BloodRequest['urgency'], { label: string; tone: Tone }> = {
   high: { label: 'Urgent', tone: 'blood' },
@@ -188,6 +190,10 @@ export default function RequestDetails() {
         </Section>
       )}
 
+      {profile?.role === 'admin' && request.status === 'open' && (
+        <NotifyDonors request={request} onSent={fetchRequest} />
+      )}
+
       {canUpdate && (
         <View style={styles.actions}>
           <Button
@@ -212,7 +218,100 @@ export default function RequestDetails() {
   );
 }
 
+// Admin-only: alert donors with the request's blood type through the notification API.
+function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () => void }) {
+  const [includeCoolingOff, setIncludeCoolingOff] = useState(false);
+  const [districtOnly, setDistrictOnly] = useState(false);
+  const [sending, setSending] = useState(false);
+  const alreadySent = !!request.donorsNotifiedAt;
+
+  const send = async () => {
+    const ok = await confirmAction(
+      alreadySent ? 'Send the alert again?' : 'Notify donors?',
+      `Send an alert to donors with ${request.bloodType} blood?`,
+      alreadySent ? 'Send again' : 'Send alert',
+    );
+    if (!ok) return;
+
+    setSending(true);
+    try {
+      const body: RequestDonorsBody = {
+        requestId: request.id,
+        includeCoolingOff,
+        districtOnly: districtOnly && !!request.district,
+        force: alreadySent,
+      };
+      const result = await callNotifyApi<NotifyResult>(NOTIFY_ENDPOINTS.requestDonors, body);
+      if (result.skipped === 'no-recipients') {
+        showMessage('Nobody to notify', `No donors with ${request.bloodType} blood have the app with notifications on.`);
+      } else if (result.skipped === 'already-notified') {
+        showMessage('Already sent', 'Donors were already alerted for this request.');
+      } else {
+        showMessage('Alert sent', `Sent to ${result.recipients} ${result.recipients === 1 ? 'donor' : 'donors'}.`);
+      }
+      onSent();
+    } catch (error) {
+      console.error('Error notifying donors:', error);
+      showMessage('Could not send alert', error instanceof Error ? error.message : 'Check your connection and try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Section title="Notify donors">
+      <View style={styles.notifyCard}>
+        <Text variant="body" color={palette.inkMuted}>
+          {alreadySent
+            ? `Sent to ${request.donorsNotifiedCount ?? 0} donors ${timeAgo(request.donorsNotifiedAt!)}${request.donorsNotifiedByName ? ` by ${request.donorsNotifiedByName}` : ''}`
+            : 'Not sent to donors yet'}
+        </Text>
+        <View style={styles.switchRow}>
+          <Text variant="body" style={styles.flex}>Include donors in cool-off</Text>
+          <Switch
+            value={includeCoolingOff}
+            onValueChange={setIncludeCoolingOff}
+            trackColor={{ false: palette.line, true: palette.leaf }}
+            thumbColor="#fff"
+          />
+        </View>
+        {request.district && (
+          <View style={styles.switchRow}>
+            <Text variant="body" style={styles.flex}>Only donors in {request.district}</Text>
+            <Switch
+              value={districtOnly}
+              onValueChange={setDistrictOnly}
+              trackColor={{ false: palette.line, true: palette.leaf }}
+              thumbColor="#fff"
+            />
+          </View>
+        )}
+        <Button
+          icon="bell-ring-outline"
+          label={alreadySent ? 'Send again' : `Notify ${request.bloodType} donors`}
+          variant={alreadySent ? 'secondary' : 'primary'}
+          loading={sending}
+          onPress={send}
+        />
+      </View>
+    </Section>
+  );
+}
+
 const styles = StyleSheet.create({
+  notifyCard: {
+    backgroundColor: palette.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: palette.line,
+    padding: space.lg,
+    gap: space.md,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
   loading: {
     paddingVertical: space.xxl,
   },

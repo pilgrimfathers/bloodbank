@@ -19,6 +19,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.bloodbankkgq.app",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 1
     },
     "web": {
@@ -37,7 +38,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#A3142B"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

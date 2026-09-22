@@ -96,6 +96,12 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && managesDistrict(resource.data.get('district', ''));
     }
 
+    // Notification audit log, written only by the server (firebase-admin)
+    match /notifications/{notificationId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Blood requests collection
     match /bloodRequests/{requestId} {
       allow read: if isAuthenticated();

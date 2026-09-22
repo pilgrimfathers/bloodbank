@@ -11,6 +11,7 @@ import { auth, firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { coversDistrict, isVolunteer, mapDonation, mapRequest } from "@/lib/data";
 import { STATUS, URGENCY } from "@/components/requests";
+import { NotifyDonorsPanel } from "@/components/notify-donors";
 import { BloodMark, Button, ButtonLink, EmptyState, PageHeader, Pill, Spinner, Surface } from "@/components/ui";
 
 async function fetchRequest(id: string, withDonations: boolean) {
@@ -189,6 +190,10 @@ export default function RequestPage() {
                 WhatsApp
               </a>
             </Surface>
+          )}
+
+          {profile?.role === "admin" && request.status === "open" && (
+            <NotifyDonorsPanel request={request} onSent={load} />
           )}
 
           {isManager && request.status === "open" && (

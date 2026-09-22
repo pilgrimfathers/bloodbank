@@ -5,6 +5,7 @@ import { auth } from '@/src/config/firebase';
 import { Donation } from '@/shared/types';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { getDonations } from '@/src/utils/data';
+import { unregisterPushToken } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { palette, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
@@ -36,6 +37,8 @@ export default function ProfileScreen() {
     const ok = await confirmAction('Log out?', 'You will need your email and password to log back in.', 'Log out');
     if (!ok) return;
     try {
+      // Stop alerts to this phone before the session ends.
+      if (auth.currentUser) await unregisterPushToken(auth.currentUser.uid);
       await auth.signOut();
       router.replace('/(auth)/login');
       // _layout.tsx will handle navigation due to auth state change

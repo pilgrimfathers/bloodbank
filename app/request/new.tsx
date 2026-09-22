@@ -7,6 +7,8 @@ import { useCurrentUser } from '@/src/context/UserContext';
 import { BLOOD_TYPES, KERALA_DISTRICTS } from '@/shared/constants';
 import { BloodRequest } from '@/shared/types';
 import { showMessage } from '@/src/utils/dialog';
+import { callNotifyApi } from '@/src/utils/push';
+import { NOTIFY_ENDPOINTS } from '@/shared/notifications';
 import { normalizePhone } from '@/shared/format';
 import { space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
@@ -72,7 +74,10 @@ export default function NewRequestScreen() {
         contactNumber,
       };
 
-      await addDoc(collection(firestore, 'bloodRequests'), request);
+      const ref = await addDoc(collection(firestore, 'bloodRequests'), request);
+      // Alert admins in the background; posting must not depend on it.
+      callNotifyApi(NOTIFY_ENDPOINTS.requestCreated, { requestId: ref.id })
+        .catch(error => console.warn('Could not alert admins:', error));
       showMessage('Request posted', 'Volunteers and donors can now see it.');
       router.back();
     } catch (error) {

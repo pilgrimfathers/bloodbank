@@ -4,6 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firestore } from '../config/firebase';
 import { UserProfile } from '@/shared/types';
 import { mapUser } from '../utils/data';
+import { registerPushToken, scheduleCooloffReminder } from '../utils/push';
 
 type UserContextValue = {
   authUser: User | null;
@@ -39,6 +40,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       error => console.error('Error loading profile:', error),
     );
   }, [authUser]);
+
+  // Register this device for push once the signed-in user's profile exists.
+  const profileLoaded = !!profile;
+  useEffect(() => {
+    if (authUser && profileLoaded) registerPushToken(authUser.uid);
+  }, [authUser?.uid, profileLoaded]);
+
+  // Remind the donor on the day their cool-off ends.
+  const lastDonationTime = profile?.lastDonation?.getTime();
+  useEffect(() => {
+    if (!profileLoaded) return;
+    scheduleCooloffReminder(lastDonationTime ? new Date(lastDonationTime) : null);
+  }, [profileLoaded, lastDonationTime]);
 
   return (
     <UserContext.Provider value={{ authUser, profile, initializing }}>

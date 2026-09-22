@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "103341716685",
+    "project_id": "bloodbank-kerala",
+    "storage_bucket": "bloodbank-kerala.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:103341716685:android:c73eba63326aa5bc746584",
+        "android_client_info": {
+          "package_name": "com.bloodbankkgq.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "103341716685-ullqmresotlr868bvmteomovbin444n6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1i3ly6Ps2A4pYAvIRmjM8KmwarMF3WG8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "103341716685-ullqmresotlr868bvmteomovbin444n6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

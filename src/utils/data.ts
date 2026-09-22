@@ -23,6 +23,8 @@ export function mapRequest(snap: DocumentSnapshot | QueryDocumentSnapshot): Bloo
     ...data,
     id: snap.id,
     createdAt: toDate(data.createdAt)!,
+    adminNotifiedAt: toDate(data.adminNotifiedAt),
+    donorsNotifiedAt: toDate(data.donorsNotifiedAt),
   } as BloodRequest;
 }
 

@@ -1,6 +1,7 @@
 import { Stack, useSegments, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
@@ -12,6 +13,7 @@ import {
 } from '@expo-google-fonts/anek-malayalam';
 import { palette } from '@/src/theme';
 import { UserProvider, useCurrentUser } from '@/src/context/UserContext';
+import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -48,6 +50,31 @@ function RootNavigator() {
       router.replace('/(tabs)/home');
     }
   }, [isAuthenticated, initializing, segments[0]]);
+
+  // Open the request when a push is tapped, whether the app was running or not.
+  // The hook and the listener can both report the same tap, so remember handled ones.
+  const handledResponses = useRef(new Set<string>());
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const openFromNotification = (response: Notifications.NotificationResponse | null | undefined) => {
+    if (!response) return;
+    const key = `${response.notification.request.identifier}:${response.notification.date}`;
+    if (handledResponses.current.has(key)) return;
+    handledResponses.current.add(key);
+    const data = response.notification.request.content.data as Partial<NotificationData> | undefined;
+    if (data?.type === 'request' && 'requestId' in data && data.requestId) {
+      router.push({ pathname: '/request/[id]', params: { id: data.requestId } });
+    }
+  };
+
+  useEffect(() => {
+    if (ready && isAuthenticated) openFromNotification(lastResponse);
+  }, [ready, isAuthenticated, lastResponse]);
+
+  useEffect(() => {
+    if (!ready || !isAuthenticated) return;
+    const subscription = Notifications.addNotificationResponseReceivedListener(openFromNotification);
+    return () => subscription.remove();
+  }, [ready, isAuthenticated]);
 
   if (!ready) return null;
 

@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
-import { Droplet, HandHeart, LayoutGrid, LogOut, Menu, Users, X, type LucideIcon } from "lucide-react";
+import { BellRing, Droplet, HandHeart, LayoutGrid, LogOut, Menu, Users, X, type LucideIcon } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { isVolunteer } from "@/lib/data";
 import { Button, Spinner, cx } from "@/components/ui";
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+const NAV: { href: string; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
   { href: "/", label: "Overview", icon: LayoutGrid },
   { href: "/requests", label: "Requests", icon: HandHeart },
   { href: "/donors", label: "Donors", icon: Users },
+  { href: "/notify", label: "Notify", icon: BellRing, adminOnly: true },
 ];
 
 export default function ConsoleLayout({ children }: LayoutProps<"/">) {
@@ -54,7 +55,7 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
 
   const nav = (
     <nav className="flex flex-col gap-1">
-      {NAV.map(({ href, label, icon: Icon }) => (
+      {NAV.filter(item => !item.adminOnly || profile!.role === "admin").map(({ href, label, icon: Icon }) => (
         <Link
           key={href}
           href={href}

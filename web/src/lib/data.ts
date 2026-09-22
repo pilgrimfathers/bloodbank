@@ -4,7 +4,7 @@ import {
 } from "firebase/firestore";
 import type { BloodRequest, Donation, UserProfile } from "@shared/types";
 import { toDate } from "@shared/format";
-import { firestore } from "./firebase";
+import { auth, firestore } from "./firebase";
 
 // Mirrors src/utils/data.ts in the mobile app. Kept per-app because each app
 // has its own Firebase SDK instance; the pure helpers live in ../shared.
@@ -22,7 +22,13 @@ export function mapUser(snap: DocumentSnapshot | QueryDocumentSnapshot): UserPro
 
 export function mapRequest(snap: DocumentSnapshot | QueryDocumentSnapshot): BloodRequest {
   const data = snap.data() ?? {};
-  return { ...data, id: snap.id, createdAt: toDate(data.createdAt)! } as BloodRequest;
+  return {
+    ...data,
+    id: snap.id,
+    createdAt: toDate(data.createdAt)!,
+    adminNotifiedAt: toDate(data.adminNotifiedAt),
+    donorsNotifiedAt: toDate(data.donorsNotifiedAt),
+  } as BloodRequest;
 }
 
 export function mapDonation(snap: QueryDocumentSnapshot): Donation {
@@ -91,4 +97,18 @@ export async function deleteDonation(donation: Donation) {
     updatedAt: new Date(),
   });
   await batch.commit();
+}
+
+// Calls the notification API as the signed-in user.
+export async function callNotifyApi<T>(path: string, body: unknown): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Log in again to send notifications.");
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.error ?? "Could not send. Try again in a minute.");
+  return json as T;
 }

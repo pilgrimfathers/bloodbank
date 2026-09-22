@@ -22,6 +22,8 @@ export type UserProfile = {
   // False for donors added by a volunteer who don't use the app.
   hasAccount?: boolean;
   notes?: string;
+  // Expo push tokens for the devices this user is signed in on.
+  pushTokens?: string[];
   createdBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -55,4 +57,9 @@ export type BloodRequest = {
   status: 'open' | 'fulfilled' | 'closed';
   createdAt: Date;
   contactNumber: string;
+  // Set by the notification API (see shared/notifications.ts).
+  adminNotifiedAt?: Date | null;
+  donorsNotifiedAt?: Date | null;
+  donorsNotifiedCount?: number;
+  donorsNotifiedByName?: string;
 };
