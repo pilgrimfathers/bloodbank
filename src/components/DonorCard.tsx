@@ -2,8 +2,8 @@ import { StyleSheet, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { palette, radius, space } from '@/src/theme';
-import { getEligibility } from '@/src/utils/eligibility';
-import { formatDate } from '@/src/utils/format';
+import { getEligibility } from '@/shared/eligibility';
+import { formatDate } from '@/shared/format';
 import Text from './ui/Text';
 
 type Props = {

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
-import { BLOOD_TYPES, KERALA_DISTRICTS } from '../constants';
+import { BLOOD_TYPES, KERALA_DISTRICTS } from '@/shared/constants';
 import { palette, radius, space } from '../theme';
-import { UserProfile } from '../types';
+import { UserProfile } from '@/shared/types';
 import { showMessage } from '../utils/dialog';
-import { normalizePhone, parseDateInput, toDateInput } from '../utils/format';
+import { normalizePhone, parseDateInput, toDateInput } from '@/shared/format';
 import ChipSelect from './ChipSelect';
 import Field from './Field';
 import Button from './ui/Button';

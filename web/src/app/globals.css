@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* "Kerala donor card" palette, shared with the mobile app (src/theme.ts). */
+@theme {
+  --color-blood: #a3142b;
+  --color-blood-dark: #7c0e20;
+  --color-blood-deep: #5e0a18;
+  --color-blood-tint: #f8e7e9;
+  --color-ink: #2b1b1e;
+  --color-ink-muted: #6e5f61;
+  --color-ink-faint: #a3979a;
+  --color-kasavu: #b8913a;
+  --color-kasavu-ink: #8a6a22;
+  --color-kasavu-tint: #f6efdf;
+  --color-leaf: #2e7d50;
+  --color-leaf-tint: #e4f1e9;
+  --color-turmeric: #c26a12;
+  --color-turmeric-tint: #fbeedd;
+  --color-info: #2f5d8a;
+  --color-info-tint: #e6eef6;
+  --color-paper: #f1e9e5;
+  --color-surface: #ffffff;
+  --color-line: #e6dbd6;
+  --color-muted-tint: #efeae7;
+
+  --font-sans: var(--font-anek), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* Visible keyboard focus everywhere; mouse clicks stay clean. */
+:focus-visible {
+  outline: 2px solid var(--color-blood);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { auth } from '@/src/config/firebase';
-import { Donation } from '@/src/types';
+import { Donation } from '@/shared/types';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { getDonations } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';

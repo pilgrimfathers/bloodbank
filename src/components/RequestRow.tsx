@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { palette, space } from '@/src/theme';
-import { BloodRequest } from '@/src/types';
-import { timeAgo } from '@/src/utils/format';
+import { BloodRequest } from '@/shared/types';
+import { timeAgo } from '@/shared/format';
 import BloodMark from './ui/BloodMark';
 import { ListRow } from './ui/List';
 import Pill, { Tone } from './ui/Pill';

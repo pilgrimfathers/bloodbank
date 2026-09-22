@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firestore } from '../config/firebase';
-import { UserProfile } from '../types';
+import { UserProfile } from '@/shared/types';
 import { mapUser } from '../utils/data';
 
 type UserContextValue = {

@@ -1,8 +1,8 @@
 import { Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { palette } from '@/src/theme';
-import { Donation } from '@/src/types';
-import { formatDate } from '@/src/utils/format';
+import { Donation } from '@/shared/types';
+import { formatDate } from '@/shared/format';
 import EmptyState from './ui/EmptyState';
 import { List, ListRow } from './ui/List';
 

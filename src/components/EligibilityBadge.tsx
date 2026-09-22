@@ -1,4 +1,4 @@
-import { getEligibility } from '@/src/utils/eligibility';
+import { getEligibility } from '@/shared/eligibility';
 import Pill from './ui/Pill';
 
 // Compact eligibility tag for lists. Use DonorCard for the full view.

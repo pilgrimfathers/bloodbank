@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { BLOOD_TYPES } from '@/src/constants';
+import { BLOOD_TYPES } from '@/shared/constants';
 import { palette, radius, space } from '@/src/theme';
 import Button from '@/src/components/ui/Button';
 import Text from '@/src/components/ui/Text';

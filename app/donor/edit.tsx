@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { addDoc, collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { UserProfile } from '@/src/types';
+import { UserProfile } from '@/shared/types';
 import { coversDistrict, getUser, isVolunteer, logDonation } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { palette, radius, space } from '@/src/theme';

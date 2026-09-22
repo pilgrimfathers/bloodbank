@@ -1,4 +1,4 @@
-import { COOLOFF_MONTHS } from '../constants';
+import { COOLOFF_MONTHS } from './constants';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

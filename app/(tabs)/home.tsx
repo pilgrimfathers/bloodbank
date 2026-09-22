@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { BloodRequest } from '@/src/types';
+import { BloodRequest } from '@/shared/types';
 import { mapRequest } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
 import DonorCard from '@/src/components/DonorCard';

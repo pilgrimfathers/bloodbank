@@ -11,7 +11,7 @@ import Text from '@/src/components/ui/Text';
 import { showMessage } from '@/src/utils/dialog';
 import { logDonation } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
-import { UserProfile } from '@/src/types';
+import { UserProfile } from '@/shared/types';
 
 type Step = 'account' | 'details';
 
