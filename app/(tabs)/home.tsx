@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/src/context/UserContext';
 import { BloodRequest } from '@/shared/types';
 import { mapRequest } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
+import AlertsCard from '@/src/components/AlertsCard';
 import DonorCard from '@/src/components/DonorCard';
 import RequestRow from '@/src/components/RequestRow';
 import EmptyState from '@/src/components/ui/EmptyState';
@@ -68,6 +69,8 @@ export default function HomeScreen() {
         />
       )}
     >
+      <AlertsCard />
+
       {profile && !profile.district && (
         <Pressable style={styles.notice} onPress={() => router.push('/profile/edit')} accessibilityRole="button">
           <MaterialCommunityIcons name="map-marker-plus" size={24} color={palette.turmeric} />

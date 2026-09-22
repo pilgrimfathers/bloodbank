@@ -9,6 +9,7 @@ import { unregisterPushToken } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { palette, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
+import AlertsCard from '@/src/components/AlertsCard';
 import DonorCard from '@/src/components/DonorCard';
 import Button from '@/src/components/ui/Button';
 import { List, ListRow } from '@/src/components/ui/List';
@@ -80,6 +81,8 @@ export default function ProfileScreen() {
           style={styles.flex}
         />
       </View>
+
+      <AlertsCard />
 
       <Section title="Your details">
         <View style={styles.pills}>
