@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Blood Bank Kerala: app icon sources</title>
+<style>
+/* Rendered by store/render.cjs into assets/images/. Transparent pieces rely on
+   the page background being transparent. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: transparent; }
+body { display: flex; flex-wrap: wrap; gap: 40px; padding: 40px; }
+.tile { width: 1024px; height: 1024px; display: flex; align-items: center; justify-content: center; flex: none; }
+.full { background: radial-gradient(90% 90% at 30% 20%, #BD1F38 0%, #A3142B 55%, #7C0E20 100%); }
+.splash { width: 512px; height: 512px; }
+</style>
+</head>
+<body>
+
+<!-- Full-bleed icon: iOS, Expo "icon", web favicon. No transparency. -->
+<section class="tile full" id="app-icon">
+  <svg width="600" height="600" viewBox="0 0 64 64"><path d="M32 6c-1.1 0-2.1.6-2.7 1.5C23.6 16.1 14 28.3 14 38.5 14 48.2 22 56 32 56s18-7.8 18-17.5C50 28.3 40.4 16.1 34.7 7.5 34.1 6.6 33.1 6 32 6z" fill="#fff"/><path d="M24.5 39.5c0 4.4 3.4 8 7.5 8" fill="none" stroke="#A3142B" stroke-width="3.2" stroke-linecap="round"/></svg>
+</section>
+
+<!-- Android adaptive foreground: drop kept inside the central safe zone
+     (Android crops to a circle/squircle of ~66%), background colour set in app.json. -->
+<section class="tile" id="adaptive-foreground">
+  <svg width="440" height="440" viewBox="0 0 64 64"><path d="M32 6c-1.1 0-2.1.6-2.7 1.5C23.6 16.1 14 28.3 14 38.5 14 48.2 22 56 32 56s18-7.8 18-17.5C50 28.3 40.4 16.1 34.7 7.5 34.1 6.6 33.1 6 32 6z" fill="#fff"/><path d="M24.5 39.5c0 4.4 3.4 8 7.5 8" fill="none" stroke="#A3142B" stroke-width="3.2" stroke-linecap="round"/></svg>
+</section>
+
+<!-- Android 13+ themed icon: a single-colour shape, the system tints it. -->
+<section class="tile" id="adaptive-monochrome">
+  <svg width="440" height="440" viewBox="0 0 64 64"><path d="M32 6c-1.1 0-2.1.6-2.7 1.5C23.6 16.1 14 28.3 14 38.5 14 48.2 22 56 32 56s18-7.8 18-17.5C50 28.3 40.4 16.1 34.7 7.5 34.1 6.6 33.1 6 32 6z" fill="#fff"/></svg>
+</section>
+
+<!-- Splash mark on the red splash background. -->
+<section class="tile splash" id="splash-icon">
+  <svg width="400" height="400" viewBox="0 0 64 64"><path d="M32 6c-1.1 0-2.1.6-2.7 1.5C23.6 16.1 14 28.3 14 38.5 14 48.2 22 56 32 56s18-7.8 18-17.5C50 28.3 40.4 16.1 34.7 7.5 34.1 6.6 33.1 6 32 6z" fill="#fff"/></svg>
+</section>
+
+</body>
+</html>

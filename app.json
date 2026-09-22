@@ -4,18 +4,19 @@
     "slug": "blood-bank",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/android/play_store_512.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "bloodbank",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bloodbankkgq.app",
-      "icon": "./assets/images/ios/AppIcon~ios-marketing.png"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/android/play_store_512.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-foreground.png",
+        "monochromeImage": "./assets/images/adaptive-monochrome.png",
+        "backgroundColor": "#A3142B"
       },
       "package": "com.bloodbankkgq.app",
       "googleServicesFile": "./google-services.json"
@@ -30,10 +31,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/android/play_store_512.png",
-          "imageWidth": 200,
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#A3142B"
         }
       ],
       "expo-font",
