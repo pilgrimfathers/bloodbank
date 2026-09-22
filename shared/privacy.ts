@@ -88,3 +88,6 @@ export const PRIVACY_POLICY: PolicySection[] = [
 
 // Deletes the signed-in user's account (web/src/app/api/account/delete).
 export const ACCOUNT_DELETE_ENDPOINT = '/api/account/delete';
+
+// Public store listing (live once the app leaves closed testing).
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.bloodbankkgq.app';

@@ -8,10 +8,10 @@ import { BellRing, Droplet, HandHeart, LayoutGrid, LogOut, Menu, Users, X, type 
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { isVolunteer } from "@/lib/data";
-import { Button, Spinner, cx } from "@/components/ui";
+import { Spinner, cx } from "@/components/ui";
 
 const NAV: { href: string; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
-  { href: "/", label: "Overview", icon: LayoutGrid },
+  { href: "/dashboard", label: "Overview", icon: LayoutGrid },
   { href: "/requests", label: "Requests", icon: HandHeart },
   { href: "/donors", label: "Donors", icon: Users },
   { href: "/notify", label: "Notify", icon: BellRing, adminOnly: true },
@@ -25,30 +25,18 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
   const [menuOpenOn, setMenuOpenOn] = useState<string | null>(null);
   const menuOpen = menuOpenOn === pathname;
 
+  // Signed-out visitors go to login; donors have their own pages under /me.
+  const isDonorOnly = !loading && !!authUser && !isVolunteer(profile);
   useEffect(() => {
     if (!loading && !authUser) router.replace("/login");
-  }, [authUser, loading, router]);
+    else if (isDonorOnly) router.replace("/me");
+  }, [authUser, loading, isDonorOnly, router]);
 
   if (loading || !authUser) return <Spinner />;
 
-  if (!isVolunteer(profile)) {
-    return (
-      <main className="flex min-h-screen items-center justify-center p-6">
-        <div className="max-w-md text-center">
-          <Droplet className="mx-auto size-8 fill-blood text-blood" />
-          <h1 className="mt-4 text-2xl font-bold">This console is for volunteers</h1>
-          <p className="mt-2 text-ink-muted">
-            Your account is a donor account. Use the mobile app, or ask an admin to make you a volunteer.
-          </p>
-          <Button variant="secondary" icon={LogOut} className="mt-6" onClick={() => signOut(auth)}>
-            Log out
-          </Button>
-        </div>
-      </main>
-    );
-  }
+  if (isDonorOnly) return <Spinner />;
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) => pathname.startsWith(href);
   const scope = profile!.role === "admin" || !profile!.volunteerDistricts?.length
     ? "All of Kerala"
     : profile!.volunteerDistricts.join(", ");
@@ -93,7 +81,7 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-screen flex-col justify-between bg-blood-dark p-5 lg:flex">
         <div>
-          <Link href="/" className="mb-8 flex items-center gap-2 px-1 text-lg font-bold text-white">
+          <Link href="/dashboard" className="mb-8 flex items-center gap-2 px-1 text-lg font-bold text-white">
             <Droplet className="size-6 fill-white" />
             Blood Bank Kerala
           </Link>
@@ -104,7 +92,7 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
 
       {/* Mobile top bar */}
       <div className="sticky top-0 z-20 flex items-center justify-between bg-blood-dark px-4 py-3 lg:hidden">
-        <Link href="/" className="flex items-center gap-2 font-bold text-white">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white">
           <Droplet className="size-5 fill-white" />
           Blood Bank Kerala
         </Link>
