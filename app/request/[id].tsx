@@ -178,6 +178,18 @@ export default function RequestDetails() {
         />
       )}
 
+      {isOwner && !isManager && request.status === 'open' && (
+        <Button
+          icon="account-search"
+          label="Find donors"
+          color={palette.info}
+          onPress={() => router.push({
+            pathname: '/find-donors',
+            params: { requestId: request.id, bloodType: request.bloodType, district: request.district ?? '' },
+          })}
+        />
+      )}
+
       {isManager && (
         <Section title={`Donations logged (${donations.length} of ${request.units})`}>
           <View style={styles.progressTrack}>

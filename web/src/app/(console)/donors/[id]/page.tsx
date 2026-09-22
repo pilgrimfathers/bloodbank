@@ -144,6 +144,8 @@ function DonorDetail() {
         {!donor.isDonor && <Pill tone="turmeric">Unavailable</Pill>}
         {donor.status === "inactive" && <Pill tone="muted">Inactive</Pill>}
         {donor.hasAccount === false && <Pill tone="kasavu">No app</Pill>}
+        {donor.visibility === "public" && <Pill tone="leaf">Public</Pill>}
+        {donor.visibility === "public_phone" && <Pill tone="leaf">Public with number</Pill>}
       </div>
 
       {message && (

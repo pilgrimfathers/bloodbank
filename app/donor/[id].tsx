@@ -125,6 +125,8 @@ export default function DonorDetailScreen() {
         {!donor.isDonor && <Pill label="Unavailable" tone="turmeric" />}
         {donor.status === 'inactive' && <Pill label="Inactive" tone="muted" />}
         {donor.hasAccount === false && <Pill label="No app" tone="kasavu" />}
+        {donor.visibility === 'public' && <Pill label="Public" tone="leaf" />}
+        {donor.visibility === 'public_phone' && <Pill label="Public with number" tone="leaf" />}
       </View>
 
       {phone && (

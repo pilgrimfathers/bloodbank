@@ -17,7 +17,7 @@ import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
-const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile'];
+const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile', 'find-donors'];
 
 function RootNavigator() {
   const { authUser, initializing } = useCurrentUser();
@@ -94,6 +94,7 @@ function RootNavigator() {
         <Stack.Screen name="donor/edit" />
         <Stack.Screen name="donation/new" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="find-donors" />
       </Stack.Protected>
       {/* Readable signed in or out */}
       <Stack.Screen name="privacy" />

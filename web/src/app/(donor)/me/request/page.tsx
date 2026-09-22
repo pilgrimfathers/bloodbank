@@ -34,7 +34,7 @@ export default function RequestBloodPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [posted, setPosted] = useState(false);
+  const [postedId, setPostedId] = useState<string | null>(null);
 
   if (!profile) return null;
   const set = (patch: Partial<typeof form>) => setForm(prev => ({ ...prev, ...patch }));
@@ -74,7 +74,7 @@ export default function RequestBloodPage() {
       // Alert admins in the background; posting must not depend on it.
       callNotifyApi(NOTIFY_ENDPOINTS.requestCreated, { requestId: ref.id })
         .catch(err => console.warn("Could not alert admins:", err));
-      setPosted(true);
+      setPostedId(ref.id);
     } catch (err) {
       console.error("Error creating request:", err);
       setError("Could not post the request. Check your connection and try again.");
@@ -83,7 +83,7 @@ export default function RequestBloodPage() {
     }
   };
 
-  if (posted) {
+  if (postedId) {
     return (
       <Surface className="space-y-3 p-6">
         <CheckCircle2 className="size-8 text-leaf" />
@@ -92,7 +92,10 @@ export default function RequestBloodPage() {
           Volunteers have been alerted and will call donors with {form.bloodType} blood. They may call you on{" "}
           {form.contactNumber} for details.
         </p>
-        <ButtonLink href="/me" variant="secondary">Back to my page</ButtonLink>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href={`/me/donors?request=${postedId}`}>Find donors now</ButtonLink>
+          <ButtonLink href="/me" variant="secondary">Back to my page</ButtonLink>
+        </div>
       </Surface>
     );
   }

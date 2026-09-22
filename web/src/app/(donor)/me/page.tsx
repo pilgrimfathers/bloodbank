@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { doc, updateDoc } from "firebase/firestore";
-import { BellRing, Droplet, HandHeart, Pencil } from "lucide-react";
+import { BellRing, Droplet, HandHeart, Pencil, UserSearch } from "lucide-react";
 import { COOLOFF_MONTHS } from "@shared/constants";
 import { addMonths } from "@shared/eligibility";
 import { formatDate } from "@shared/format";
@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth";
 import { getDonations, logDonation } from "@/lib/data";
 import { fromDateInput, toDateValue } from "@/components/donor-form";
 import { DonorRing } from "@/components/eligibility";
+import { VisibilityPicker } from "@/components/visibility";
 import { Button, ButtonLink, Field, Surface, cx } from "@/components/ui";
 
 export default function MyDonorPage() {
@@ -76,6 +77,7 @@ export default function MyDonorPage() {
           I donated
         </Button>
         <ButtonLink href="/me/request" variant="secondary" icon={Droplet}>Request blood</ButtonLink>
+        <ButtonLink href="/me/donors" variant="secondary" icon={UserSearch}>Find donors</ButtonLink>
         <ButtonLink href="/me/edit" variant="secondary" icon={Pencil}>Edit details</ButtonLink>
       </div>
 
@@ -137,6 +139,14 @@ export default function MyDonorPage() {
             <Detail label="Medical conditions" value={profile.medicalConditions} />
           </dl>
         </Surface>
+      </section>
+
+      <section>
+        <h2 className="mb-1 text-xl font-semibold">Who can find you</h2>
+        <p className="mb-3 text-sm text-ink-muted">
+          Your address, email and medical details are never shown to the public.
+        </p>
+        <VisibilityPicker profile={profile} />
       </section>
 
       <section>

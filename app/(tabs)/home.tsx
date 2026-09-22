@@ -9,6 +9,7 @@ import { BloodRequest } from '@/shared/types';
 import { mapRequest } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
 import AlertsCard from '@/src/components/AlertsCard';
+import VisibilityCard from '@/src/components/VisibilityCard';
 import DonorCard from '@/src/components/DonorCard';
 import RequestRow from '@/src/components/RequestRow';
 import EmptyState from '@/src/components/ui/EmptyState';
@@ -71,6 +72,8 @@ export default function HomeScreen() {
     >
       <AlertsCard />
 
+      <VisibilityCard />
+
       {profile && !profile.district && (
         <Pressable style={styles.notice} onPress={() => router.push('/profile/edit')} accessibilityRole="button">
           <MaterialCommunityIcons name="map-marker-plus" size={24} color={palette.turmeric} />
@@ -96,6 +99,15 @@ export default function HomeScreen() {
           onPress={() => router.push('/donation/new')}
         />
       </View>
+
+      <Pressable style={styles.findRow} onPress={() => router.push('/find-donors')} accessibilityRole="button">
+        <MaterialCommunityIcons name="account-search" size={24} color={palette.blood} />
+        <View style={styles.flex}>
+          <Text variant="bodyStrong">Find donors</Text>
+          <Text variant="caption" color={palette.inkMuted}>Donors near you who chose to be listed</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={palette.inkFaint} />
+      </Pressable>
 
       <Section
         title={`Open requests in ${scope}`}
@@ -167,6 +179,16 @@ const styles = StyleSheet.create({
   tileFilled: {
     backgroundColor: palette.bloodDark,
     borderColor: palette.bloodDark,
+  },
+  findRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.md,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.line,
   },
   tileTitle: {
     marginTop: space.sm,

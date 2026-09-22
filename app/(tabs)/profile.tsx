@@ -12,6 +12,7 @@ import { palette, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
 import AlertsCard from '@/src/components/AlertsCard';
 import DonorCard from '@/src/components/DonorCard';
+import VisibilityPicker from '@/src/components/VisibilityPicker';
 import Button from '@/src/components/ui/Button';
 import { List, ListRow } from '@/src/components/ui/List';
 import Pill from '@/src/components/ui/Pill';
@@ -129,6 +130,10 @@ export default function ProfileScreen() {
             subtitle="Volunteers only call you when you are available"
           />
         </List>
+      </Section>
+
+      <Section title="Who can find you">
+        <VisibilityPicker profile={profile} />
       </Section>
 
       <Section title={`Donation history (${donations.length})`}>
