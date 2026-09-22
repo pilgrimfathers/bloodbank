@@ -91,7 +91,7 @@ export default function Login() {
             New here? <Text variant="bodyStrong" color={palette.blood}>Create an account</Text>
           </Text>
         </Pressable>
-        <Pressable onPress={() => router.push('/(auth)/privacy-policy')} accessibilityRole="link" hitSlop={8}>
+        <Pressable onPress={() => router.push('/privacy')} accessibilityRole="link" hitSlop={8}>
           <Text variant="label" color={palette.inkMuted} style={styles.center}>Privacy policy</Text>
         </Pressable>
       </View>

@@ -5,7 +5,8 @@ import { auth } from '@/src/config/firebase';
 import { Donation } from '@/shared/types';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { getDonations } from '@/src/utils/data';
-import { unregisterPushToken } from '@/src/utils/push';
+import { callNotifyApi, unregisterPushToken } from '@/src/utils/push';
+import { ACCOUNT_DELETE_ENDPOINT } from '@/shared/privacy';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { palette, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
@@ -33,6 +34,29 @@ export default function ProfileScreen() {
       .then(setDonations)
       .catch(error => console.error('Error fetching donations:', error));
   }, [profile?.id, profile?.lastDonation?.getTime()]));
+
+  const [deleting, setDeleting] = useState(false);
+
+  // Google Play requires in-app account deletion. The server erases the profile,
+  // donation history, requests and login in one go.
+  const handleDeleteAccount = async () => {
+    const ok = await confirmAction(
+      'Delete your account?',
+      'This permanently erases your profile, blood group, donation history and the requests you posted. It cannot be undone.',
+      'Delete account',
+    );
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await callNotifyApi(ACCOUNT_DELETE_ENDPOINT, {});
+      await auth.signOut().catch(() => {});
+      showMessage('Account deleted', 'Your account and data have been erased. Thank you for being a donor.');
+    } catch (error) {
+      showMessage('Could not delete account', (error as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleLogout = async () => {
     const ok = await confirmAction('Log out?', 'You will need your email and password to log back in.', 'Log out');
@@ -118,11 +142,34 @@ export default function ProfileScreen() {
         color={palette.inkMuted}
         onPress={handleLogout}
       />
+
+      <View style={styles.footer}>
+        <Button
+          icon="shield-account-outline"
+          label="Privacy policy"
+          variant="quiet"
+          color={palette.inkMuted}
+          onPress={() => router.push('/privacy')}
+        />
+        <Button
+          icon="delete-outline"
+          label="Delete account"
+          variant="quiet"
+          color={palette.blood}
+          loading={deleting}
+          onPress={handleDeleteAccount}
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: space.lg,
+  },
   loading: {
     paddingVertical: space.xxl,
   },

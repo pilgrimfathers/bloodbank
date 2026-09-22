@@ -95,6 +95,8 @@ function RootNavigator() {
         <Stack.Screen name="donation/new" />
         <Stack.Screen name="profile/edit" />
       </Stack.Protected>
+      {/* Readable signed in or out */}
+      <Stack.Screen name="privacy" />
     </Stack>
   );
 }
