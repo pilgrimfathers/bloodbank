@@ -1,5 +1,8 @@
 export type UserRole = 'donor' | 'volunteer' | 'admin';
 
+// Who outside the volunteer team can find a donor (see shared/donors.ts).
+export type ProfileVisibility = 'private' | 'public' | 'public_phone';
+
 export type UserProfile = {
   id: string;
   name: string;
@@ -14,6 +17,8 @@ export type UserProfile = {
   donationCount?: number;
   // Donor is willing to be contacted for donations.
   isDonor: boolean;
+  // Missing means the donor hasn't chosen yet, and is treated as private.
+  visibility?: ProfileVisibility;
   role?: UserRole;
   // Districts a volunteer manages. Empty or missing means all of Kerala.
   volunteerDistricts?: string[];

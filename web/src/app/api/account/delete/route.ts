@@ -3,16 +3,18 @@ import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { authedRoute } from "@/lib/api";
 
 // Permanently deletes the caller's account and everything tied to it:
-// donation history, blood requests they posted, their profile (including
-// push tokens) and their login. Required by Google Play.
+// donation history, blood requests they posted, direct asks to or from them,
+// their profile (including push tokens) and their login. Required by Google Play.
 export const POST = authedRoute<Record<string, never>>("any", async caller => {
   const db = adminDb();
-  const [donations, requests] = await Promise.all([
+  const [donations, requests, asksReceived, asksSent] = await Promise.all([
     db.collection("donations").where("donorId", "==", caller.uid).get(),
     db.collection("bloodRequests").where("requesterId", "==", caller.uid).get(),
+    db.collection("donorAsks").where("donorId", "==", caller.uid).get(),
+    db.collection("donorAsks").where("askedBy", "==", caller.uid).get(),
   ]);
 
-  await deleteAll([donations, requests]);
+  await deleteAll([donations, requests, asksReceived, asksSent]);
   await db.collection("users").doc(caller.uid).delete();
   await adminAuth().deleteUser(caller.uid);
 

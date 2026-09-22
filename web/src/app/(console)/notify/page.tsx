@@ -14,7 +14,7 @@ import { Button, EmptyState, Field, PageHeader, Pill, Select, Spinner, Surface, 
 
 type LogEntry = {
   id: string;
-  type: "request-created" | "request-donors" | "broadcast";
+  type: "request-created" | "request-donors" | "broadcast" | "donor-ask";
   title: string;
   body: string;
   requestId?: string;
@@ -27,6 +27,7 @@ const TYPE_LABELS: Record<LogEntry["type"], { label: string; tone: Tone }> = {
   "request-created": { label: "New request to admins", tone: "info" },
   "request-donors": { label: "Request to donors", tone: "blood" },
   broadcast: { label: "Broadcast", tone: "kasavu" },
+  "donor-ask": { label: "Asked a donor", tone: "leaf" },
 };
 
 async function fetchLog(): Promise<LogEntry[]> {

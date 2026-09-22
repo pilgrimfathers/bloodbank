@@ -33,7 +33,7 @@ export function authedRoute<Body>(
 
 // Audit trail of every notification sent (readable by admins).
 export function logNotification(entry: {
-  type: "request-created" | "request-donors" | "broadcast";
+  type: "request-created" | "request-donors" | "broadcast" | "donor-ask";
   title: string;
   body: string;
   requestId?: string;

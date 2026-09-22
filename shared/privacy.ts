@@ -46,7 +46,8 @@ export const PRIVACY_POLICY: PolicySection[] = [
     bullets: [
       'Volunteers and admins of Blood Bank Kerala can see donor details, including phone numbers, for the districts they manage. They use them only to arrange donations.',
       'Everyone who uses the app can see blood requests, including the contact number given in the request.',
-      'Other donors cannot see your profile.',
+      'Your profile is private unless you choose otherwise. If you make it public, signed-in users can see your first name and last initial, blood group, district, area, whether you can donate now, and whether you are verified. Your phone number is shown only if you choose "Public with number". Your address, email, medical conditions and donation dates are never shown.',
+      'If your number is hidden, people can ask you to donate through the app. You get a notification with their request and decide whether to call them.',
       'We do not sell your information or use it for advertising.',
     ],
   },
@@ -70,6 +71,7 @@ export const PRIVACY_POLICY: PolicySection[] = [
     bullets: [
       'Edit your details at any time from your profile.',
       'Turn off "Available to donate" to stop being contacted.',
+      'Choose who can find you (private, public, or public with your number) from your profile.',
       'Turn off notifications in your phone settings.',
       `Delete your account from Profile in the app, or at ${DELETE_ACCOUNT_URL}.`,
     ],

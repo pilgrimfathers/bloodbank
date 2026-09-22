@@ -66,17 +66,19 @@ service cloud.firestore {
         // Volunteers add donors who don't use the app
         (managesDistrict(request.resource.data.get('district', '')) &&
          request.resource.data.role == 'donor' &&
-         request.resource.data.hasAccount == false)
+         request.resource.data.hasAccount == false &&
+         !request.resource.data.keys().hasAny(['visibility']))
       );
 
       allow update: if isAuthenticated() && (
         (isOwner(userId) && !changedKeys().hasAny(staffOnlyFields())) ||
-        isAdmin() ||
+        // Only the donor decides whether the public can find them.
+        (isAdmin() && !changedKeys().hasAny(['visibility'])) ||
         // Volunteers manage plain donors in their districts, but can't change roles
         (managesDistrict(resource.data.get('district', '')) &&
          managesDistrict(request.resource.data.get('district', '')) &&
          resource.data.get('role', 'donor') == 'donor' &&
-         !changedKeys().hasAny(['role', 'volunteerDistricts']))
+         !changedKeys().hasAny(['role', 'volunteerDistricts', 'visibility']))
       );
 
       allow delete: if isAdmin();
@@ -98,6 +100,12 @@ service cloud.firestore {
 
     // Notification audit log, written only by the server (firebase-admin)
     match /notifications/{notificationId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Donors asked directly for a request (web/src/app/api/donors/ask), server only
+    match /donorAsks/{askId} {
       allow read: if isAdmin();
       allow write: if false;
     }

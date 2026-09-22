@@ -20,7 +20,7 @@ Blood Bank Kerala
 ### Short description (max 80 characters)
 
 ```
-Find blood donors across Kerala. Track your donations and when you can give again.
+Find blood donors across Kerala and see when you can donate again.
 ```
 
 ### Full description (max 4000 characters)
