@@ -26,6 +26,8 @@ export type UserProfile = {
   status?: 'active' | 'inactive';
   // False for donors added by a volunteer who don't use the app.
   hasAccount?: boolean;
+  // Ids of donors added without the app that an admin merged into this account.
+  mergedFrom?: string[];
   notes?: string;
   // Expo push tokens for the devices this user is signed in on.
   pushTokens?: string[];

@@ -99,6 +99,16 @@ export async function deleteDonation(donation: Donation) {
   await batch.commit();
 }
 
+// Admins only: removes a donor added without the app, with their donations.
+export async function deleteAddedDonor(donor: UserProfile) {
+  if (donor.hasAccount !== false) throw new Error("Only donors added without the app can be deleted here.");
+  const donations = await getDocs(query(collection(firestore, "donations"), where("donorId", "==", donor.id)));
+  const batch = writeBatch(firestore);
+  donations.docs.forEach(d => batch.delete(d.ref));
+  batch.delete(doc(firestore, "users", donor.id));
+  await batch.commit();
+}
+
 // Calls the notification API as the signed-in user.
 export async function callNotifyApi<T>(path: string, body: unknown): Promise<T> {
   const token = await auth.currentUser?.getIdToken();

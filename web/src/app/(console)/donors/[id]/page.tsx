@@ -1,18 +1,22 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { doc, updateDoc } from "firebase/firestore";
+import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import {
-  MessageCircle, Pencil, Phone, ShieldCheck, ShieldOff, Trash2, UserCheck, UserRoundX, UserX, Droplet,
+  Combine, MessageCircle, Pencil, Phone, Search, ShieldCheck, ShieldOff, Trash2, UserCheck, UserRoundX, UserX, Droplet,
 } from "lucide-react";
 import { COOLOFF_MONTHS, KERALA_DISTRICTS } from "@shared/constants";
+import { DONOR_ENDPOINTS, type MergeDonorResult } from "@shared/donors";
 import { addMonths } from "@shared/eligibility";
 import { formatDate } from "@shared/format";
 import type { Donation, UserProfile, UserRole } from "@shared/types";
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
-import { coversDistrict, deleteDonation, getDonations, getUser, logDonation } from "@/lib/data";
+import {
+  callNotifyApi, coversDistrict, deleteAddedDonor, deleteDonation, getDonations, getUser, logDonation, mapUser,
+} from "@/lib/data";
 import { DonorRing } from "@/components/eligibility";
 import {
   DonorForm, DonorFormError, findDuplicateDonor, fromDateInput, toDateValue, type DonorFormValues,
@@ -35,6 +39,7 @@ export default function DonorPage() {
 
 function DonorDetail() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const requestId = useSearchParams().get("requestId");
   const { profile: me } = useAuth();
   const [donor, setDonor] = useState<UserProfile | null>(null);
@@ -121,6 +126,19 @@ function DonorDetail() {
     setDonor({ ...donor, ...details });
     setEditing(false);
     setMessage("Donor details saved.");
+  };
+
+  const handleDeleteDonor = async () => {
+    if (!window.confirm(
+      `Delete ${donor.name} and their ${donations.length} recorded donations? This can't be undone.`,
+    )) return;
+    try {
+      await deleteAddedDonor(donor);
+      router.replace("/donors");
+    } catch (error) {
+      console.error("Error deleting donor:", error);
+      setMessage("Could not delete donor. Check your connection and try again.");
+    }
   };
 
   const handleDelete = async (donation: Donation) => {
@@ -293,8 +311,19 @@ function DonorDetail() {
               >
                 {donor.status === "inactive" ? "Reactivate donor" : "Deactivate donor"}
               </Button>
+              {isAdmin && donor.hasAccount === false && (
+                <Button variant="danger" icon={Trash2} className="w-full" onClick={handleDeleteDonor}>
+                  Delete donor
+                </Button>
+              )}
             </Surface>
           )}
+
+          {isAdmin && donor.hasAccount === false && (
+            <MergeCard donor={donor} onMerged={intoId => router.replace(`/donors/${intoId}`)} />
+          )}
+
+          {isAdmin && donor.hasAccount !== false && <AddedRecordsCard donor={donor} />}
 
           {isAdmin && donor.id !== me.id && donor.hasAccount !== false && (
             <AccessCard
@@ -381,6 +410,130 @@ function LogDonation({ donor, donations, requestId, recorder, onLogged }: {
         {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
         <Button type="submit" icon={Droplet} loading={saving} className="w-full">Log donation</Button>
       </form>
+    </Surface>
+  );
+}
+
+// Other donors sharing this donor's phone number.
+function useSamePhone(donor: UserProfile) {
+  const [matches, setMatches] = useState<UserProfile[]>([]);
+  useEffect(() => {
+    if (!donor.phoneNumber) return;
+    let cancelled = false;
+    getDocs(query(collection(firestore, "users"), where("phoneNumber", "==", donor.phoneNumber)))
+      .then(snap => {
+        if (!cancelled) setMatches(snap.docs.map(mapUser).filter(user => user.id !== donor.id));
+      })
+      .catch(error => console.error("Error finding donors with the same phone:", error));
+    return () => { cancelled = true; };
+  }, [donor.id, donor.phoneNumber]);
+  return matches;
+}
+
+// On an app account: donors a volunteer added earlier who may be the same person.
+function AddedRecordsCard({ donor }: { donor: UserProfile }) {
+  const added = useSamePhone(donor).filter(user => user.hasAccount === false);
+  if (!added.length) return null;
+  return (
+    <Surface className="space-y-2 p-4">
+      <h2 className="font-semibold">Also added without the app</h2>
+      <p className="text-sm text-ink-muted">
+        A volunteer added a donor with this number before they signed up. Open it to merge it into this account.
+      </p>
+      {added.map(user => (
+        <Link key={user.id} href={`/donors/${user.id}`} className="block rounded-lg border border-line px-3 py-2 hover:border-ink-faint">
+          <span className="font-medium">{user.name}</span>
+          <span className="text-sm text-ink-muted"> · {user.bloodType} · {user.district || "No district"}</span>
+        </Link>
+      ))}
+    </Surface>
+  );
+}
+
+// On a donor added without the app: move them onto the account they signed up with.
+function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId: string) => void }) {
+  const samePhone = useSamePhone(donor).filter(user => user.hasAccount !== false);
+  const [email, setEmail] = useState("");
+  const [found, setFound] = useState<UserProfile[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const search = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setBusy("search");
+    try {
+      const snap = await getDocs(query(collection(firestore, "users"), where("email", "==", email.trim())));
+      setFound(snap.docs.map(mapUser).filter(user => user.hasAccount !== false && user.id !== donor.id));
+    } catch (err) {
+      console.error("Error searching accounts:", err);
+      setError("Could not search. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const merge = async (account: UserProfile) => {
+    if (!window.confirm(
+      `Merge ${donor.name} into ${account.name}'s account (${account.email ?? account.phoneNumber})? ` +
+      "Their donation history moves to the account, and this record is deleted.",
+    )) return;
+    setError(null);
+    setBusy(account.id);
+    try {
+      await callNotifyApi<MergeDonorResult>(DONOR_ENDPOINTS.merge, { fromId: donor.id, intoId: account.id });
+      onMerged(account.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not merge. Try again in a minute.");
+      setBusy(null);
+    }
+  };
+
+  const candidates = [...samePhone, ...(found ?? []).filter(user => !samePhone.some(s => s.id === user.id))];
+
+  return (
+    <Surface className="space-y-4 p-4">
+      <div>
+        <h2 className="font-semibold">Signed up on the app?</h2>
+        <p className="text-sm text-ink-muted">Merge this donor into their account to keep one record.</p>
+      </div>
+      {candidates.length > 0 && (
+        <ul className="space-y-2">
+          {candidates.map(account => (
+            <li key={account.id} className="rounded-lg border border-line p-3">
+              <p className="font-medium">{account.name}</p>
+              <p className="text-sm text-ink-muted">
+                {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && "Same phone"]
+                  .filter(Boolean).join(" · ")}
+              </p>
+              <Button
+                variant="secondary"
+                icon={Combine}
+                loading={busy === account.id}
+                disabled={!!busy}
+                className="mt-2 w-full"
+                onClick={() => merge(account)}
+              >
+                Merge into this account
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={search} className="space-y-2">
+        <Field
+          label="Find account by email"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
+        <Button type="submit" variant="secondary" icon={Search} loading={busy === "search"} disabled={!!busy} className="w-full">
+          Search
+        </Button>
+        {found && !found.length && <p className="text-sm text-ink-muted">No app account uses that email.</p>}
+      </form>
+      {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
     </Surface>
   );
 }

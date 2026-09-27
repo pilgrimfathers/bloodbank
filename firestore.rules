@@ -47,7 +47,7 @@ service cloud.firestore {
     match /users/{userId} {
       // Fields only volunteers/admins may set on someone's profile.
       function staffOnlyFields() {
-        return ['role', 'volunteerDistricts', 'verified', 'status', 'notes', 'createdBy', 'hasAccount'];
+        return ['role', 'volunteerDistricts', 'verified', 'status', 'notes', 'createdBy', 'hasAccount', 'mergedFrom'];
       }
 
       // District-limited volunteers must always query by district.

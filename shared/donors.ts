@@ -9,6 +9,8 @@ export const DONOR_ENDPOINTS = {
   search: '/api/donors/search',
   // Requester (or a volunteer): push one of their open requests to a donor.
   ask: '/api/donors/ask',
+  // Admins: fold a donor added without the app into their new app account.
+  merge: '/api/donors/merge',
 } as const;
 
 export const VISIBILITY_OPTIONS: { value: ProfileVisibility; label: string; description: string }[] = [
@@ -71,4 +73,39 @@ export function publicName(name?: string): string {
   const [first = 'Donor', ...rest] = (name ?? '').trim().split(/\s+/).filter(Boolean);
   const last = rest[rest.length - 1];
   return last ? `${first} ${last[0].toUpperCase()}.` : first;
+}
+
+export type MergeDonorBody = {
+  // The donor a volunteer added, who doesn't use the app (hasAccount false).
+  fromId: string;
+  // The app account the same person signed up with.
+  intoId: string;
+};
+
+export type MergeDonorResult = { merged: true; donations: number };
+
+// Details kept on the account when merging in a donor added without the app.
+// The account's own answers win; the added record only fills gaps, and its
+// volunteer notes and verification carry over.
+export function mergedProfileFields(
+  added: { area?: string; address?: string; medicalConditions?: string; district?: string; notes?: string; verified?: boolean },
+  account: { area?: string; address?: string; medicalConditions?: string; district?: string; notes?: string; verified?: boolean },
+) {
+  const fill = (key: 'area' | 'address' | 'medicalConditions' | 'district') =>
+    account[key]?.trim() ? {} : added[key]?.trim() ? { [key]: added[key] } : {};
+  const notes = [account.notes?.trim(), added.notes?.trim()].filter(Boolean).join('\n\n');
+  return {
+    ...fill('district'),
+    ...fill('area'),
+    ...fill('address'),
+    ...fill('medicalConditions'),
+    ...(notes && { notes }),
+    verified: !!(account.verified || added.verified),
+  };
+}
+
+// Donation count and latest donation once all donations are on one donor.
+export function donationSummary(dates: Date[]) {
+  const latest = dates.reduce<Date | null>((max, date) => (!max || date > max ? date : max), null);
+  return { lastDonation: latest, donationCount: dates.length };
 }

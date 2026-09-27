@@ -1,18 +1,21 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { KERALA_DISTRICTS } from '@/shared/constants';
+import { DONOR_ENDPOINTS, MergeDonorResult } from '@/shared/donors';
 import { Donation, UserProfile, UserRole } from '@/shared/types';
-import { coversDistrict, deleteDonation, getDonations, getUser } from '@/src/utils/data';
+import { coversDistrict, deleteAddedDonor, deleteDonation, getDonations, getUser, mapUser } from '@/src/utils/data';
+import { callNotifyApi } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { formatDate } from '@/shared/format';
 import { palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import DonationList from '@/src/components/DonationList';
 import DonorCard from '@/src/components/DonorCard';
+import Field from '@/src/components/Field';
 import Button from '@/src/components/ui/Button';
 import EmptyState from '@/src/components/ui/EmptyState';
 import { List, ListRow } from '@/src/components/ui/List';
@@ -89,6 +92,22 @@ export default function DonorDetailScreen() {
       deactivating ? 'Deactivate' : 'Reactivate',
     );
     if (ok) await update({ status: deactivating ? 'inactive' : 'active' });
+  };
+
+  const handleDeleteDonor = async () => {
+    const ok = await confirmAction(
+      'Delete donor?',
+      `${donor.name} and their ${donations.length} recorded donations will be removed. This can't be undone.`,
+      'Delete',
+    );
+    if (!ok) return;
+    try {
+      await deleteAddedDonor(donor);
+      router.back();
+    } catch (error) {
+      console.error('Error deleting donor:', error);
+      showMessage('Could not delete donor', 'Check your connection and try again.');
+    }
   };
 
   const handleDeleteDonation = async (donation: Donation) => {
@@ -186,8 +205,26 @@ export default function DonorDetailScreen() {
             color={palette.inkMuted}
             onPress={toggleActive}
           />
+          {isAdmin && donor.hasAccount === false && (
+            <Button
+              icon="trash-can-outline"
+              label="Delete donor"
+              variant="secondary"
+              color={palette.blood}
+              onPress={handleDeleteDonor}
+            />
+          )}
         </View>
       )}
+
+      {isAdmin && donor.hasAccount === false && (
+        <MergeSection
+          donor={donor}
+          onMerged={intoId => router.replace({ pathname: '/donor/[id]', params: { id: intoId } })}
+        />
+      )}
+
+      {isAdmin && donor.hasAccount !== false && <AddedRecordsSection donor={donor} />}
 
       {isAdmin && donor.id !== me.id && donor.hasAccount !== false && (
         <RoleEditor donor={donor} onSave={update} />
@@ -197,6 +234,138 @@ export default function DonorDetailScreen() {
         <DonationList donations={donations} onDelete={canManage ? handleDeleteDonation : undefined} />
       </Section>
     </Screen>
+  );
+}
+
+// Other donors sharing this donor's phone number.
+function useSamePhone(donor: UserProfile) {
+  const [matches, setMatches] = useState<UserProfile[]>([]);
+  useEffect(() => {
+    if (!donor.phoneNumber) return;
+    let cancelled = false;
+    getDocs(query(collection(firestore, 'users'), where('phoneNumber', '==', donor.phoneNumber)))
+      .then(snap => {
+        if (!cancelled) setMatches(snap.docs.map(mapUser).filter(user => user.id !== donor.id));
+      })
+      .catch(error => console.error('Error finding donors with the same phone:', error));
+    return () => { cancelled = true; };
+  }, [donor.id, donor.phoneNumber]);
+  return matches;
+}
+
+// On an app account: donors a volunteer added earlier who may be the same person.
+function AddedRecordsSection({ donor }: { donor: UserProfile }) {
+  const added = useSamePhone(donor).filter(user => user.hasAccount === false);
+  if (!added.length) return null;
+  return (
+    <Section title="Also added without the app">
+      <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
+        A volunteer added a donor with this number before they signed up. Open it to merge it into this account.
+      </Text>
+      <List>
+        {added.map(user => (
+          <ListRow
+            key={user.id}
+            icon="account-outline"
+            title={user.name}
+            subtitle={`${user.bloodType} · ${user.district || 'No district'}`}
+            onPress={() => router.push({ pathname: '/donor/[id]', params: { id: user.id } })}
+          />
+        ))}
+      </List>
+    </Section>
+  );
+}
+
+// On a donor added without the app: move them onto the account they signed up with.
+function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId: string) => void }) {
+  const samePhone = useSamePhone(donor).filter(user => user.hasAccount !== false);
+  const [email, setEmail] = useState('');
+  const [found, setFound] = useState<UserProfile[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const search = async () => {
+    if (!email.trim()) return;
+    setBusy('search');
+    try {
+      const snap = await getDocs(query(collection(firestore, 'users'), where('email', '==', email.trim())));
+      setFound(snap.docs.map(mapUser).filter(user => user.hasAccount !== false && user.id !== donor.id));
+    } catch (error) {
+      console.error('Error searching accounts:', error);
+      showMessage('Could not search', 'Check your connection and try again.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const merge = async (account: UserProfile) => {
+    const ok = await confirmAction(
+      'Merge donor?',
+      `Merge ${donor.name} into ${account.name}'s account (${account.email ?? account.phoneNumber})? ` +
+        'Their donation history moves to the account, and this record is deleted.',
+      'Merge',
+    );
+    if (!ok) return;
+    setBusy(account.id);
+    try {
+      await callNotifyApi<MergeDonorResult>(DONOR_ENDPOINTS.merge, { fromId: donor.id, intoId: account.id });
+      onMerged(account.id);
+    } catch (error) {
+      showMessage('Could not merge', error instanceof Error ? error.message : 'Try again in a minute.');
+      setBusy(null);
+    }
+  };
+
+  const candidates = [...samePhone, ...(found ?? []).filter(user => !samePhone.some(s => s.id === user.id))];
+
+  return (
+    <Section title="Signed up on the app?">
+      <View style={styles.panel}>
+        <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
+          Merge this donor into their account to keep one record.
+        </Text>
+        {candidates.map(account => (
+          <View key={account.id} style={styles.candidate}>
+            <Text variant="bodyStrong">{account.name}</Text>
+            <Text variant="caption" color={palette.inkMuted}>
+              {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && 'Same phone']
+                .filter(Boolean).join(' · ')}
+            </Text>
+            <Button
+              icon="call-merge"
+              label="Merge into this account"
+              variant="secondary"
+              loading={busy === account.id}
+              disabled={!!busy}
+              onPress={() => merge(account)}
+              style={styles.candidateButton}
+            />
+          </View>
+        ))}
+        <Field
+          label="Find account by email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          onSubmitEditing={search}
+        />
+        {found && !found.length && (
+          <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
+            No app account uses that email.
+          </Text>
+        )}
+        <Button
+          icon="magnify"
+          label="Search"
+          variant="secondary"
+          loading={busy === 'search'}
+          disabled={!!busy}
+          onPress={search}
+        />
+      </View>
+    </Section>
   );
 }
 
@@ -292,6 +461,15 @@ const styles = StyleSheet.create({
   },
   panelHint: {
     marginBottom: space.md,
+  },
+  candidate: {
+    paddingVertical: space.md,
+    marginBottom: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.line,
+  },
+  candidateButton: {
+    marginTop: space.sm,
   },
   districts: {
     marginBottom: space.lg,
