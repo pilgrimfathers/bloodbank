@@ -15,6 +15,7 @@ import { palette } from '@/src/theme';
 import { UserProvider, useCurrentUser } from '@/src/context/UserContext';
 import { LanguageProvider, useI18n } from '@/src/i18n';
 import LanguageChooser from '@/src/components/LanguageChooser';
+import { scheduleCooloffReminder } from '@/src/utils/push';
 import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
@@ -53,6 +54,15 @@ function RootNavigator() {
       router.replace('/(tabs)/home');
     }
   }, [isAuthenticated, initializing, segments[0]]);
+
+  // Remind the donor on the day their cool-off ends. Waits for the language,
+  // and reschedules when it changes, so the reminder is worded the way they read.
+  const lastDonationTime = profile?.lastDonation?.getTime();
+  const profileLoaded = !!profile;
+  useEffect(() => {
+    if (!profileLoaded || !language) return;
+    scheduleCooloffReminder(lastDonationTime ? new Date(lastDonationTime) : null);
+  }, [profileLoaded, lastDonationTime, language]);
 
   // First time in the app: walk through it once. Saved on the profile, so
   // it doesn't come back on other phones.

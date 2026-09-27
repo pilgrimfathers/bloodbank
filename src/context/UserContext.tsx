@@ -4,7 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, firestore } from '../config/firebase';
 import { UserProfile } from '@/shared/types';
 import { mapUser } from '../utils/data';
-import { registerPushToken, scheduleCooloffReminder } from '../utils/push';
+import { registerPushToken } from '../utils/push';
 
 type UserContextValue = {
   authUser: User | null;
@@ -46,13 +46,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authUser && profileLoaded) registerPushToken(authUser.uid);
   }, [authUser?.uid, profileLoaded]);
-
-  // Remind the donor on the day their cool-off ends.
-  const lastDonationTime = profile?.lastDonation?.getTime();
-  useEffect(() => {
-    if (!profileLoaded) return;
-    scheduleCooloffReminder(lastDonationTime ? new Date(lastDonationTime) : null);
-  }, [profileLoaded, lastDonationTime]);
 
   return (
     <UserContext.Provider value={{ authUser, profile, initializing }}>
