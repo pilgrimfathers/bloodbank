@@ -11,17 +11,19 @@ import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { callNotifyApi } from "@/lib/data";
 import { Button, ButtonLink, Field, PageHeader, Segmented, Select, Surface } from "@/components/ui";
+import { useI18n, type StringKey } from "@/i18n";
 
 type Urgency = BloodRequest["urgency"];
 
-const URGENCY_OPTIONS = [
-  { value: "high", label: "Urgent" },
-  { value: "medium", label: "Needed soon" },
-  { value: "low", label: "Planned" },
+const URGENCY_OPTIONS: { value: Urgency; label: StringKey }[] = [
+  { value: "high", label: "urgency.high" },
+  { value: "medium", label: "urgency.medium" },
+  { value: "low", label: "urgency.low" },
 ];
 
 export default function RequestBloodPage() {
   const { profile } = useAuth();
+  const { t, districtName } = useI18n();
   const [form, setForm] = useState({
     patientName: "",
     bloodType: "",
@@ -44,14 +46,14 @@ export default function RequestBloodPage() {
     const units = Number(form.units);
     const contactNumber = normalizePhone(form.contactNumber);
 
-    if (!form.patientName.trim()) return setError("Enter the patient's name.");
-    if (!form.bloodType) return setError("Select the blood group needed.");
-    if (!/^\d+$/.test(form.units.trim()) || units < 1) return setError("Enter the number of units needed, for example 2.");
-    if (!form.urgency) return setError("Select how soon the blood is needed.");
-    if (!form.hospital.trim()) return setError("Enter the hospital name.");
-    if (!form.district) return setError("Select the district of the hospital.");
-    if (!form.location.trim()) return setError("Enter the area or town of the hospital.");
-    if (!contactNumber) return setError("Enter a 10-digit Indian mobile number donors can call.");
+    if (!form.patientName.trim()) return setError(t("myRequest.missingPatient"));
+    if (!form.bloodType) return setError(t("myRequest.missingBloodType"));
+    if (!/^\d+$/.test(form.units.trim()) || units < 1) return setError(t("myRequest.invalidUnits"));
+    if (!form.urgency) return setError(t("myRequest.missingUrgency"));
+    if (!form.hospital.trim()) return setError(t("myRequest.missingHospital"));
+    if (!form.district) return setError(t("myRequest.missingDistrict"));
+    if (!form.location.trim()) return setError(t("myRequest.missingArea"));
+    if (!contactNumber) return setError(t("myRequest.invalidPhone"));
 
     setSaving(true);
     setError(null);
@@ -77,7 +79,7 @@ export default function RequestBloodPage() {
       setPostedId(ref.id);
     } catch (err) {
       console.error("Error creating request:", err);
-      setError("Could not post the request. Check your connection and try again.");
+      setError(t("myRequest.couldNotPost"));
     } finally {
       setSaving(false);
     }
@@ -87,14 +89,13 @@ export default function RequestBloodPage() {
     return (
       <Surface className="space-y-3 p-6">
         <CheckCircle2 className="size-8 text-leaf" />
-        <h1 className="text-2xl font-bold">Request posted</h1>
+        <h1 className="text-2xl font-bold">{t("myRequest.posted.title")}</h1>
         <p className="text-ink-muted">
-          Volunteers have been alerted and will call donors with {form.bloodType} blood. They may call you on{" "}
-          {form.contactNumber} for details.
+          {t("myRequest.posted.message", { bloodType: form.bloodType, phone: form.contactNumber })}
         </p>
         <div className="flex flex-wrap gap-2">
-          <ButtonLink href={`/me/donors?request=${postedId}`}>Find donors now</ButtonLink>
-          <ButtonLink href="/me" variant="secondary">Back to my page</ButtonLink>
+          <ButtonLink href={`/me/donors?request=${postedId}`}>{t("myRequest.findDonorsNow")}</ButtonLink>
+          <ButtonLink href="/me" variant="secondary">{t("myRequest.backToPage")}</ButtonLink>
         </div>
       </Surface>
     );
@@ -103,59 +104,59 @@ export default function RequestBloodPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/me", label: "My donor page" }}
-        title="Request blood"
-        subtitle="Volunteers will call donors who match."
+        back={{ href: "/me", label: t("me.backToPage") }}
+        title={t("publicSite.requestBlood")}
+        subtitle={t("myRequest.subtitle")}
       />
       <Surface className="p-5">
         <form onSubmit={handleSubmit} className="space-y-5">
-          <Field label="Patient name" value={form.patientName} onChange={e => set({ patientName: e.target.value })} />
+          <Field label={t("myRequest.patientName")} value={form.patientName} onChange={e => set({ patientName: e.target.value })} />
           <Segmented
-            label="Blood group needed"
+            label={t("myRequest.bloodGroup")}
             options={BLOOD_TYPES.map(type => ({ value: type, label: type }))}
             value={form.bloodType}
             onChange={bloodType => set({ bloodType })}
           />
           <div className="grid gap-5 sm:grid-cols-2">
             <Field
-              label="Units needed"
+              label={t("myRequest.units")}
               inputMode="numeric"
               value={form.units}
               onChange={e => set({ units: e.target.value })}
             />
             <Segmented
-              label="How soon"
-              options={URGENCY_OPTIONS}
+              label={t("myRequest.urgency")}
+              options={URGENCY_OPTIONS.map(option => ({ value: option.value, label: t(option.label) }))}
               value={form.urgency}
               onChange={urgency => set({ urgency: urgency as Urgency })}
             />
           </div>
-          <Field label="Hospital" value={form.hospital} onChange={e => set({ hospital: e.target.value })} />
+          <Field label={t("myRequest.hospital")} value={form.hospital} onChange={e => set({ hospital: e.target.value })} />
           <div className="grid gap-5 sm:grid-cols-2">
             <Select
-              label="District"
+              label={t("myRequest.district")}
               value={form.district}
               onChange={district => set({ district })}
-              placeholder="Select district"
-              options={KERALA_DISTRICTS.map(district => ({ value: district, label: district }))}
+              placeholder={t("myRequest.selectDistrict")}
+              options={KERALA_DISTRICTS.map(district => ({ value: district, label: districtName(district) }))}
             />
             <Field
-              label="Area or town"
+              label={t("myRequest.area")}
               value={form.location}
               onChange={e => set({ location: e.target.value })}
-              placeholder="e.g. Kanhangad"
+              placeholder={t("myRequest.areaPlaceholder")}
             />
           </div>
           <Field
-            label="Contact number"
+            label={t("myRequest.contact")}
             type="tel"
             inputMode="tel"
             value={form.contactNumber}
             onChange={e => set({ contactNumber: e.target.value })}
-            hint="Donors and volunteers will call this number"
+            hint={t("myRequest.contactHint")}
           />
           {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
-          <Button type="submit" icon={Send} loading={saving} className="w-full sm:w-auto">Post request</Button>
+          <Button type="submit" icon={Send} loading={saving} className="w-full sm:w-auto">{t("myRequest.submit")}</Button>
         </form>
       </Surface>
     </>

@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from '@/shared/i18n/define';
 
 // The first-run app tour (app/tour.tsx).
 export const tour = defineStrings(

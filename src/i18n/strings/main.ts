@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from '@/shared/i18n/define';
 
 // Landing, login/register, the tab bar, Home and the Requests tab.
 export const main = defineStrings(

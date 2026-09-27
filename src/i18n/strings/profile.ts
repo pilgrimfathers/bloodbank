@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from '@/shared/i18n/define';
 
 // Profile tab, the privacy policy screen and push notification text.
 export const profile = defineStrings(

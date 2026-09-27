@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { LoaderCircle, type LucideIcon } from "lucide-react";
+import { useI18n } from "@/i18n";
 
 export function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -100,11 +101,12 @@ export function Surface({ className, children }: { className?: string; children:
   return <div className={cx("rounded-xl border border-line bg-surface", className)}>{children}</div>;
 }
 
-export function Spinner({ label = "Loading" }: { label?: string }) {
+export function Spinner({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center justify-center gap-2 py-16 text-ink-muted" role="status">
       <LoaderCircle className="size-5 animate-spin text-blood" />
-      <span>{label}</span>
+      <span>{label ?? t("publicSite.loading")}</span>
     </div>
   );
 }

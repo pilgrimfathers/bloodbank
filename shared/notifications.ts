@@ -27,6 +27,10 @@ export type RequestDonorsBody = {
 export type BroadcastBody = {
   title: string;
   body: string;
+  // Optional Malayalam version, sent to people who use the app in Malayalam.
+  // Everyone else, and anyone if it's left empty, gets the English one.
+  titleMl?: string;
+  bodyMl?: string;
   bloodType?: string;
   district?: string;
 };

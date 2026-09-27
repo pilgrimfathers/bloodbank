@@ -10,9 +10,11 @@ import { useAuth } from "@/lib/auth";
 import { mapRequest } from "@/lib/data";
 import { RequestTable } from "@/components/requests";
 import { ButtonLink, EmptyState, PageHeader, Spinner } from "@/components/ui";
+import { useI18n } from "@/i18n";
 
 export default function OverviewPage() {
   const { profile } = useAuth();
+  const { t } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[] | null>(null);
   const [counts, setCounts] = useState<{ open: number; urgent: number } | null>(null);
 
@@ -38,21 +40,21 @@ export default function OverviewPage() {
   return (
     <>
       <PageHeader
-        title={firstName ? `Good to see you, ${firstName}` : "Overview"}
-        subtitle="Open blood requests waiting for donors."
+        title={firstName ? t("dashboard.greeting", { name: firstName }) : t("dashboard.title")}
+        subtitle={t("dashboard.subtitle")}
         actions={
           <>
-            <ButtonLink href="/donors/new" variant="secondary" icon={UserPlus}>Add donor</ButtonLink>
-            <ButtonLink href="/donors" icon={Users}>Find donors</ButtonLink>
+            <ButtonLink href="/donors/new" variant="secondary" icon={UserPlus}>{t("dashboard.addDonor")}</ButtonLink>
+            <ButtonLink href="/donors" icon={Users}>{t("dashboard.findDonors")}</ButtonLink>
           </>
         }
       />
 
       {counts && (
         <p className="mb-6 text-lg text-ink-muted">
-          <span className="font-semibold text-ink">{counts.open}</span> open {counts.open === 1 ? "request" : "requests"}
+          <span className="font-semibold text-ink">{counts.open}</span> {t(counts.open === 1 ? "dashboard.openOne" : "dashboard.openMany")}
           {counts.urgent > 0 && (
-            <>, <span className="font-semibold text-blood">{counts.urgent} urgent</span></>
+            <>, <span className="font-semibold text-blood">{t("dashboard.urgent", { count: counts.urgent })}</span></>
           )}
         </p>
       )}
@@ -62,14 +64,14 @@ export default function OverviewPage() {
       ) : requests.length === 0 ? (
         <EmptyState
           icon={HandHeart}
-          title="No open requests right now"
-          message="New requests from the app show up here."
+          title={t("dashboard.empty.title")}
+          message={t("dashboard.empty.message")}
         />
       ) : (
         <>
           <RequestTable requests={requests} />
           <Link href="/requests" className="mt-4 inline-block font-medium text-blood hover:underline">
-            See all requests
+            {t("dashboard.seeAll")}
           </Link>
         </>
       )}

@@ -16,7 +16,10 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "<rootDir>/web/"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^@shared/(.*)$": "<rootDir>/shared/$1"
+    }
   },
   "dependencies": {
     "@expo-google-fonts/anek-malayalam": "^0.4.1",

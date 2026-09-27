@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from '@/shared/i18n/define';
 
 // Donor list, donor details (including admin merge and access), adding and
 // editing donors, logging a donation, and editing your own profile.
@@ -173,7 +173,7 @@ export const donors = defineStrings(
     'manage.includeCompatible': 'യോജിക്കുന്ന മറ്റ് ഗ്രൂപ്പുകാരെയും ഉൾപ്പെടുത്തുക',
     'manage.canGiveTo': '{groups} ഗ്രൂപ്പുകാർക്ക് {bloodType} ഉള്ളവർക്ക് നൽകാം',
     'manage.eligibility': 'യോഗ്യത',
-    'manage.coolingOff': 'വിശ്രമ കാലയളവിൽ',
+    'manage.coolingOff': 'ഇടവേളയിൽ',
     'manage.loading': 'ദാതാക്കളെ ലോഡ് ചെയ്യുന്നു',
     'manage.showing': '{total} ദാതാക്കളിൽ {shown} പേരെ കാണിക്കുന്നു',
     'manage.empty.title': 'ഈ ഫിൽട്ടറുകൾക്ക് യോജിച്ച ദാതാക്കളില്ല',
@@ -253,7 +253,7 @@ export const donors = defineStrings(
     'donationNew.invalidDate': 'തീയതി ശരിയല്ല',
     'donationNew.dateFormat': 'രക്തദാന തീയതി DD-MM-YYYY എന്ന രീതിയിൽ നൽകുക.',
     'donationNew.futureDate': 'രക്തദാന തീയതി ഭാവിയിലെ ദിവസമാകാൻ പാടില്ല.',
-    'donationNew.coolOffTitle': 'വിശ്രമ കാലയളവിനുള്ളിലാണ്',
+    'donationNew.coolOffTitle': 'ഇടവേള കഴിഞ്ഞിട്ടില്ല',
     'donationNew.coolOffMessage': '{name} {date}-ന് രക്തം നൽകിയതായി രേഖയുണ്ട്. {months} മാസം തികഞ്ഞിട്ടില്ല. എന്നാലും രേഖപ്പെടുത്തണോ?',
     'donationNew.record': 'രേഖപ്പെടുത്തുക',
     'donationNew.savedTitle': 'രക്തദാനം സേവ് ചെയ്തു',

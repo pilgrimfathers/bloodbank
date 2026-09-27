@@ -1,6 +1,8 @@
 // Push notification text the server sends, in the recipient's app language
 // (users.language). Admin broadcasts are sent exactly as typed.
 
+import { DISTRICTS_ML } from './i18n/common';
+
 export type PushLanguage = 'en' | 'ml';
 
 type RequestInfo = {
@@ -9,23 +11,6 @@ type RequestInfo = {
   hospital: string;
   district?: string | null;
   patientName?: string;
-};
-
-const DISTRICTS_ML: Record<string, string> = {
-  Thiruvananthapuram: 'തിരുവനന്തപുരം',
-  Kollam: 'കൊല്ലം',
-  Pathanamthitta: 'പത്തനംതിട്ട',
-  Alappuzha: 'ആലപ്പുഴ',
-  Kottayam: 'കോട്ടയം',
-  Idukki: 'ഇടുക്കി',
-  Ernakulam: 'എറണാകുളം',
-  Thrissur: 'തൃശ്ശൂർ',
-  Palakkad: 'പാലക്കാട്',
-  Malappuram: 'മലപ്പുറം',
-  Kozhikode: 'കോഴിക്കോട്',
-  Wayanad: 'വയനാട്',
-  Kannur: 'കണ്ണൂർ',
-  Kasaragod: 'കാസർഗോഡ്',
 };
 
 export function pushLanguage(value: unknown): PushLanguage {

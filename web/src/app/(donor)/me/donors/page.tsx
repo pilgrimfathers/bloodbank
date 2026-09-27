@@ -17,9 +17,9 @@ import { callNotifyApi, mapRequest } from "@/lib/data";
 import {
   BloodMark, Button, ButtonLink, EmptyState, PageHeader, Pill, Segmented, Select, Spinner, Surface,
 } from "@/components/ui";
+import { useI18n } from "@/i18n";
 
 const BLOOD_OPTIONS = BLOOD_TYPES.map(type => ({ value: type, label: type }));
-const DISTRICT_OPTIONS = KERALA_DISTRICTS.map(district => ({ value: district, label: district }));
 
 export default function FindDonorsPage() {
   return (
@@ -34,6 +34,7 @@ export default function FindDonorsPage() {
 function FindDonors() {
   const params = useSearchParams();
   const { profile } = useAuth();
+  const { t, districtName } = useI18n();
 
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [requestId, setRequestId] = useState(params.get("request") ?? "");
@@ -90,20 +91,26 @@ function FindDonors() {
       },
       err => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Could not load donors.");
+        setError(err instanceof Error ? err.message : t("myDonors.couldNotLoad"));
         setResults({ key, donors: [] });
       },
     );
     return () => {
       cancelled = true;
     };
+    // t only changes the fallback error text; don't search again for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bloodType, district, includeCompatible]);
 
   const ask = async (donor: PublicDonor) => {
     if (!request) return;
-    const ok = window.confirm(
-      `Ask ${donor.name}?\n\nThey'll get a notification about ${request.patientName}'s ${request.bloodType} request at ${request.hospital}, and can call ${request.contactNumber} if they can help.`,
-    );
+    const ok = window.confirm(t("myDonors.askConfirm", {
+      name: donor.name,
+      patient: request.patientName,
+      bloodType: request.bloodType,
+      hospital: request.hospital,
+      phone: request.contactNumber,
+    }));
     if (!ok) return;
 
     setAsking(donor.id);
@@ -113,51 +120,63 @@ function FindDonors() {
       const body: AskDonorBody = { donorId: donor.id, requestId: request.id };
       const result = await callNotifyApi<AskDonorResult>(DONOR_ENDPOINTS.ask, body);
       if (result.skipped === "no-device") {
-        setError(`${donor.name} has notifications turned off. Try another donor or ask a volunteer.`);
+        setError(t("myDonors.noDevice", { name: donor.name }));
         return;
       }
       setAsked(prev => new Set(prev).add(`${request.id}_${donor.id}`));
       setNotice(result.skipped === "already-asked"
-        ? `You already sent this request to ${donor.name}.`
-        : `Sent to ${donor.name}. Keep your phone close. You can ask up to ${DAILY_ASK_LIMIT} donors a day.`);
+        ? t("myDonors.alreadyAsked", { name: donor.name })
+        : t("myDonors.sent", { name: donor.name, limit: DAILY_ASK_LIMIT }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not send. Try again in a minute.");
+      setError(err instanceof Error ? err.message : t("myDonors.couldNotSend"));
     } finally {
       setAsking(null);
     }
   };
 
   const compatible = bloodType ? COMPATIBLE_DONORS[bloodType as BloodType] : [];
+  const districtOptions = KERALA_DISTRICTS.map(value => ({ value, label: districtName(value) }));
 
   return (
     <>
       <PageHeader
-        back={{ href: "/me", label: "My donor page" }}
-        title="Find donors"
-        subtitle="Donors who chose to be listed publicly."
+        back={{ href: "/me", label: t("me.backToPage") }}
+        title={t("publicSite.findDonors")}
+        subtitle={t("myDonors.subtitle")}
       />
 
       <Surface className="space-y-5 p-5">
         {requests.length > 0 ? (
           <Select
-            label="Asking for"
+            label={t("myDonors.askingFor")}
             value={requestId}
             onChange={id => {
               const next = requests.find(r => r.id === id);
               if (next) selectRequest(next);
               else setRequestId("");
             }}
-            placeholder="Just browsing"
-            options={requests.map(r => ({ value: r.id, label: `${r.bloodType} for ${r.patientName} at ${r.hospital}` }))}
+            placeholder={t("myDonors.justBrowsing")}
+            options={requests.map(r => ({
+              value: r.id,
+              label: t("myDonors.requestOption", { bloodType: r.bloodType, patient: r.patientName, hospital: r.hospital }),
+            }))}
           />
         ) : (
           <p className="text-sm text-ink-muted">
-            To ask donors whose number is hidden, <Link href="/me/request" className="font-medium text-blood hover:underline">post a request</Link> first.
+            {t("myDonors.postFirstBefore")}
+            <Link href="/me/request" className="font-medium text-blood hover:underline">{t("myDonors.postFirstLink")}</Link>
+            {t("myDonors.postFirstAfter")}
           </p>
         )}
-        <Segmented label="Blood group needed" options={BLOOD_OPTIONS} value={bloodType} onChange={setBloodType} />
+        <Segmented label={t("myDonors.bloodGroup")} options={BLOOD_OPTIONS} value={bloodType} onChange={setBloodType} />
         <div className="grid gap-5 sm:grid-cols-2">
-          <Select label="District" value={district} onChange={setDistrict} placeholder="All Kerala" options={DISTRICT_OPTIONS} />
+          <Select
+            label={t("myDonors.district")}
+            value={district}
+            onChange={setDistrict}
+            placeholder={t("myDonors.allKerala")}
+            options={districtOptions}
+          />
           {compatible.length > 1 && (
             <label className="flex items-start gap-3 self-end pb-2">
               <input
@@ -167,8 +186,10 @@ function FindDonors() {
                 className="mt-1 size-4 accent-[var(--color-leaf)]"
               />
               <span>
-                <span className="block font-medium">Include compatible donors</span>
-                <span className="block text-sm text-ink-muted">{compatible.join(", ")} can give to {bloodType}</span>
+                <span className="block font-medium">{t("myDonors.includeCompatible")}</span>
+                <span className="block text-sm text-ink-muted">
+                  {t("myDonors.canGiveTo", { groups: compatible.join(", "), bloodType })}
+                </span>
               </span>
             </label>
           )}
@@ -180,19 +201,19 @@ function FindDonors() {
         {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
 
         {!bloodType ? (
-          <EmptyState icon={Droplet} title="Choose a blood group" message="Pick the blood group the patient needs." />
+          <EmptyState icon={Droplet} title={t("myDonors.chooseGroup.title")} message={t("myDonors.chooseGroup.message")} />
         ) : donors === null ? (
-          <Spinner label="Finding donors" />
+          <Spinner label={t("myDonors.finding")} />
         ) : donors.length === 0 ? (
           <EmptyState
             icon={SearchX}
-            title="No public donors found"
-            message="Try all of Kerala. Volunteers can also reach donors who keep their profile private."
-            action={!request && <ButtonLink href="/me/request" variant="secondary">Request blood</ButtonLink>}
+            title={t("myDonors.empty.title")}
+            message={t("myDonors.empty.message")}
+            action={!request && <ButtonLink href="/me/request" variant="secondary">{t("publicSite.requestBlood")}</ButtonLink>}
           />
         ) : (
           <>
-            <p className="text-sm text-ink-muted">{donors.length === 1 ? "1 donor" : `${donors.length} donors`}</p>
+            <p className="text-sm text-ink-muted">{donors.length === 1 ? t("myDonors.oneDonor") : t("myDonors.donors", { count: donors.length })}</p>
             <Surface>
               <ul className="divide-y divide-line">
                 {donors.map(donor => (
@@ -221,7 +242,8 @@ function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
   asked: boolean;
   onAsk: () => void;
 }) {
-  const place = [donor.area, donor.district].filter(Boolean).join(", ") || "Kerala";
+  const { t, districtName } = useI18n();
+  const place = [donor.area, districtName(donor.district)].filter(Boolean).join(", ") || t("common.kerala");
   const phone = donor.phoneNumber?.replace(/\D/g, "").slice(-10);
 
   return (
@@ -231,8 +253,10 @@ function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
         <p className="font-semibold">{donor.name}</p>
         <p className="text-sm text-ink-muted">{place}</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          {donor.eligible ? <Pill tone="leaf">Can donate</Pill> : <Pill tone="turmeric">{donor.daysRemaining} days left</Pill>}
-          {donor.verified && <Pill tone="kasavu">Verified</Pill>}
+          {donor.eligible
+            ? <Pill tone="leaf">{t("eligibility.canDonate")}</Pill>
+            : <Pill tone="turmeric">{t("eligibility.daysLeft", { count: donor.daysRemaining })}</Pill>}
+          {donor.verified && <Pill tone="kasavu">{t("myDonors.verified")}</Pill>}
         </div>
       </div>
       {donor.eligible && (
@@ -250,7 +274,7 @@ function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
                 href={`https://wa.me/91${phone}`}
                 target="_blank"
                 rel="noreferrer"
-                aria-label={`WhatsApp ${donor.name}`}
+                aria-label={t("myDonors.whatsapp", { name: donor.name })}
                 className="inline-flex h-10 items-center rounded-lg border-[1.5px] border-line bg-surface px-3 text-leaf hover:border-ink-faint"
               >
                 <MessageCircle className="size-4" />
@@ -262,10 +286,10 @@ function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
               icon={asked ? Check : BellRing}
               loading={asking}
               disabled={asked || !canAsk}
-              title={canAsk ? undefined : "Post a request first"}
+              title={canAsk ? undefined : t("myDonors.postFirst")}
               onClick={onAsk}
             >
-              {asked ? "Asked" : "Ask to donate"}
+              {asked ? t("myDonors.asked") : t("myDonors.ask")}
             </Button>
           )}
         </div>

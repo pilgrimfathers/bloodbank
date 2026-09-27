@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from './define';
 
 // Words used across many screens, plus shared labels (dates, districts,
 // eligibility, roles, visibility). Screen-specific text lives in its own file.
@@ -130,7 +130,7 @@ export const common = defineStrings(
     'request.oneUnitFor': '1 യൂണിറ്റ് · രോഗി: {patient}',
     'donation.hospitalNotRecorded': 'ആശുപത്രി രേഖപ്പെടുത്തിയിട്ടില്ല',
     'donation.loggedBy': 'രേഖപ്പെടുത്തിയത്: {name}',
-    'donation.deleteLabel': '{date}-ലെ രക്തദാനം ഡിലീറ്റ് ചെയ്യുക',
+    'donation.deleteLabel': '{date} തീയതിയിലെ രക്തദാനം ഡിലീറ്റ് ചെയ്യുക',
 
     'language.title': 'ഭാഷ തിരഞ്ഞെടുക്കുക',
     'language.subtitle': 'പ്രൊഫൈലിൽ എപ്പോൾ വേണമെങ്കിലും മാറ്റാം.',

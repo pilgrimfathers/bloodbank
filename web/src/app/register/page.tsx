@@ -12,13 +12,14 @@ import { useAuth } from "@/lib/auth";
 import { logDonation } from "@/lib/data";
 import { DonorForm, DonorFormError, type DonorFormValues } from "@/components/donor-form";
 import { Button, Field } from "@/components/ui";
+import { LanguageSwitch, useI18n, type StringKey } from "@/i18n";
 
-const ERRORS: Record<string, string> = {
-  "auth/email-already-in-use": "This email is already registered. Log in instead.",
-  "auth/invalid-email": "That email address is not valid.",
-  "auth/weak-password": "Password is too weak. Use at least 6 characters.",
-  "auth/network-request-failed": "No internet connection. Check your network and try again.",
-  "auth/too-many-requests": "Too many attempts. Wait a few minutes and try again.",
+const ERRORS: Record<string, StringKey> = {
+  "auth/email-already-in-use": "register.error.emailInUse",
+  "auth/invalid-email": "login.error.invalidEmail",
+  "auth/weak-password": "register.error.weakPassword",
+  "auth/network-request-failed": "login.error.network",
+  "auth/too-many-requests": "login.error.tooManyRequests",
 };
 
 type Step = "account" | "details";
@@ -26,6 +27,7 @@ type Step = "account" | "details";
 export default function RegisterPage() {
   const router = useRouter();
   const { authUser, loading } = useAuth();
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>("account");
   const [account, setAccount] = useState({ email: "", password: "", confirmPassword: "" });
   const [error, setError] = useState<string | null>(null);
@@ -40,11 +42,11 @@ export default function RegisterPage() {
   const handleNext = (event: FormEvent) => {
     event.preventDefault();
     if (account.password.length < 6) {
-      setError("Use at least 6 characters for your password.");
+      setError(t("register.passwordShort"));
       return;
     }
     if (account.password !== account.confirmPassword) {
-      setError("Passwords do not match. Type the same password in both fields.");
+      setError(t("register.passwordMismatch"));
       return;
     }
     setError(null);
@@ -89,11 +91,11 @@ export default function RegisterPage() {
       const code = (err as { code?: string }).code ?? "";
       if (code === "auth/email-already-in-use" || code === "auth/invalid-email" || code === "auth/weak-password") {
         setStep("account");
-        setError(ERRORS[code]);
+        setError(t(ERRORS[code]));
         return;
       }
       console.error("Registration error:", err);
-      throw new DonorFormError(ERRORS[code] ?? "Could not create your account. Check your connection and try again.");
+      throw new DonorFormError(t(ERRORS[code] ?? "register.error.failed"));
     }
   };
 
@@ -106,24 +108,26 @@ export default function RegisterPage() {
         </Link>
         <div>
           <h1 className="max-w-md text-4xl leading-tight font-bold">
-            One donation can keep three people alive.
+            {t("register.heroTitle")}
           </h1>
           <p className="mt-3 max-w-md text-white/80">
-            Register once. When someone near you needs your blood group, a volunteer will call you.
-            We keep track of your six-month gap between donations so you are only asked when you can give.
+            {t("register.heroText")}
           </p>
         </div>
-        <p className="text-sm text-white/60">Run by volunteers across all 14 districts of Kerala.</p>
+        <p className="text-sm text-white/60">{t("register.heroFooter")}</p>
       </section>
 
       <section className="flex justify-center p-6 lg:items-center">
         <div className="w-full max-w-lg py-6">
-          <Link href="/" className="mb-8 flex items-center gap-2 text-lg font-semibold text-blood lg:hidden">
-            <Droplet className="size-6 fill-blood" />
-            Blood Bank Kerala
-          </Link>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+            <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-blood lg:invisible">
+              <Droplet className="size-6 fill-blood" />
+              Blood Bank Kerala
+            </Link>
+            <LanguageSwitch />
+          </div>
 
-          <p className="text-sm font-medium text-ink-muted">Step {step === "account" ? 1 : 2} of 2</p>
+          <p className="text-sm font-medium text-ink-muted">{t("register.step", { step: step === "account" ? 1 : 2 })}</p>
           <div className="mt-2 mb-6 flex gap-2" aria-hidden>
             <span className="h-1.5 flex-1 rounded-full bg-blood" />
             <span className={`h-1.5 flex-1 rounded-full ${step === "details" ? "bg-blood" : "bg-line"}`} />
@@ -132,11 +136,11 @@ export default function RegisterPage() {
           {step === "account" ? (
             <form onSubmit={handleNext} className="space-y-5">
               <div>
-                <h2 className="text-3xl font-bold tracking-tight">Register as a donor</h2>
-                <p className="mt-1 text-ink-muted">Use the same email and password in the app and on this site.</p>
+                <h2 className="text-3xl font-bold tracking-tight">{t("publicSite.registerAsDonor")}</h2>
+                <p className="mt-1 text-ink-muted">{t("register.subtitle")}</p>
               </div>
               <Field
-                label="Email"
+                label={t("publicSite.email")}
                 type="email"
                 autoComplete="email"
                 required
@@ -144,16 +148,16 @@ export default function RegisterPage() {
                 onChange={e => setAccount({ ...account, email: e.target.value })}
               />
               <Field
-                label="Password"
+                label={t("publicSite.password")}
                 type="password"
                 autoComplete="new-password"
                 required
-                hint="At least 6 characters"
+                hint={t("register.passwordHint")}
                 value={account.password}
                 onChange={e => setAccount({ ...account, password: e.target.value })}
               />
               <Field
-                label="Confirm password"
+                label={t("register.confirmPassword")}
                 type="password"
                 autoComplete="new-password"
                 required
@@ -161,29 +165,28 @@ export default function RegisterPage() {
                 onChange={e => setAccount({ ...account, confirmPassword: e.target.value })}
               />
               {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
-              <Button type="submit" className="w-full">Continue</Button>
+              <Button type="submit" className="w-full">{t("register.continue")}</Button>
               <p className="text-center text-sm text-ink-muted">
-                Already registered?{" "}
-                <Link href="/login" className="font-semibold text-blood hover:underline">Log in</Link>
+                {t("register.alreadyRegistered")}{" "}
+                <Link href="/login" className="font-semibold text-blood hover:underline">{t("publicSite.logIn")}</Link>
               </p>
             </form>
           ) : (
             <div className="space-y-5">
               <div>
-                <h2 className="text-3xl font-bold tracking-tight">Donor details</h2>
-                <p className="mt-1 text-ink-muted">
-                  Volunteers use these details to reach you when someone nearby needs your blood group.
-                </p>
+                <h2 className="text-3xl font-bold tracking-tight">{t("register.detailsTitle")}</h2>
+                <p className="mt-1 text-ink-muted">{t("register.detailsIntro")}</p>
               </div>
               <DonorForm
                 showLastDonation
-                submitLabel="Create account"
+                submitLabel={t("register.submit")}
                 onSubmit={handleRegister}
               />
-              <Button variant="quiet" onClick={() => setStep("account")}>Back to account</Button>
+              <Button variant="quiet" onClick={() => setStep("account")}>{t("register.backToAccount")}</Button>
               <p className="text-sm text-ink-muted">
-                By registering you agree to our{" "}
-                <Link href="/privacy" className="text-blood hover:underline">privacy policy</Link>.
+                {t("register.agreeBefore")}
+                <Link href="/privacy" className="text-blood hover:underline">{t("register.agreeLink")}</Link>
+                {t("register.agreeAfter")}
               </p>
             </div>
           )}

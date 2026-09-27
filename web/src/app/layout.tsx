@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Anek_Malayalam } from "next/font/google";
 import { AuthProvider } from "@/lib/auth";
+import { LanguageProvider } from "@/i18n";
 import "./globals.css";
 
 // One family for the whole console; the Malayalam cut also covers Latin.
@@ -44,7 +45,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${anek.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <LanguageProvider>{children}</LanguageProvider>
+        </AuthProvider>
       </body>
     </html>
   );

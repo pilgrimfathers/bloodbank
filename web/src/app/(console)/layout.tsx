@@ -9,18 +9,20 @@ import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { isVolunteer } from "@/lib/data";
 import { Spinner, cx } from "@/components/ui";
+import { LanguageSwitch, useI18n, type StringKey } from "@/i18n";
 
-const NAV: { href: string; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
-  { href: "/dashboard", label: "Overview", icon: LayoutGrid },
-  { href: "/requests", label: "Requests", icon: HandHeart },
-  { href: "/donors", label: "Donors", icon: Users },
-  { href: "/notify", label: "Notify", icon: BellRing, adminOnly: true },
+const NAV: { href: string; label: StringKey; icon: LucideIcon; adminOnly?: boolean }[] = [
+  { href: "/dashboard", label: "console.nav.overview", icon: LayoutGrid },
+  { href: "/requests", label: "console.nav.requests", icon: HandHeart },
+  { href: "/donors", label: "console.nav.donors", icon: Users },
+  { href: "/notify", label: "console.nav.notify", icon: BellRing, adminOnly: true },
 ];
 
 export default function ConsoleLayout({ children }: LayoutProps<"/">) {
   const router = useRouter();
   const pathname = usePathname();
   const { authUser, profile, loading } = useAuth();
+  const { t, districtName } = useI18n();
   // Remember which page the mobile menu was opened on, so navigating closes it.
   const [menuOpenOn, setMenuOpenOn] = useState<string | null>(null);
   const menuOpen = menuOpenOn === pathname;
@@ -38,8 +40,8 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
 
   const isActive = (href: string) => pathname.startsWith(href);
   const scope = profile!.role === "admin" || !profile!.volunteerDistricts?.length
-    ? "All of Kerala"
-    : profile!.volunteerDistricts.join(", ");
+    ? t("console.scopeAllKerala")
+    : profile!.volunteerDistricts.map(districtName).join(", ");
 
   const nav = (
     <nav className="flex flex-col gap-1">
@@ -54,7 +56,7 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
           )}
         >
           <Icon className="size-5" />
-          {label}
+          {t(label)}
         </Link>
       ))}
     </nav>
@@ -64,14 +66,15 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
     <div className="border-t border-white/15 pt-4">
       <p className="truncate font-semibold text-white">{profile!.name}</p>
       <p className="truncate text-sm text-white/70">
-        {profile!.role === "admin" ? "Admin" : "Volunteer"}, {scope}
+        {t(profile!.role === "admin" ? "role.admin" : "role.volunteer")}, {scope}
       </p>
+      <LanguageSwitch tone="dark" className="mt-3" />
       <button
         onClick={() => signOut(auth)}
         className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white"
       >
         <LogOut className="size-4" />
-        Log out
+        {t("console.logOut")}
       </button>
     </div>
   );
@@ -98,7 +101,7 @@ export default function ConsoleLayout({ children }: LayoutProps<"/">) {
         </Link>
         <button
           onClick={() => setMenuOpenOn(menuOpen ? null : pathname)}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-label={t(menuOpen ? "console.closeMenu" : "console.openMenu")}
           aria-expanded={menuOpen}
           className="rounded-lg p-2 text-white hover:bg-white/10"
         >

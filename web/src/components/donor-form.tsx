@@ -6,6 +6,7 @@ import { BLOOD_TYPES, KERALA_DISTRICTS } from "@shared/constants";
 import { normalizePhone } from "@shared/format";
 import type { UserProfile } from "@shared/types";
 import { firestore } from "@/lib/firebase";
+import { useI18n } from "@/i18n";
 import { Button, Field, Segmented, Select, TextArea } from "./ui";
 
 export type DonorFormValues = {
@@ -48,9 +49,11 @@ export function toDateValue(date: Date = new Date()): string {
 }
 
 const BLOOD_OPTIONS = BLOOD_TYPES.map(type => ({ value: type, label: type }));
-const DISTRICT_OPTIONS = KERALA_DISTRICTS.map(district => ({ value: district, label: district }));
 
 export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, onSubmit, onCancel }: Props) {
+  const { t, districtName } = useI18n();
+  // Values stay in English; only the label follows the language.
+  const districtOptions = KERALA_DISTRICTS.map(district => ({ value: district, label: districtName(district) }));
   const [form, setForm] = useState({
     name: initial?.name ?? "",
     phoneNumber: initial?.phoneNumber ?? "",
@@ -72,16 +75,16 @@ export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, o
     setError(null);
 
     const phoneNumber = normalizePhone(form.phoneNumber);
-    if (!form.name.trim()) return setError("Enter the donor's full name.");
-    if (!phoneNumber) return setError("Enter a 10-digit Indian mobile number.");
-    if (!form.bloodType) return setError("Choose a blood type.");
-    if (!form.district) return setError("Choose a district.");
+    if (!form.name.trim()) return setError(t("donorForm.enterName"));
+    if (!phoneNumber) return setError(t("donorForm.enterPhone"));
+    if (!form.bloodType) return setError(t("donorForm.chooseBloodType"));
+    if (!form.district) return setError(t("donorForm.chooseDistrict"));
 
     let lastDonation: Date | null = null;
     if (showLastDonation && form.lastDonation) {
       lastDonation = fromDateInput(form.lastDonation);
-      if (!lastDonation) return setError("Enter a valid last donation date.");
-      if (lastDonation > new Date()) return setError("Last donation date cannot be in the future.");
+      if (!lastDonation) return setError(t("donorForm.lastDateInvalid"));
+      if (lastDonation > new Date()) return setError(t("donorForm.lastDateFuture"));
     }
 
     setSubmitting(true);
@@ -101,7 +104,7 @@ export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, o
         setError(err.message);
       } else {
         console.error("Error saving donor:", err);
-        setError("Could not save donor. Check your connection and try again.");
+        setError(t("donorForm.couldNotSave"));
       }
     } finally {
       setSubmitting(false);
@@ -111,57 +114,57 @@ export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, o
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Full name" value={form.name} onChange={e => set({ name: e.target.value })} required />
+        <Field label={t("donorForm.fullName")} value={form.name} onChange={e => set({ name: e.target.value })} required />
         <Field
-          label="Phone number"
+          label={t("donorForm.phone")}
           type="tel"
           inputMode="tel"
-          placeholder="10-digit mobile number"
+          placeholder={t("donorForm.phonePlaceholder")}
           value={form.phoneNumber}
           onChange={e => set({ phoneNumber: e.target.value })}
           required
         />
       </div>
-      <Segmented label="Blood type" options={BLOOD_OPTIONS} value={form.bloodType} onChange={bloodType => set({ bloodType })} />
+      <Segmented label={t("donors.bloodType")} options={BLOOD_OPTIONS} value={form.bloodType} onChange={bloodType => set({ bloodType })} />
       <div className="grid gap-5 sm:grid-cols-2">
         <Select
-          label="District"
-          options={DISTRICT_OPTIONS}
+          label={t("donors.district")}
+          options={districtOptions}
           value={form.district}
           onChange={district => set({ district })}
-          placeholder="Choose a district"
+          placeholder={t("donorForm.districtPlaceholder")}
         />
         <Field
-          label="Area or town (optional)"
-          placeholder="e.g. Kanhangad, Edappally"
+          label={t("donorForm.area")}
+          placeholder={t("donorForm.areaPlaceholder")}
           value={form.area}
           onChange={e => set({ area: e.target.value })}
         />
       </div>
-      <TextArea label="Address (optional)" value={form.address} onChange={e => set({ address: e.target.value })} rows={2} />
+      <TextArea label={t("donorForm.address")} value={form.address} onChange={e => set({ address: e.target.value })} rows={2} />
       {showLastDonation && (
         <Field
-          label="Last donation date (optional)"
+          label={t("donorForm.lastDonation")}
           type="date"
           max={toDateValue()}
           value={form.lastDonation}
           onChange={e => set({ lastDonation: e.target.value })}
-          hint="Leave empty if they have never donated"
+          hint={t("donorForm.lastDonationHint")}
           className="sm:max-w-xs"
         />
       )}
       <TextArea
-        label="Medical conditions (optional)"
+        label={t("donorForm.medical")}
         value={form.medicalConditions}
         onChange={e => set({ medicalConditions: e.target.value })}
         rows={2}
       />
       {showNotes && (
         <TextArea
-          label="Volunteer notes (optional)"
+          label={t("donorForm.notes")}
           value={form.notes}
           onChange={e => set({ notes: e.target.value })}
-          hint="Not shown to the donor in the app"
+          hint={t("donorForm.notesHint")}
           rows={2}
         />
       )}
@@ -173,8 +176,8 @@ export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, o
           className="mt-1 size-4 accent-[var(--color-leaf)]"
         />
         <span>
-          <span className="block font-medium">Available to donate</span>
-          <span className="block text-sm text-ink-muted">Turn off to stop volunteers calling for requests</span>
+          <span className="block font-medium">{t("donorForm.available")}</span>
+          <span className="block text-sm text-ink-muted">{t("donorForm.availableHint")}</span>
         </span>
       </label>
 
@@ -182,7 +185,7 @@ export function DonorForm({ initial, showLastDonation, showNotes, submitLabel, o
 
       <div className="flex flex-wrap gap-2">
         <Button type="submit" loading={submitting}>{submitLabel}</Button>
-        {onCancel && <Button type="button" variant="quiet" onClick={onCancel}>Cancel</Button>}
+        {onCancel && <Button type="button" variant="quiet" onClick={onCancel}>{t("common.cancel")}</Button>}
       </div>
     </form>
   );

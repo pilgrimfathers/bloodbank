@@ -1,10 +1,15 @@
+"use client";
+
 import { getEligibility } from "@shared/eligibility";
-import { formatDate } from "@shared/format";
+import { useI18n } from "@/i18n";
 import { Pill } from "./ui";
 
 export function EligibilityPill({ lastDonation }: { lastDonation?: Date | null }) {
+  const { t } = useI18n();
   const { eligible, daysRemaining } = getEligibility(lastDonation);
-  return eligible ? <Pill tone="leaf">Can donate</Pill> : <Pill tone="turmeric">{daysRemaining} days left</Pill>;
+  return eligible
+    ? <Pill tone="leaf">{t("eligibility.canDonate")}</Pill>
+    : <Pill tone="turmeric">{t("eligibility.daysLeft", { count: daysRemaining })}</Pill>;
 }
 
 const SIZE = 120;
@@ -18,6 +23,7 @@ export function DonorRing({ bloodType, lastDonation, donationCount = 0 }: {
   lastDonation?: Date | null;
   donationCount?: number;
 }) {
+  const { t, formatDate } = useI18n();
   const { eligible, eligibleFrom, daysRemaining } = getEligibility(lastDonation);
   // Share of the cool-off already served, from the day counts getEligibility computes.
   const totalDays = lastDonation && eligibleFrom
@@ -50,15 +56,15 @@ export function DonorRing({ bloodType, lastDonation, donationCount = 0 }: {
       </div>
       <div>
         <p className="text-lg font-semibold" style={{ color: ring }}>
-          {eligible ? "Ready to donate" : `${daysRemaining} days to go`}
+          {eligible ? t("eligibility.ready") : t("eligibility.daysToGo", { count: daysRemaining })}
         </p>
         <p className="text-sm text-ink-muted">
           {eligible
-            ? lastDonation ? `Last gave on ${formatDate(lastDonation)}` : "No donations recorded yet"
-            : `Can give again on ${formatDate(eligibleFrom)}`}
+            ? lastDonation ? t("eligibility.lastGave", { date: formatDate(lastDonation) }) : t("eligibility.noDonations")
+            : t("eligibilityUi.canGiveAgain", { date: formatDate(eligibleFrom) })}
         </p>
         <p className="mt-3">
-          <Pill tone="kasavu">{donationCount === 1 ? "1 donation" : `${donationCount} donations`}</Pill>
+          <Pill tone="kasavu">{donationCount === 1 ? t("eligibility.oneDonation") : t("eligibility.donations", { count: donationCount })}</Pill>
         </p>
       </div>
     </div>

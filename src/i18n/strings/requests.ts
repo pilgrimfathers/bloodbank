@@ -1,4 +1,4 @@
-import { defineStrings } from '../define';
+import { defineStrings } from '@/shared/i18n/define';
 
 // Posting a request, a request's detail page, and finding public donors.
 export const requests = defineStrings(
@@ -187,7 +187,7 @@ export const requests = defineStrings(
     'requestDetail.notify.summary': '{count} ദാതാക്കൾക്ക് അയച്ചു, {time}',
     'requestDetail.notify.summaryBy': '{count} ദാതാക്കൾക്ക് അയച്ചു, {time} · അയച്ചത്: {name}',
     'requestDetail.notify.notSent': 'ഇതുവരെ ദാതാക്കൾക്ക് അയച്ചിട്ടില്ല',
-    'requestDetail.notify.includeCoolingOff': 'വിശ്രമ കാലയളവിലുള്ള ദാതാക്കളെയും ഉൾപ്പെടുത്തുക',
+    'requestDetail.notify.includeCoolingOff': 'ഇടവേളയിലുള്ള ദാതാക്കളെയും ഉൾപ്പെടുത്തുക',
     'requestDetail.notify.districtOnly': '{district} ജില്ലയിലെ ദാതാക്കൾ മാത്രം',
     'requestDetail.notify.button': '{bloodType} ദാതാക്കളെ അറിയിക്കുക',
 

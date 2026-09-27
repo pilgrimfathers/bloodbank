@@ -9,15 +9,17 @@ import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { callNotifyApi } from "@/lib/data";
 import { Button, Field, Surface } from "@/components/ui";
+import { useI18n, type StringKey } from "@/i18n";
 
-const LOGIN_ERRORS: Record<string, string> = {
-  "auth/invalid-credential": "Email or password is wrong.",
-  "auth/invalid-email": "That email address is not valid.",
-  "auth/too-many-requests": "Too many attempts. Wait a few minutes and try again.",
+const LOGIN_ERRORS: Record<string, StringKey> = {
+  "auth/invalid-credential": "login.error.invalidCredential",
+  "auth/invalid-email": "login.error.invalidEmail",
+  "auth/too-many-requests": "login.error.tooManyRequests",
 };
 
 export default function DeleteAccountPage() {
   const { authUser, profile, loading } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,14 +34,14 @@ export default function DeleteAccountPage() {
       await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (err) {
       const code = (err as { code?: string }).code ?? "";
-      setError(LOGIN_ERRORS[code] ?? "Could not log in. Check your connection and try again.");
+      setError(t(LOGIN_ERRORS[code] ?? "login.error.failed"));
     } finally {
       setBusy(false);
     }
   };
 
   const deleteAccount = async () => {
-    if (!window.confirm("Delete your account permanently? Your profile, donation history and requests will be erased. This cannot be undone.")) return;
+    if (!window.confirm(t("deleteAccount.confirm"))) return;
     setError(null);
     setBusy(true);
     try {
@@ -56,50 +58,48 @@ export default function DeleteAccountPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-4xl font-bold tracking-tight">Delete your account</h1>
-        <p className="mt-2 leading-relaxed text-ink-muted">
-          Deleting your account permanently erases your profile, contact details, blood group, donation history,
-          the blood requests you posted and your notification settings. You can also do this in the app under
-          Profile.
-        </p>
+        <h1 className="text-4xl font-bold tracking-tight">{t("deleteAccount.title")}</h1>
+        <p className="mt-2 leading-relaxed text-ink-muted">{t("deleteAccount.intro")}</p>
       </header>
 
       <Surface className="max-w-md p-6">
         {done ? (
           <div className="space-y-2">
             <CheckCircle2 className="size-8 text-leaf" />
-            <p className="text-lg font-semibold">Your account has been deleted</p>
-            <p className="text-ink-muted">Thank you for being a donor. You can sign up again at any time.</p>
+            <p className="text-lg font-semibold">{t("deleteAccount.done.title")}</p>
+            <p className="text-ink-muted">{t("deleteAccount.done.message")}</p>
           </div>
         ) : loading ? (
-          <p className="text-ink-muted">Loading…</p>
+          <p className="text-ink-muted">{t("publicSite.loadingEllipsis")}</p>
         ) : authUser ? (
           <div className="space-y-4">
             <p>
-              Logged in as <span className="font-semibold">{profile?.name ?? authUser.email}</span>
+              {t("deleteAccount.loggedInAs")} <span className="font-semibold">{profile?.name ?? authUser.email}</span>
               {authUser.email && <span className="text-ink-muted"> ({authUser.email})</span>}.
             </p>
             <Button variant="danger" icon={Trash2} loading={busy} onClick={deleteAccount} className="w-full">
-              Delete my account
+              {t("me.deleteMyAccount")}
             </Button>
             <button onClick={() => signOut(auth)} className="text-sm text-ink-muted hover:text-ink">
-              Not you? Log out
+              {t("deleteAccount.notYou")}
             </button>
           </div>
         ) : (
           <form onSubmit={logIn} className="space-y-4">
-            <p className="text-ink-muted">Log in with the email and password you use in the app.</p>
-            <Field label="Email" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
-            <Field label="Password" type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
-            <Button type="submit" loading={busy} className="w-full">Log in to continue</Button>
+            <p className="text-ink-muted">{t("deleteAccount.loginIntro")}</p>
+            <Field label={t("publicSite.email")} type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} />
+            <Field label={t("publicSite.password")} type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} />
+            <Button type="submit" loading={busy} className="w-full">{t("deleteAccount.loginToContinue")}</Button>
           </form>
         )}
         {error && <p role="alert" className="mt-4 rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
       </Surface>
 
       <p className="text-sm text-ink-muted">
-        Donor added by a volunteer and don&apos;t use the app? Email {CONTACT_EMAIL} and we will delete your
-        details. Read the <Link href="/privacy" className="text-blood hover:underline">privacy policy</Link>.
+        {t("deleteAccount.noApp", { email: CONTACT_EMAIL })}{" "}
+        {t("deleteAccount.readBefore")}
+        <Link href="/privacy" className="text-blood hover:underline">{t("deleteAccount.readLink")}</Link>
+        {t("deleteAccount.readAfter")}
       </p>
     </div>
   );

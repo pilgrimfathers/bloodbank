@@ -1,4 +1,4 @@
-import { CONTACT_EMAIL, DELETE_ACCOUNT_URL, PolicySection } from '@/shared/privacy';
+import { CONTACT_EMAIL, DELETE_ACCOUNT_URL, PolicySection } from '../privacy';
 
 // Malayalam translation of PRIVACY_POLICY in shared/privacy.ts, same sections
 // and order. Update this whenever the English policy changes. If the two ever

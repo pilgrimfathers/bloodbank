@@ -3,15 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
-import { Language } from './define';
-import { common, DISTRICTS_ML, MONTHS } from './strings/common';
+import { Language } from '@/shared/i18n/define';
+import { common, DISTRICTS_ML, MONTHS } from '@/shared/i18n/common';
 import { donors } from './strings/donors';
 import { main } from './strings/main';
 import { profile as profileStrings } from './strings/profile';
 import { requests } from './strings/requests';
 import { tour } from './strings/tour';
 
-export type { Language } from './define';
+export type { Language } from '@/shared/i18n/define';
 
 // Every strings file is merged here. Keys are namespaced ("home.title"), so
 // files never collide.

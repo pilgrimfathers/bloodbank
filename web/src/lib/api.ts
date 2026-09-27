@@ -36,6 +36,8 @@ export function logNotification(entry: {
   type: "request-created" | "request-donors" | "broadcast" | "donor-ask";
   title: string;
   body: string;
+  // Malayalam wording, when it differs from the English title and body.
+  ml?: { title: string; body: string };
   requestId?: string;
   filters?: Record<string, unknown>;
   sent: number;

@@ -8,21 +8,27 @@ import { useAuth } from "@/lib/auth";
 import { coversDistrict, logDonation } from "@/lib/data";
 import { DonorForm, DonorFormError, findDuplicateDonor, type DonorFormValues } from "@/components/donor-form";
 import { PageHeader, Surface } from "@/components/ui";
+import { useI18n } from "@/i18n";
 
 // Volunteers add donors who don't use the app.
 export default function NewDonorPage() {
   const router = useRouter();
   const { profile: me } = useAuth();
+  const { t, districtName } = useI18n();
   if (!me) return null;
 
   const handleSubmit = async (values: DonorFormValues) => {
     if (!coversDistrict(me, values.district)) {
-      throw new DonorFormError(`You don't manage donors in ${values.district}.`);
+      throw new DonorFormError(t("donorForm.notYourDistrict", { district: districtName(values.district) }));
     }
 
     const duplicate = await findDuplicateDonor(values);
     if (duplicate && !window.confirm(
-      `${duplicate.name ?? "Another donor"} in ${values.district} already uses ${values.phoneNumber}. Save anyway?`,
+      t("donorForm.duplicate", {
+        name: duplicate.name ?? t("donorForm.anotherDonor"),
+        district: districtName(values.district),
+        phone: values.phoneNumber,
+      }),
     )) return;
 
     const { lastDonation, ...details } = values;
@@ -42,6 +48,7 @@ export default function NewDonorPage() {
     if (lastDonation) {
       await logDonation(
         { ...newDonor, id: ref.id } as UserProfile,
+        // Saved with the donation record, so it stays in English.
         { date: lastDonation, hospital: "Reported when added" },
         { id: me.id, name: me.name },
       );
@@ -52,16 +59,16 @@ export default function NewDonorPage() {
   return (
     <>
       <PageHeader
-        back={{ href: "/donors", label: "All donors" }}
-        title="Add donor"
-        subtitle="For donors who don't use the app. People who sign up themselves appear automatically."
+        back={{ href: "/donors", label: t("donors.allDonors") }}
+        title={t("donors.addDonor")}
+        subtitle={t("donorNew.subtitle")}
       />
       <Surface className="max-w-3xl p-6">
         <DonorForm
           initial={{ district: me.volunteerDistricts?.[0] ?? me.district }}
           showLastDonation
           showNotes
-          submitLabel="Add donor"
+          submitLabel={t("donors.addDonor")}
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
         />

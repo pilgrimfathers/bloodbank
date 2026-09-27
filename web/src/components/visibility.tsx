@@ -6,11 +6,13 @@ import { LoaderCircle } from "lucide-react";
 import { VISIBILITY_OPTIONS } from "@shared/donors";
 import type { ProfileVisibility, UserProfile } from "@shared/types";
 import { firestore } from "@/lib/firebase";
+import { useI18n, type StringKey } from "@/i18n";
 import { Surface, cx } from "./ui";
 
 // Lets donors choose who outside the volunteer team can find them. Saves on
 // click; the live profile in useAuth picks up the change.
 export function VisibilityPicker({ profile }: { profile: UserProfile }) {
+  const { t } = useI18n();
   const [saving, setSaving] = useState<ProfileVisibility | null>(null);
   const [error, setError] = useState<string | null>(null);
   const current = profile.visibility ?? "private";
@@ -23,7 +25,7 @@ export function VisibilityPicker({ profile }: { profile: UserProfile }) {
       await updateDoc(doc(firestore, "users", profile.id), { visibility, updatedAt: new Date() });
     } catch (err) {
       console.error("Error saving visibility:", err);
-      setError("Could not save. Check your connection and try again.");
+      setError(t("visibilityUi.couldNotSave"));
     } finally {
       setSaving(null);
     }
@@ -32,7 +34,7 @@ export function VisibilityPicker({ profile }: { profile: UserProfile }) {
   return (
     <div className="space-y-3">
       <Surface>
-        <div role="radiogroup" aria-label="Who can find you" className="divide-y divide-line">
+        <div role="radiogroup" aria-label={t("visibilityUi.label")} className="divide-y divide-line">
           {VISIBILITY_OPTIONS.map(option => {
             const selected = option.value === current;
             return (
@@ -58,8 +60,8 @@ export function VisibilityPicker({ profile }: { profile: UserProfile }) {
                   </span>
                 )}
                 <span>
-                  <span className="block font-semibold">{option.label}</span>
-                  <span className="block text-sm text-ink-muted">{option.description}</span>
+                  <span className="block font-semibold">{t(`visibility.${option.value}.label` as StringKey)}</span>
+                  <span className="block text-sm text-ink-muted">{t(`visibility.${option.value}.description` as StringKey)}</span>
                 </span>
               </button>
             );

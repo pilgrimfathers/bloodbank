@@ -13,13 +13,14 @@ import { useAuth } from "@/lib/auth";
 import { isVolunteer, mapUser } from "@/lib/data";
 import { EligibilityPill } from "@/components/eligibility";
 import { BloodMark, ButtonLink, EmptyState, PageHeader, Pill, Segmented, Select, Spinner } from "@/components/ui";
+import { useI18n, type StringKey } from "@/i18n";
 
 type EligibilityFilter = "all" | "eligible" | "cooling";
 
-const ELIGIBILITY_OPTIONS: { value: EligibilityFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "eligible", label: "Can donate" },
-  { value: "cooling", label: "Cooling off" },
+const ELIGIBILITY_OPTIONS: { value: EligibilityFilter; label: StringKey }[] = [
+  { value: "all", label: "donors.filter.all" },
+  { value: "eligible", label: "eligibility.canDonate" },
+  { value: "cooling", label: "donors.filter.cooling" },
 ];
 
 const BLOOD_OPTIONS = BLOOD_TYPES.map(type => ({ value: type, label: type }));
@@ -42,6 +43,7 @@ function DonorRegistry() {
   const router = useRouter();
   const params = useSearchParams();
   const { profile } = useAuth();
+  const { t, districtName } = useI18n();
   const requestId = params.get("requestId") ?? "";
   const paramBloodType = params.get("bloodType") ?? "";
   const paramDistrict = params.get("district") ?? "";
@@ -65,7 +67,8 @@ function DonorRegistry() {
   // Results are tagged with the query they answer, so "loading" is derived
   // instead of being reset inside the effect.
   const queryKey = JSON.stringify([effectiveDistrict, bloodType, includeCompatible]);
-  const [result, setResult] = useState<{ key: string; donors: UserProfile[]; error: string | null } | null>(null);
+  // The error is a string key, so it follows a language switch.
+  const [result, setResult] = useState<{ key: string; donors: UserProfile[]; error: StringKey | null } | null>(null);
   const loading = result?.key !== queryKey;
   const donors = useMemo(() => (loading ? [] : result!.donors), [loading, result]);
   const error = loading ? null : result!.error;
@@ -90,7 +93,7 @@ function DonorRegistry() {
       .catch(err => {
         console.error("Error fetching donors:", err);
         if (!cancelled) {
-          setResult({ key: queryKey, donors: [], error: "Could not load donors. Check your connection and try again." });
+          setResult({ key: queryKey, donors: [], error: "donors.couldNotLoad" });
         }
       });
 
@@ -115,8 +118,8 @@ function DonorRegistry() {
   }, [donors, search, eligibility]);
 
   const districtOptions = [
-    ...(allowedDistricts ? [] : [{ value: "", label: "All Kerala" }]),
-    ...(allowedDistricts ?? KERALA_DISTRICTS).map(d => ({ value: d, label: d })),
+    ...(allowedDistricts ? [] : [{ value: "", label: t("donors.allKerala") }]),
+    ...(allowedDistricts ?? KERALA_DISTRICTS).map(d => ({ value: d, label: districtName(d) })),
   ];
 
   const donorHref = (id: string) => (requestId ? `/donors/${id}?requestId=${requestId}` : `/donors/${id}`);
@@ -124,20 +127,22 @@ function DonorRegistry() {
   return (
     <>
       <PageHeader
-        title="Donors"
-        subtitle={allowedDistricts ? `Managing ${allowedDistricts.join(", ")}` : "Managing all of Kerala"}
-        actions={<ButtonLink href="/donors/new" icon={UserPlus}>Add donor</ButtonLink>}
+        title={t("donors.title")}
+        subtitle={allowedDistricts
+          ? t("donors.managing", { districts: allowedDistricts.map(districtName).join(", ") })
+          : t("donors.managingAll")}
+        actions={<ButtonLink href="/donors/new" icon={UserPlus}>{t("donors.addDonor")}</ButtonLink>}
       />
 
       {requestId && (
         <div className="mb-6 flex items-start gap-3 rounded-xl bg-info-tint px-4 py-3 text-info">
           <Info className="mt-0.5 size-5 shrink-0" />
           <p className="flex-1">
-            Finding donors for a {paramBloodType} request. Open a donor to log their donation against it.
+            {t("donors.requestBanner", { bloodType: paramBloodType })}
           </p>
           <button
             onClick={() => router.replace("/donors")}
-            aria-label="Stop finding donors for this request"
+            aria-label={t("donors.stopFinding")}
             className="rounded p-0.5 hover:bg-info/10"
           >
             <X className="size-5" />
@@ -146,31 +151,31 @@ function DonorRegistry() {
       )}
 
       <div className="mb-4 grid gap-4 rounded-xl border border-line bg-surface p-4 md:grid-cols-[1fr_1fr_2fr]">
-        <Select label="District" options={districtOptions} value={effectiveDistrict} onChange={setDistrict} />
+        <Select label={t("donors.district")} options={districtOptions} value={effectiveDistrict} onChange={setDistrict} />
         <Select
-          label="Blood type"
+          label={t("donors.bloodType")}
           options={BLOOD_OPTIONS}
           value={bloodType}
           onChange={setBloodType}
-          placeholder="Any"
+          placeholder={t("donors.any")}
         />
         <label className="block">
-          <span className="mb-1.5 block text-sm font-medium text-ink-muted">Search</span>
+          <span className="mb-1.5 block text-sm font-medium text-ink-muted">{t("common.search")}</span>
           <span className="relative block">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-faint" />
             <input
               type="search"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Name, phone or area"
+              placeholder={t("donors.searchPlaceholder")}
               className="h-11 w-full rounded-lg border-[1.5px] border-line bg-surface pr-3 pl-9 text-[15px] placeholder:text-ink-faint focus:border-blood focus:outline-none"
             />
           </span>
         </label>
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3 md:col-span-3">
           <Segmented
-            label="Eligibility"
-            options={ELIGIBILITY_OPTIONS}
+            label={t("donors.eligibility")}
+            options={ELIGIBILITY_OPTIONS.map(option => ({ value: option.value, label: t(option.label) }))}
             value={eligibility}
             onChange={value => setEligibility(value as EligibilityFilter)}
           />
@@ -182,7 +187,7 @@ function DonorRegistry() {
                 onChange={e => setIncludeCompatible(e.target.checked)}
                 className="size-4 accent-[var(--color-leaf)]"
               />
-              Include compatible donors ({COMPATIBLE_DONORS[bloodType as BloodType].join(", ")})
+              {t("donors.includeCompatible", { groups: COMPATIBLE_DONORS[bloodType as BloodType].join(", ") })}
             </label>
           )}
         </div>
@@ -190,38 +195,40 @@ function DonorRegistry() {
 
       {!loading && !error && (
         <p className="mb-3 text-sm text-ink-muted">
-          Showing {visibleDonors.length} of {donors.length} {donors.length === 1 ? "donor" : "donors"}
+          {donors.length === 1
+            ? t("donors.showingOne", { shown: visibleDonors.length })
+            : t("donors.showing", { shown: visibleDonors.length, total: donors.length })}
         </p>
       )}
 
       {loading ? (
-        <Spinner label="Loading donors" />
+        <Spinner label={t("donors.loading")} />
       ) : error ? (
-        <p role="alert" className="rounded-lg bg-blood-tint px-4 py-3 text-blood">{error}</p>
+        <p role="alert" className="rounded-lg bg-blood-tint px-4 py-3 text-blood">{t(error)}</p>
       ) : visibleDonors.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No donors match these filters"
-          message="Try another district or blood type, or add a donor who doesn't use the app."
-          action={<ButtonLink href="/donors/new" variant="secondary" icon={UserPlus}>Add donor</ButtonLink>}
+          title={t("donors.empty.title")}
+          message={t("donors.empty.message")}
+          action={<ButtonLink href="/donors/new" variant="secondary" icon={UserPlus}>{t("donors.addDonor")}</ButtonLink>}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-surface">
           <table className="w-full min-w-[720px] text-left">
             <thead className="border-b border-line text-sm text-ink-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Blood</th>
-                <th className="px-4 py-3 font-medium">Donor</th>
-                <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Eligibility</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">{t("donors.col.blood")}</th>
+                <th className="px-4 py-3 font-medium">{t("role.donor")}</th>
+                <th className="px-4 py-3 font-medium">{t("donors.col.phone")}</th>
+                <th className="px-4 py-3 font-medium">{t("donors.eligibility")}</th>
+                <th className="px-4 py-3 font-medium">{t("donors.col.status")}</th>
               </tr>
             </thead>
             <tbody>
               {visibleDonors.map(donor => {
                 const eligible = getEligibility(donor.lastDonation).eligible;
                 const active = eligible && donor.isDonor && donor.status !== "inactive";
-                const place = [donor.area, donor.district].filter(Boolean).join(", ") || "No district set";
+                const place = [donor.area, districtName(donor.district)].filter(Boolean).join(", ") || t("donors.noDistrictSet");
                 return (
                   <tr key={donor.id} className="border-b border-line last:border-0 hover:bg-paper/60">
                     <td className="px-4 py-3">
@@ -236,19 +243,19 @@ function DonorRegistry() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       {donor.phoneNumber
                         ? <a href={`tel:${donor.phoneNumber}`} className="hover:text-blood">{donor.phoneNumber}</a>
-                        : <span className="text-ink-faint">No phone number</span>}
+                        : <span className="text-ink-faint">{t("common.noPhone")}</span>}
                     </td>
                     <td className="px-4 py-3">
                       <EligibilityPill lastDonation={donor.lastDonation} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
-                        {donor.role === "volunteer" && <Pill tone="info">Volunteer</Pill>}
-                        {donor.role === "admin" && <Pill tone="info">Admin</Pill>}
-                        {!donor.verified && <Pill tone="muted">Unverified</Pill>}
-                        {!donor.isDonor && <Pill tone="turmeric">Unavailable</Pill>}
-                        {donor.status === "inactive" && <Pill tone="muted">Inactive</Pill>}
-                        {donor.hasAccount === false && <Pill tone="kasavu">No app</Pill>}
+                        {donor.role === "volunteer" && <Pill tone="info">{t("role.volunteer")}</Pill>}
+                        {donor.role === "admin" && <Pill tone="info">{t("role.admin")}</Pill>}
+                        {!donor.verified && <Pill tone="muted">{t("donors.pill.unverified")}</Pill>}
+                        {!donor.isDonor && <Pill tone="turmeric">{t("donors.pill.unavailable")}</Pill>}
+                        {donor.status === "inactive" && <Pill tone="muted">{t("donors.pill.inactive")}</Pill>}
+                        {donor.hasAccount === false && <Pill tone="kasavu">{t("donors.pill.noApp")}</Pill>}
                       </div>
                     </td>
                   </tr>

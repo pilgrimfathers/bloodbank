@@ -10,7 +10,6 @@ import {
 import { COOLOFF_MONTHS, KERALA_DISTRICTS } from "@shared/constants";
 import { DONOR_ENDPOINTS, type MergeDonorResult } from "@shared/donors";
 import { addMonths } from "@shared/eligibility";
-import { formatDate } from "@shared/format";
 import type { Donation, UserProfile, UserRole } from "@shared/types";
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
@@ -22,11 +21,12 @@ import {
   DonorForm, DonorFormError, findDuplicateDonor, fromDateInput, toDateValue, type DonorFormValues,
 } from "@/components/donor-form";
 import { Button, EmptyState, Field, PageHeader, Pill, Segmented, Spinner, Surface, cx } from "@/components/ui";
+import { useI18n, type StringKey } from "@/i18n";
 
-const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
-  { value: "donor", label: "Donor" },
-  { value: "volunteer", label: "Volunteer" },
-  { value: "admin", label: "Admin" },
+const ROLE_OPTIONS: { value: UserRole; label: StringKey; success: StringKey }[] = [
+  { value: "donor", label: "role.donor", success: "donorPage.nowDonor" },
+  { value: "volunteer", label: "role.volunteer", success: "donorPage.nowVolunteer" },
+  { value: "admin", label: "role.admin", success: "donorPage.nowAdmin" },
 ];
 
 export default function DonorPage() {
@@ -42,6 +42,7 @@ function DonorDetail() {
   const router = useRouter();
   const requestId = useSearchParams().get("requestId");
   const { profile: me } = useAuth();
+  const { t, formatDate, districtName } = useI18n();
   const [donor, setDonor] = useState<UserProfile | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">("loading");
@@ -65,21 +66,21 @@ function DonorDetail() {
     return () => { cancelled = true; };
   }, [apply, id]);
 
-  if (status === "loading" || !me) return <Spinner label="Loading donor" />;
+  if (status === "loading" || !me) return <Spinner label={t("donorPage.loading")} />;
   if (status === "missing") {
     return (
       <>
-        <PageHeader back={{ href: "/donors", label: "All donors" }} title="Donor" />
-        <EmptyState icon={UserRoundX} title="This donor no longer exists" />
+        <PageHeader back={{ href: "/donors", label: t("donors.allDonors") }} title={t("role.donor")} />
+        <EmptyState icon={UserRoundX} title={t("donorPage.notFound")} />
       </>
     );
   }
   if (status === "error" || !donor) {
     return (
       <>
-        <PageHeader back={{ href: "/donors", label: "All donors" }} title="Donor" />
+        <PageHeader back={{ href: "/donors", label: t("donors.allDonors") }} title={t("role.donor")} />
         <p role="alert" className="rounded-lg bg-blood-tint px-4 py-3 text-blood">
-          Could not load this donor. Check your connection and reload the page.
+          {t("donorPage.couldNotLoad")}
         </p>
       </>
     );
@@ -88,7 +89,7 @@ function DonorDetail() {
   const canManage = coversDistrict(me, donor.district);
   const isAdmin = me.role === "admin";
   const phone = donor.phoneNumber?.replace(/\D/g, "").slice(-10);
-  const place = [donor.area, donor.district].filter(Boolean).join(", ") || "No district set";
+  const place = [donor.area, districtName(donor.district)].filter(Boolean).join(", ") || t("donors.noDistrictSet");
 
   const update = async (patch: Partial<UserProfile>, success?: string) => {
     setMessage(null);
@@ -98,25 +99,29 @@ function DonorDetail() {
       if (success) setMessage(success);
     } catch (error) {
       console.error("Error updating donor:", error);
-      setMessage("Could not update donor. Check your connection and try again.");
+      setMessage(t("donorPage.couldNotUpdate"));
     }
   };
 
   const toggleActive = async () => {
     const deactivating = donor.status !== "inactive";
     const ok = window.confirm(deactivating
-      ? `Deactivate ${donor.name}? They will be hidden from eligible donor searches.`
-      : `Reactivate ${donor.name}? They will show up in donor searches again.`);
+      ? t("donorPage.deactivateConfirm", { name: donor.name })
+      : t("donorPage.reactivateConfirm", { name: donor.name }));
     if (ok) await update({ status: deactivating ? "inactive" : "active" });
   };
 
   const handleEdit = async (values: DonorFormValues) => {
     if (!coversDistrict(me, values.district)) {
-      throw new DonorFormError(`You don't manage donors in ${values.district}.`);
+      throw new DonorFormError(t("donorForm.notYourDistrict", { district: districtName(values.district) }));
     }
     const duplicate = await findDuplicateDonor(values, donor.id);
     if (duplicate && !window.confirm(
-      `${duplicate.name ?? "Another donor"} in ${values.district} already uses ${values.phoneNumber}. Save anyway?`,
+      t("donorForm.duplicate", {
+        name: duplicate.name ?? t("donorForm.anotherDonor"),
+        district: districtName(values.district),
+        phone: values.phoneNumber,
+      }),
     )) return;
 
     // Last donation comes from donation records, never from the edit form.
@@ -125,45 +130,47 @@ function DonorDetail() {
     await updateDoc(doc(firestore, "users", donor.id), { ...details, updatedAt: new Date() });
     setDonor({ ...donor, ...details });
     setEditing(false);
-    setMessage("Donor details saved.");
+    setMessage(t("donorPage.saved"));
   };
 
   const handleDeleteDonor = async () => {
     if (!window.confirm(
-      `Delete ${donor.name} and their ${donations.length} recorded donations? This can't be undone.`,
+      t("donorPage.deleteDonorConfirm", { name: donor.name, count: donations.length }),
     )) return;
     try {
       await deleteAddedDonor(donor);
       router.replace("/donors");
     } catch (error) {
       console.error("Error deleting donor:", error);
-      setMessage("Could not delete donor. Check your connection and try again.");
+      setMessage(t("donorPage.couldNotDeleteDonor"));
     }
   };
 
   const handleDelete = async (donation: Donation) => {
-    if (!window.confirm(`Delete the donation on ${formatDate(donation.date)}?`)) return;
+    if (!window.confirm(t("donorPage.deleteDonationConfirm", { date: formatDate(donation.date) }))) return;
     try {
       await deleteDonation(donation);
       await load();
     } catch (error) {
       console.error("Error deleting donation:", error);
-      setMessage("Could not delete donation. Check your connection and try again.");
+      setMessage(t("donorPage.couldNotDeleteDonation"));
     }
   };
 
   return (
     <>
-      <PageHeader back={{ href: "/donors", label: "All donors" }} title={donor.name} subtitle={place} />
+      <PageHeader back={{ href: "/donors", label: t("donors.allDonors") }} title={donor.name} subtitle={place} />
 
       <div className="mb-6 flex flex-wrap gap-2">
-        <Pill tone="info">{ROLE_OPTIONS.find(r => r.value === (donor.role ?? "donor"))?.label}</Pill>
-        <Pill tone={donor.verified ? "leaf" : "muted"}>{donor.verified ? "Verified" : "Unverified"}</Pill>
-        {!donor.isDonor && <Pill tone="turmeric">Unavailable</Pill>}
-        {donor.status === "inactive" && <Pill tone="muted">Inactive</Pill>}
-        {donor.hasAccount === false && <Pill tone="kasavu">No app</Pill>}
-        {donor.visibility === "public" && <Pill tone="leaf">Public</Pill>}
-        {donor.visibility === "public_phone" && <Pill tone="leaf">Public with number</Pill>}
+        <Pill tone="info">{t(ROLE_OPTIONS.find(r => r.value === (donor.role ?? "donor"))?.label ?? "role.donor")}</Pill>
+        <Pill tone={donor.verified ? "leaf" : "muted"}>
+          {donor.verified ? t("donors.pill.verified") : t("donors.pill.unverified")}
+        </Pill>
+        {!donor.isDonor && <Pill tone="turmeric">{t("donors.pill.unavailable")}</Pill>}
+        {donor.status === "inactive" && <Pill tone="muted">{t("donors.pill.inactive")}</Pill>}
+        {donor.hasAccount === false && <Pill tone="kasavu">{t("donors.pill.noApp")}</Pill>}
+        {donor.visibility === "public" && <Pill tone="leaf">{t("donors.pill.public")}</Pill>}
+        {donor.visibility === "public_phone" && <Pill tone="leaf">{t("visibility.public_phone.label")}</Pill>}
       </div>
 
       {message && (
@@ -182,11 +189,11 @@ function DonorDetail() {
 
           {editing ? (
             <Surface className="p-6">
-              <h2 className="mb-4 text-xl font-semibold">Edit details</h2>
+              <h2 className="mb-4 text-xl font-semibold">{t("donorPage.editDetails")}</h2>
               <DonorForm
                 initial={donor}
                 showNotes
-                submitLabel="Save changes"
+                submitLabel={t("donorPage.saveChanges")}
                 onSubmit={handleEdit}
                 onCancel={() => setEditing(false)}
               />
@@ -194,46 +201,46 @@ function DonorDetail() {
           ) : (
             <Surface>
               <dl className="divide-y divide-line">
-                <Detail label="Phone">
+                <Detail label={t("donorPage.phone")}>
                   {donor.phoneNumber
                     ? <a href={`tel:${donor.phoneNumber}`} className="hover:text-blood">{donor.phoneNumber}</a>
-                    : "No phone number"}
+                    : t("common.noPhone")}
                 </Detail>
-                {donor.email && <Detail label="Email">{donor.email}</Detail>}
-                <Detail label="Address">{donor.address || "Not added"}</Detail>
-                <Detail label="Medical conditions">{donor.medicalConditions || "None noted"}</Detail>
-                {donor.notes && <Detail label="Volunteer notes">{donor.notes}</Detail>}
-                <Detail label="Added on">{formatDate(donor.createdAt)}</Detail>
+                {donor.email && <Detail label={t("donorPage.email")}>{donor.email}</Detail>}
+                <Detail label={t("donorPage.address")}>{donor.address || t("common.notAdded")}</Detail>
+                <Detail label={t("donorPage.medical")}>{donor.medicalConditions || t("donorPage.noneNoted")}</Detail>
+                {donor.notes && <Detail label={t("donorPage.volunteerNotes")}>{donor.notes}</Detail>}
+                <Detail label={t("donorPage.addedOn")}>{formatDate(donor.createdAt)}</Detail>
               </dl>
             </Surface>
           )}
 
           <section>
-            <h2 className="mb-3 text-xl font-semibold">Donation history</h2>
+            <h2 className="mb-3 text-xl font-semibold">{t("donorPage.history")}</h2>
             {donations.length === 0 ? (
-              <EmptyState icon={Droplet} title="No donations recorded yet" />
+              <EmptyState icon={Droplet} title={t("eligibility.noDonations")} />
             ) : (
               <div className="overflow-x-auto rounded-xl border border-line bg-surface">
                 <table className="w-full min-w-[520px] text-left">
                   <thead className="border-b border-line text-sm text-ink-muted">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Date</th>
-                      <th className="px-4 py-3 font-medium">Hospital</th>
-                      <th className="px-4 py-3 font-medium">Logged by</th>
-                      {canManage && <th className="px-4 py-3"><span className="sr-only">Actions</span></th>}
+                      <th className="px-4 py-3 font-medium">{t("donorPage.col.date")}</th>
+                      <th className="px-4 py-3 font-medium">{t("donorPage.col.hospital")}</th>
+                      <th className="px-4 py-3 font-medium">{t("donorPage.col.loggedBy")}</th>
+                      {canManage && <th className="px-4 py-3"><span className="sr-only">{t("donorPage.col.actions")}</span></th>}
                     </tr>
                   </thead>
                   <tbody>
                     {donations.map(donation => (
                       <tr key={donation.id} className="border-b border-line last:border-0">
                         <td className="px-4 py-3 font-medium whitespace-nowrap">{formatDate(donation.date)}</td>
-                        <td className="px-4 py-3">{donation.hospital || <span className="text-ink-faint">Not recorded</span>}</td>
+                        <td className="px-4 py-3">{donation.hospital || <span className="text-ink-faint">{t("donorPage.notRecorded")}</span>}</td>
                         <td className="px-4 py-3 text-ink-muted">{donation.recordedByName || "-"}</td>
                         {canManage && (
                           <td className="px-4 py-3 text-right">
                             <button
                               onClick={() => handleDelete(donation)}
-                              aria-label={`Delete donation on ${formatDate(donation.date)}`}
+                              aria-label={t("donorPage.deleteDonationLabel", { date: formatDate(donation.date) })}
                               className="rounded p-1 text-ink-faint hover:bg-blood-tint hover:text-blood"
                             >
                               <Trash2 className="size-4" />
@@ -257,7 +264,7 @@ function DonorDetail() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blood px-4 font-semibold text-white hover:bg-blood-dark"
               >
                 <Phone className="size-4" />
-                Call
+                {t("common.call")}
               </a>
               <a
                 href={`https://wa.me/91${phone}`}
@@ -266,7 +273,7 @@ function DonorDetail() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border-[1.5px] border-leaf/40 px-4 font-semibold text-leaf hover:bg-leaf-tint"
               >
                 <MessageCircle className="size-4" />
-                WhatsApp
+                {t("common.whatsapp")}
               </a>
             </Surface>
           )}
@@ -279,17 +286,17 @@ function DonorDetail() {
               recorder={{ id: me.id, name: me.name }}
               onLogged={async () => {
                 await load();
-                setMessage(`Donation logged. ${donor.name} can give again after ${COOLOFF_MONTHS} months.`);
+                setMessage(t("donorPage.donationLogged", { name: donor.name, months: COOLOFF_MONTHS }));
               }}
             />
           )}
 
           {canManage && (
             <Surface className="space-y-2 p-4">
-              <h2 className="mb-1 font-semibold">Manage donor</h2>
+              <h2 className="mb-1 font-semibold">{t("donorPage.manage")}</h2>
               {!editing && (
                 <Button variant="secondary" icon={Pencil} className="w-full" onClick={() => setEditing(true)}>
-                  Edit details
+                  {t("donorPage.editDetails")}
                 </Button>
               )}
               <Button
@@ -298,10 +305,12 @@ function DonorDetail() {
                 className="w-full"
                 onClick={() => update(
                   { verified: !donor.verified },
-                  donor.verified ? `${donor.name} is no longer verified.` : `${donor.name} is verified.`,
+                  donor.verified
+                    ? t("donorPage.nowUnverified", { name: donor.name })
+                    : t("donorPage.nowVerified", { name: donor.name }),
                 )}
               >
-                {donor.verified ? "Remove verification" : "Mark as verified"}
+                {donor.verified ? t("donorPage.removeVerification") : t("donorPage.markVerified")}
               </Button>
               <Button
                 variant={donor.status === "inactive" ? "secondary" : "danger"}
@@ -309,11 +318,11 @@ function DonorDetail() {
                 className="w-full"
                 onClick={toggleActive}
               >
-                {donor.status === "inactive" ? "Reactivate donor" : "Deactivate donor"}
+                {donor.status === "inactive" ? t("donorPage.reactivateDonor") : t("donorPage.deactivateDonor")}
               </Button>
               {isAdmin && donor.hasAccount === false && (
                 <Button variant="danger" icon={Trash2} className="w-full" onClick={handleDeleteDonor}>
-                  Delete donor
+                  {t("donorPage.deleteDonor")}
                 </Button>
               )}
             </Surface>
@@ -364,6 +373,7 @@ function LogDonation({ donor, donations, requestId, recorder, onLogged }: {
   recorder: { id: string; name: string };
   onLogged: () => Promise<void>;
 }) {
+  const { t, formatDate } = useI18n();
   const [date, setDate] = useState(toDateValue());
   const [hospital, setHospital] = useState("");
   const [saving, setSaving] = useState(false);
@@ -373,15 +383,15 @@ function LogDonation({ donor, donations, requestId, recorder, onLogged }: {
     event.preventDefault();
     setError(null);
     const donationDate = fromDateInput(date);
-    if (!donationDate) return setError("Enter a valid donation date.");
-    if (donationDate > new Date()) return setError("Donation date cannot be in the future.");
+    if (!donationDate) return setError(t("donorPage.log.invalidDate"));
+    if (donationDate > new Date()) return setError(t("donorPage.log.futureDate"));
 
     // Two donations closer than the cool-off period usually means a mistake.
     const tooClose = donations.find(d =>
       donationDate < addMonths(d.date, COOLOFF_MONTHS) && d.date < addMonths(donationDate, COOLOFF_MONTHS),
     );
     if (tooClose && !window.confirm(
-      `${donor.name} already has a donation on ${formatDate(tooClose.date)}, less than ${COOLOFF_MONTHS} months apart. Record anyway?`,
+      t("donorPage.log.tooClose", { name: donor.name, date: formatDate(tooClose.date), months: COOLOFF_MONTHS }),
     )) return;
 
     setSaving(true);
@@ -392,7 +402,7 @@ function LogDonation({ donor, donations, requestId, recorder, onLogged }: {
       await onLogged();
     } catch (err) {
       console.error("Error logging donation:", err);
-      setError("Could not log donation. Check your connection and try again.");
+      setError(t("donorPage.log.couldNotLog"));
     } finally {
       setSaving(false);
     }
@@ -402,13 +412,13 @@ function LogDonation({ donor, donations, requestId, recorder, onLogged }: {
     <Surface className="p-4">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <h2 className="font-semibold">Log a donation</h2>
-          {requestId && <p className="text-sm text-info">This donation will be linked to the request.</p>}
+          <h2 className="font-semibold">{t("donorPage.log.title")}</h2>
+          {requestId && <p className="text-sm text-info">{t("donorPage.log.linked")}</p>}
         </div>
-        <Field label="Donation date" type="date" max={toDateValue()} value={date} onChange={e => setDate(e.target.value)} required />
-        <Field label="Hospital or blood bank (optional)" value={hospital} onChange={e => setHospital(e.target.value)} />
+        <Field label={t("donorPage.log.date")} type="date" max={toDateValue()} value={date} onChange={e => setDate(e.target.value)} required />
+        <Field label={t("donorPage.log.hospital")} value={hospital} onChange={e => setHospital(e.target.value)} />
         {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
-        <Button type="submit" icon={Droplet} loading={saving} className="w-full">Log donation</Button>
+        <Button type="submit" icon={Droplet} loading={saving} className="w-full">{t("donorPage.log.submit")}</Button>
       </form>
     </Surface>
   );
@@ -432,18 +442,19 @@ function useSamePhone(donor: UserProfile) {
 
 // On an app account: donors a volunteer added earlier who may be the same person.
 function AddedRecordsCard({ donor }: { donor: UserProfile }) {
+  const { t, districtName } = useI18n();
   const added = useSamePhone(donor).filter(user => user.hasAccount === false);
   if (!added.length) return null;
   return (
     <Surface className="space-y-2 p-4">
-      <h2 className="font-semibold">Also added without the app</h2>
+      <h2 className="font-semibold">{t("donorPage.alsoAdded")}</h2>
       <p className="text-sm text-ink-muted">
-        A volunteer added a donor with this number before they signed up. Open it to merge it into this account.
+        {t("donorPage.alsoAddedHint")}
       </p>
       {added.map(user => (
         <Link key={user.id} href={`/donors/${user.id}`} className="block rounded-lg border border-line px-3 py-2 hover:border-ink-faint">
           <span className="font-medium">{user.name}</span>
-          <span className="text-sm text-ink-muted"> · {user.bloodType} · {user.district || "No district"}</span>
+          <span className="text-sm text-ink-muted"> · {user.bloodType} · {districtName(user.district) || t("common.noDistrict")}</span>
         </Link>
       ))}
     </Surface>
@@ -452,6 +463,7 @@ function AddedRecordsCard({ donor }: { donor: UserProfile }) {
 
 // On a donor added without the app: move them onto the account they signed up with.
 function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId: string) => void }) {
+  const { t } = useI18n();
   const samePhone = useSamePhone(donor).filter(user => user.hasAccount !== false);
   const [email, setEmail] = useState("");
   const [found, setFound] = useState<UserProfile[] | null>(null);
@@ -467,7 +479,7 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
       setFound(snap.docs.map(mapUser).filter(user => user.hasAccount !== false && user.id !== donor.id));
     } catch (err) {
       console.error("Error searching accounts:", err);
-      setError("Could not search. Check your connection and try again.");
+      setError(t("donorPage.couldNotSearch"));
     } finally {
       setBusy(null);
     }
@@ -475,8 +487,11 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
 
   const merge = async (account: UserProfile) => {
     if (!window.confirm(
-      `Merge ${donor.name} into ${account.name}'s account (${account.email ?? account.phoneNumber})? ` +
-      "Their donation history moves to the account, and this record is deleted.",
+      t("donorPage.mergeConfirm", {
+        donor: donor.name,
+        account: account.name,
+        contact: account.email ?? account.phoneNumber ?? "",
+      }),
     )) return;
     setError(null);
     setBusy(account.id);
@@ -484,7 +499,7 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
       await callNotifyApi<MergeDonorResult>(DONOR_ENDPOINTS.merge, { fromId: donor.id, intoId: account.id });
       onMerged(account.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not merge. Try again in a minute.");
+      setError(err instanceof Error ? err.message : t("donorPage.couldNotMerge"));
       setBusy(null);
     }
   };
@@ -494,8 +509,8 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
   return (
     <Surface className="space-y-4 p-4">
       <div>
-        <h2 className="font-semibold">Signed up on the app?</h2>
-        <p className="text-sm text-ink-muted">Merge this donor into their account to keep one record.</p>
+        <h2 className="font-semibold">{t("donorPage.signedUp")}</h2>
+        <p className="text-sm text-ink-muted">{t("donorPage.mergeHint")}</p>
       </div>
       {candidates.length > 0 && (
         <ul className="space-y-2">
@@ -503,7 +518,7 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
             <li key={account.id} className="rounded-lg border border-line p-3">
               <p className="font-medium">{account.name}</p>
               <p className="text-sm text-ink-muted">
-                {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && "Same phone"]
+                {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && t("donorPage.samePhone")]
                   .filter(Boolean).join(" · ")}
               </p>
               <Button
@@ -514,7 +529,7 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
                 className="mt-2 w-full"
                 onClick={() => merge(account)}
               >
-                Merge into this account
+                {t("donorPage.mergeInto")}
               </Button>
             </li>
           ))}
@@ -522,16 +537,16 @@ function MergeCard({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId:
       )}
       <form onSubmit={search} className="space-y-2">
         <Field
-          label="Find account by email"
+          label={t("donorPage.findByEmail")}
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
           required
         />
         <Button type="submit" variant="secondary" icon={Search} loading={busy === "search"} disabled={!!busy} className="w-full">
-          Search
+          {t("common.search")}
         </Button>
-        {found && !found.length && <p className="text-sm text-ink-muted">No app account uses that email.</p>}
+        {found && !found.length && <p className="text-sm text-ink-muted">{t("donorPage.noAccount")}</p>}
       </form>
       {error && <p role="alert" className="rounded-lg bg-blood-tint px-3 py-2 text-sm text-blood">{error}</p>}
     </Surface>
@@ -542,6 +557,7 @@ function AccessCard({ donor, onSave }: {
   donor: UserProfile;
   onSave: (patch: Partial<UserProfile>, success: string) => Promise<void>;
 }) {
+  const { t, districtName } = useI18n();
   const [role, setRole] = useState<UserRole>(donor.role ?? "donor");
   const [districts, setDistricts] = useState<string[]>(donor.volunteerDistricts ?? []);
   const [saving, setSaving] = useState(false);
@@ -551,10 +567,10 @@ function AccessCard({ donor, onSave }: {
 
   const save = async () => {
     setSaving(true);
-    const label = ROLE_OPTIONS.find(r => r.value === role)!.label.toLowerCase();
+    const success = ROLE_OPTIONS.find(r => r.value === role)!.success;
     await onSave(
       { role, volunteerDistricts: role === "volunteer" ? districts : [] },
-      `${donor.name} is now ${role === "admin" ? "an admin" : `a ${label}`}.`,
+      t(success, { name: donor.name }),
     );
     setSaving(false);
   };
@@ -562,14 +578,18 @@ function AccessCard({ donor, onSave }: {
   return (
     <Surface className="space-y-4 p-4">
       <div>
-        <h2 className="font-semibold">Access</h2>
-        <p className="text-sm text-ink-muted">Only admins can change roles.</p>
+        <h2 className="font-semibold">{t("donorPage.access")}</h2>
+        <p className="text-sm text-ink-muted">{t("donorPage.adminsOnly")}</p>
       </div>
-      <Segmented options={ROLE_OPTIONS} value={role} onChange={value => setRole(value as UserRole)} />
+      <Segmented
+        options={ROLE_OPTIONS.map(option => ({ value: option.value, label: t(option.label) }))}
+        value={role}
+        onChange={value => setRole(value as UserRole)}
+      />
       {role === "volunteer" && (
         <fieldset>
           <legend className="mb-1.5 text-sm text-ink-muted">
-            Districts they manage. Leave all unselected for the whole of Kerala.
+            {t("donorPage.districtsHint")}
           </legend>
           <div className="flex flex-wrap gap-1.5">
             {KERALA_DISTRICTS.map(district => {
@@ -585,14 +605,14 @@ function AccessCard({ donor, onSave }: {
                     selected ? "border-info bg-info text-white" : "border-line bg-surface hover:border-ink-faint",
                   )}
                 >
-                  {district}
+                  {districtName(district)}
                 </button>
               );
             })}
           </div>
         </fieldset>
       )}
-      <Button variant="secondary" loading={saving} className="w-full" onClick={save}>Save access</Button>
+      <Button variant="secondary" loading={saving} className="w-full" onClick={save}>{t("donorPage.saveAccess")}</Button>
     </Surface>
   );
 }

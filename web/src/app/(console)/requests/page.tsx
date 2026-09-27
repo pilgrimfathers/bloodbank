@@ -10,11 +10,13 @@ import { useAuth } from "@/lib/auth";
 import { mapRequest } from "@/lib/data";
 import { RequestTable } from "@/components/requests";
 import { EmptyState, PageHeader, Segmented, Select, Spinner } from "@/components/ui";
+import { useI18n } from "@/i18n";
 
 type StatusFilter = "open" | "all";
 
 export default function RequestsPage() {
   const { profile } = useAuth();
+  const { t, districtName } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[] | null>(null);
   const [district, setDistrict] = useState(profile?.district ?? "");
   const [status, setStatus] = useState<StatusFilter>("open");
@@ -38,24 +40,29 @@ export default function RequestsPage() {
   return (
     <>
       <PageHeader
-        title="Blood requests"
-        subtitle={district ? `Requests in ${district}` : "Requests across Kerala"}
+        title={t("requestsList.title")}
+        subtitle={district
+          ? t("requestsList.subtitleDistrict", { district: districtName(district) })
+          : t("requestsList.subtitleAll")}
       />
 
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <Select
-          label="District"
+          label={t("console.district")}
           className="w-56"
           value={district}
           onChange={setDistrict}
-          placeholder="All Kerala"
-          options={KERALA_DISTRICTS.map(d => ({ value: d, label: d }))}
+          placeholder={t("console.allKerala")}
+          options={KERALA_DISTRICTS.map(d => ({ value: d, label: districtName(d) }))}
         />
         <Segmented
-          label="Status"
+          label={t("requestsList.status")}
           value={status}
           onChange={value => setStatus(value as StatusFilter)}
-          options={[{ value: "open", label: "Open only" }, { value: "all", label: "Include closed" }]}
+          options={[
+            { value: "open", label: t("requestsList.openOnly") },
+            { value: "all", label: t("requestsList.includeClosed") },
+          ]}
         />
       </div>
 
@@ -64,13 +71,19 @@ export default function RequestsPage() {
       ) : visible.length === 0 ? (
         <EmptyState
           icon={HandHeart}
-          title={`No ${status === "open" ? "open " : ""}requests${district ? ` in ${district}` : ""}`}
-          message="Try another district or include closed requests."
+          title={district
+            ? t(status === "open" ? "requestsList.empty.openInDistrict" : "requestsList.empty.anyInDistrict", {
+              district: districtName(district),
+            })
+            : t(status === "open" ? "requestsList.empty.open" : "requestsList.empty.any")}
+          message={t("requestsList.empty.message")}
         />
       ) : (
         <>
           <p className="mb-3 text-sm text-ink-muted">
-            {visible.length} {visible.length === 1 ? "request" : "requests"}
+            {visible.length === 1
+              ? t("requestsList.countOne")
+              : t("requestsList.countMany", { count: visible.length })}
           </p>
           <RequestTable requests={visible} />
         </>
