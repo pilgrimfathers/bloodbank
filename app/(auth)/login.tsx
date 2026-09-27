@@ -9,11 +9,13 @@ import Field from '@/src/components/Field';
 import Button from '@/src/components/ui/Button';
 import Screen from '@/src/components/ui/Screen';
 import Text from '@/src/components/ui/Text';
+import { StringKey, useI18n } from '@/src/i18n';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -31,7 +33,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      showMessage('Missing details', 'Enter your email and password.');
+      showMessage(t('auth.missingDetails'), t('auth.login.missing'));
       return;
     }
 
@@ -40,35 +42,35 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       // No need to manually navigate here as the auth state change will trigger the useEffect
     } catch (error: any) {
-      let errorMessage = 'Could not log in. Check your connection and try again.';
+      let errorMessage: StringKey = 'auth.login.failedMessage';
 
       switch (error.code) {
         case 'auth/invalid-email':
-          errorMessage = 'That email address is not valid.';
+          errorMessage = 'auth.invalidEmail';
           break;
         case 'auth/user-not-found':
-          errorMessage = 'No account uses this email. Create an account instead.';
+          errorMessage = 'auth.login.userNotFound';
           break;
         case 'auth/wrong-password':
         case 'auth/invalid-credential':
-          errorMessage = 'The email or password is incorrect.';
+          errorMessage = 'auth.login.wrongPassword';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Too many attempts. Wait a few minutes and try again.';
+          errorMessage = 'auth.tooManyRequests';
           break;
       }
 
-      showMessage('Could not log in', errorMessage);
+      showMessage(t('auth.login.failed'), t(errorMessage));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Screen back title="Log in" subtitle="Welcome back">
+    <Screen back title={t('auth.login.title')} subtitle={t('auth.login.subtitle')}>
       <View>
         <Field
-          label="Email"
+          label={t('auth.email')}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -76,23 +78,23 @@ export default function Login() {
           autoComplete="email"
         />
         <Field
-          label="Password"
+          label={t('auth.password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           autoComplete="password"
         />
-        <Button label="Log in" onPress={handleLogin} loading={loading} />
+        <Button label={t('auth.login.title')} onPress={handleLogin} loading={loading} />
       </View>
 
       <View style={styles.links}>
         <Pressable onPress={() => router.push('/(auth)/register')} accessibilityRole="link" hitSlop={8}>
           <Text variant="body" color={palette.inkMuted} style={styles.center}>
-            New here? <Text variant="bodyStrong" color={palette.blood}>Create an account</Text>
+            {t('auth.login.newHere')} <Text variant="bodyStrong" color={palette.blood}>{t('auth.login.createAccount')}</Text>
           </Text>
         </Pressable>
         <Pressable onPress={() => router.push('/privacy')} accessibilityRole="link" hitSlop={8}>
-          <Text variant="label" color={palette.inkMuted} style={styles.center}>Privacy policy</Text>
+          <Text variant="label" color={palette.inkMuted} style={styles.center}>{t('auth.privacyPolicy')}</Text>
         </Pressable>
       </View>
     </Screen>

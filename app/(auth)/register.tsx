@@ -12,10 +12,12 @@ import { showMessage } from '@/src/utils/dialog';
 import { logDonation } from '@/src/utils/data';
 import { palette, radius, space } from '@/src/theme';
 import { UserProfile } from '@/shared/types';
+import { StringKey, useI18n } from '@/src/i18n';
 
 type Step = 'account' | 'details';
 
 export default function Register() {
+  const { t } = useI18n();
   const [step, setStep] = useState<Step>('account');
   const [account, setAccount] = useState({
     email: '',
@@ -25,15 +27,15 @@ export default function Register() {
 
   const handleNext = () => {
     if (!account.email || !account.password || !account.confirmPassword) {
-      showMessage('Missing details', 'Fill in your email and both password fields.');
+      showMessage(t('auth.missingDetails'), t('auth.register.missing'));
       return;
     }
     if (account.password.length < 6) {
-      showMessage('Password too short', 'Use at least 6 characters.');
+      showMessage(t('auth.register.passwordShort'), t('auth.register.passwordShortMessage'));
       return;
     }
     if (account.password !== account.confirmPassword) {
-      showMessage('Passwords do not match', 'Type the same password in both fields.');
+      showMessage(t('auth.register.passwordMismatch'), t('auth.register.passwordMismatchMessage'));
       return;
     }
     setStep('details');
@@ -77,30 +79,30 @@ export default function Register() {
         );
       }
     } catch (error: any) {
-      let errorMessage = 'Registration failed. Check your connection and try again.';
+      let errorMessage: StringKey = 'auth.register.failedMessage';
 
       // Handle specific Firebase Auth errors
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'This email is already registered. Log in instead.';
+          errorMessage = 'auth.register.emailInUse';
           break;
         case 'auth/invalid-email':
-          errorMessage = 'That email address is not valid.';
+          errorMessage = 'auth.invalidEmail';
           break;
         case 'auth/weak-password':
-          errorMessage = 'Password is too weak. Use at least 6 characters.';
+          errorMessage = 'auth.register.weakPassword';
           break;
         case 'auth/network-request-failed':
-          errorMessage = 'No internet connection. Check your network and try again.';
+          errorMessage = 'auth.register.noInternet';
           break;
         case 'auth/too-many-requests':
-          errorMessage = 'Too many attempts. Wait a few minutes and try again.';
+          errorMessage = 'auth.tooManyRequests';
           break;
         default:
           console.error('Registration error:', error);
       }
 
-      showMessage('Could not create account', errorMessage);
+      showMessage(t('auth.register.failed'), t(errorMessage));
     }
   };
 
@@ -109,8 +111,8 @@ export default function Register() {
   return (
     <Screen
       back
-      title={step === 'account' ? 'Create your account' : 'Donor details'}
-      subtitle={`Step ${stepNumber} of 2`}
+      title={step === 'account' ? t('auth.register.accountTitle') : t('auth.register.detailsTitle')}
+      subtitle={t('auth.register.step', { step: stepNumber })}
     >
       <View style={styles.progress}>
         <View style={[styles.segment, styles.segmentDone]} />
@@ -120,7 +122,7 @@ export default function Register() {
       {step === 'account' ? (
         <View>
           <Field
-            label="Email"
+            label={t('auth.email')}
             value={account.email}
             onChangeText={(text) => setAccount({...account, email: text})}
             keyboardType="email-address"
@@ -128,28 +130,28 @@ export default function Register() {
             autoComplete="email"
           />
           <Field
-            label="Password"
+            label={t('auth.password')}
             value={account.password}
             onChangeText={(text) => setAccount({...account, password: text})}
             secureTextEntry
-            hint="At least 6 characters"
+            hint={t('auth.register.passwordHint')}
           />
           <Field
-            label="Confirm password"
+            label={t('auth.register.confirmPassword')}
             value={account.confirmPassword}
             onChangeText={(text) => setAccount({...account, confirmPassword: text})}
             secureTextEntry
           />
-          <Button label="Continue" onPress={handleNext} />
+          <Button label={t('auth.register.continue')} onPress={handleNext} />
         </View>
       ) : (
         <View>
           <Text variant="body" color={palette.inkMuted} style={styles.intro}>
-            Volunteers use these details to reach you when someone nearby needs your blood group.
+            {t('auth.register.intro')}
           </Text>
-          <DonorForm showLastDonation submitLabel="Create account" onSubmit={handleRegister} />
+          <DonorForm showLastDonation submitLabel={t('auth.register.submit')} onSubmit={handleRegister} />
           <Button
-            label="Back to account"
+            label={t('auth.register.backToAccount')}
             variant="quiet"
             color={palette.inkMuted}
             onPress={() => setStep('account')}

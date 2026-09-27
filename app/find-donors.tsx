@@ -12,6 +12,7 @@ import { BloodRequest } from '@/shared/types';
 import { mapRequest } from '@/src/utils/data';
 import { callNotifyApi } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
+import { useI18n } from '@/src/i18n';
 import { palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import BloodMark from '@/src/components/ui/BloodMark';
@@ -26,6 +27,7 @@ import Text from '@/src/components/ui/Text';
 export default function FindDonorsScreen() {
   const params = useLocalSearchParams<{ requestId?: string; bloodType?: string; district?: string }>();
   const { profile } = useCurrentUser();
+  const { t, districtName } = useI18n();
 
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [requestId, setRequestId] = useState<string | null>(params.requestId || null);
@@ -74,7 +76,7 @@ export default function FindDonorsScreen() {
       setDonors(result.donors);
     } catch (error) {
       console.error('Error searching donors:', error);
-      showMessage('Could not load donors', error instanceof Error ? error.message : 'Check your connection and try again.');
+      showMessage(t('findDonors.couldNotLoad'), error instanceof Error ? error.message : t('common.checkConnection'));
     } finally {
       setLoading(false);
     }
@@ -93,17 +95,23 @@ export default function FindDonorsScreen() {
   const ask = async (donor: PublicDonor) => {
     if (!request) {
       const ok = await confirmAction(
-        'Post a request first',
-        'Donors get your request with the hospital and contact number, so they can call you. Post one, then come back to ask donors.',
-        'Request blood',
+        t('findDonors.postFirst.title'),
+        t('findDonors.postFirst.message'),
+        t('requestNew.title'),
       );
       if (ok) router.push('/request/new');
       return;
     }
     const ok = await confirmAction(
-      `Ask ${donor.name}?`,
-      `${donor.name} will get a notification about ${request.patientName}'s ${request.bloodType} request at ${request.hospital}, and can call ${request.contactNumber} if they can help.`,
-      'Send',
+      t('findDonors.askConfirm.title', { name: donor.name }),
+      t('findDonors.askConfirm.message', {
+        name: donor.name,
+        patient: request.patientName,
+        bloodType: request.bloodType,
+        hospital: request.hospital,
+        phone: request.contactNumber,
+      }),
+      t('findDonors.askConfirm.send'),
     );
     if (!ok) return;
 
@@ -112,18 +120,18 @@ export default function FindDonorsScreen() {
       const body: AskDonorBody = { donorId: donor.id, requestId: request.id };
       const result = await callNotifyApi<AskDonorResult>(DONOR_ENDPOINTS.ask, body);
       if (result.skipped === 'no-device') {
-        showMessage('Could not reach this donor', `${donor.name} has notifications turned off. Try another donor or ask a volunteer.`);
+        showMessage(t('findDonors.noDevice.title'), t('findDonors.noDevice.message', { name: donor.name }));
         return;
       }
       setAsked(prev => new Set(prev).add(`${request.id}_${donor.id}`));
       showMessage(
-        result.skipped === 'already-asked' ? 'Already asked' : 'Request sent',
+        result.skipped === 'already-asked' ? t('findDonors.alreadyAsked.title') : t('findDonors.sent.title'),
         result.skipped === 'already-asked'
-          ? `You already sent this request to ${donor.name}.`
-          : `${donor.name} will see your request. Keep your phone close. You can ask up to ${DAILY_ASK_LIMIT} donors a day.`,
+          ? t('findDonors.alreadyAsked.message', { name: donor.name })
+          : t('findDonors.sent.message', { name: donor.name, limit: DAILY_ASK_LIMIT }),
       );
     } catch (error) {
-      showMessage('Could not send', error instanceof Error ? error.message : 'Check your connection and try again.');
+      showMessage(t('findDonors.couldNotSend'), error instanceof Error ? error.message : t('common.checkConnection'));
     } finally {
       setAsking(null);
     }
@@ -134,42 +142,49 @@ export default function FindDonorsScreen() {
   return (
     <Screen
       back
-      title="Find donors"
-      subtitle="Donors who chose to be listed publicly"
+      title={t('findDonors.title')}
+      subtitle={t('findDonors.subtitle')}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
       {requests.length > 0 && (
         <ChipSelect
           horizontal
-          label="Asking for"
+          label={t('findDonors.askingFor')}
           options={requests.map(r => r.id)}
           value={requestId}
           onChange={id => selectRequest(requests.find(r => r.id === id)!)}
           format={id => {
             const r = requests.find(item => item.id === id)!;
-            return `${r.bloodType} for ${r.patientName}`;
+            return t('findDonors.requestOption', { bloodType: r.bloodType, patient: r.patientName });
           }}
         />
       )}
 
       <View>
-        <ChipSelect horizontal label="Blood group needed" options={BLOOD_TYPES} value={bloodType} onChange={setBloodType} />
         <ChipSelect
           horizontal
-          label="District"
+          label={t('findDonors.bloodGroup')}
+          options={BLOOD_TYPES}
+          value={bloodType}
+          onChange={setBloodType}
+        />
+        <ChipSelect
+          horizontal
+          label={t('findDonors.district')}
           options={withFirst(KERALA_DISTRICTS, district ?? profile?.district)}
           value={district}
           onChange={setDistrict}
-          allLabel="All Kerala"
+          format={districtName}
+          allLabel={t('findDonors.allKerala')}
           onClear={() => setDistrict(null)}
         />
         {bloodType && compatible.length > 1 && (
           <View style={styles.switchRow}>
             <View style={styles.flex}>
-              <Text variant="bodyStrong">Include compatible donors</Text>
+              <Text variant="bodyStrong">{t('findDonors.includeCompatible')}</Text>
               <Text variant="caption" color={palette.inkMuted}>
-                {compatible.join(', ')} can give to {bloodType}
+                {t('findDonors.canGiveTo', { groups: compatible.join(', '), bloodType })}
               </Text>
             </View>
             <Switch
@@ -183,22 +198,24 @@ export default function FindDonorsScreen() {
       </View>
 
       {!bloodType ? (
-        <EmptyState icon="water-outline" title="Choose a blood group" message="Pick the blood group the patient needs." />
+        <EmptyState
+          icon="water-outline"
+          title={t('findDonors.chooseGroup.title')}
+          message={t('findDonors.chooseGroup.message')}
+        />
       ) : loading && !refreshing ? (
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       ) : donors.length === 0 ? (
         <EmptyState
           icon="account-search-outline"
-          title="No public donors found"
-          message={request
-            ? 'Try all of Kerala. Volunteers can also reach donors who keep their profile private.'
-            : 'Try all of Kerala, or post a request so volunteers can reach donors who keep their profile private.'}
-          action={request ? undefined : { label: 'Request blood', onPress: () => router.push('/request/new') }}
+          title={t('findDonors.empty.title')}
+          message={request ? t('findDonors.empty.withRequest') : t('findDonors.empty.noRequest')}
+          action={request ? undefined : { label: t('requestNew.title'), onPress: () => router.push('/request/new') }}
         />
       ) : (
         <View style={styles.list}>
           <Text variant="caption" color={palette.inkMuted}>
-            {donors.length === 1 ? '1 donor' : `${donors.length} donors`}
+            {donors.length === 1 ? t('findDonors.oneDonor') : t('findDonors.donors', { count: donors.length })}
           </Text>
           {donors.map(donor => (
             <DonorRow
@@ -221,7 +238,8 @@ function DonorRow({ donor, asking, asked, onAsk }: {
   asked: boolean;
   onAsk: () => void;
 }) {
-  const place = [donor.area, donor.district].filter(Boolean).join(', ') || 'Kerala';
+  const { t, districtName } = useI18n();
+  const place = [donor.area, districtName(donor.district)].filter(Boolean).join(', ') || t('common.kerala');
   const phone = donor.phoneNumber?.replace(/\D/g, '').slice(-10);
 
   return (
@@ -233,9 +251,9 @@ function DonorRow({ donor, asking, asked, onAsk }: {
           <Text variant="caption" color={palette.inkMuted}>{place}</Text>
           <View style={styles.pills}>
             {donor.eligible
-              ? <Pill label="Can donate" tone="leaf" />
-              : <Pill label={`${donor.daysRemaining} days left`} tone="turmeric" />}
-            {donor.verified && <Pill label="Verified" tone="kasavu" />}
+              ? <Pill label={t('eligibility.canDonate')} tone="leaf" />
+              : <Pill label={t('eligibility.daysLeft', { count: donor.daysRemaining })} tone="turmeric" />}
+            {donor.verified && <Pill label={t('findDonors.verified')} tone="kasavu" />}
           </View>
         </View>
       </View>
@@ -244,10 +262,10 @@ function DonorRow({ donor, asking, asked, onAsk }: {
         <View style={styles.actions}>
           {phone ? (
             <>
-              <Button icon="phone" label="Call" onPress={() => Linking.openURL(`tel:${phone}`)} style={styles.flex} />
+              <Button icon="phone" label={t('common.call')} onPress={() => Linking.openURL(`tel:${phone}`)} style={styles.flex} />
               <Button
                 icon="whatsapp"
-                label="WhatsApp"
+                label={t('common.whatsapp')}
                 variant="secondary"
                 color={palette.leaf}
                 onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
@@ -257,7 +275,7 @@ function DonorRow({ donor, asking, asked, onAsk }: {
           ) : (
             <Button
               icon={asked ? 'check' : 'bell-ring-outline'}
-              label={asked ? 'Asked' : 'Ask to donate'}
+              label={asked ? t('findDonors.asked') : t('findDonors.ask')}
               variant={asked ? 'secondary' : 'primary'}
               loading={asking}
               disabled={asked}

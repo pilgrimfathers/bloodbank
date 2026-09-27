@@ -8,13 +8,15 @@ import { showMessage } from '@/src/utils/dialog';
 import { palette, space } from '@/src/theme';
 import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
 import Screen from '@/src/components/ui/Screen';
+import { useI18n } from '@/src/i18n';
 
 export default function EditProfileScreen() {
   const { profile } = useCurrentUser();
+  const { t } = useI18n();
 
   if (!profile) {
     return (
-      <Screen back title="Edit profile">
+      <Screen back title={t('profileEdit.title')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
@@ -29,13 +31,13 @@ export default function EditProfileScreen() {
       router.back();
     } catch (error) {
       console.error('Error updating profile:', error);
-      showMessage('Could not save profile', 'Check your connection and try again.');
+      showMessage(t('profileEdit.couldNotSave'), t('common.checkConnection'));
     }
   };
 
   return (
-    <Screen back title="Edit profile" subtitle="Keep your details current so volunteers can reach you">
-      <DonorForm initial={profile} submitLabel="Save changes" onSubmit={handleSubmit} />
+    <Screen back title={t('profileEdit.title')} subtitle={t('profileEdit.subtitle')}>
+      <DonorForm initial={profile} submitLabel={t('donorEdit.saveChanges')} onSubmit={handleSubmit} />
     </Screen>
   );
 }

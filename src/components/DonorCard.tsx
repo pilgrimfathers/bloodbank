@@ -3,7 +3,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { palette, radius, space } from '@/src/theme';
 import { getEligibility } from '@/shared/eligibility';
-import { formatDate } from '@/shared/format';
+import { useI18n } from '@/src/i18n';
 import Text from './ui/Text';
 
 type Props = {
@@ -26,6 +26,7 @@ function refillProgress(lastDonation: Date | null | undefined, eligibleFrom: Dat
 }
 
 export default function DonorCard({ bloodType, lastDonation, donationCount = 0 }: Props) {
+  const { t, formatDate } = useI18n();
   const { eligible, eligibleFrom, daysRemaining } = getEligibility(lastDonation);
   const progress = refillProgress(lastDonation, eligibleFrom);
   const ringColor = eligible ? palette.leaf : palette.turmeric;
@@ -55,19 +56,19 @@ export default function DonorCard({ bloodType, lastDonation, donationCount = 0 }
 
       <View style={styles.details}>
         <Text variant="heading" color={ringColor}>
-          {eligible ? 'Ready to donate' : `${daysRemaining} days to go`}
+          {eligible ? t('eligibility.ready') : t('eligibility.daysToGo', { count: daysRemaining })}
         </Text>
         <Text variant="caption" color={palette.inkMuted} style={styles.gap}>
           {eligible
             ? lastDonation
-              ? `Last gave on ${formatDate(lastDonation)}`
-              : 'No donations recorded yet'
-            : `Your body is refilling. You can give again on ${formatDate(eligibleFrom)}.`}
+              ? t('eligibility.lastGave', { date: formatDate(lastDonation) })
+              : t('eligibility.noDonations')
+            : t('eligibility.refilling', { date: formatDate(eligibleFrom) })}
         </Text>
         <View style={styles.count}>
           <MaterialCommunityIcons name="water" size={18} color={palette.kasavu} />
           <Text variant="label" color={palette.ink}>
-            {donationCount === 1 ? '1 donation' : `${donationCount} donations`}
+            {donationCount === 1 ? t('eligibility.oneDonation') : t('eligibility.donations', { count: donationCount })}
           </Text>
         </View>
       </View>

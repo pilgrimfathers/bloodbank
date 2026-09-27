@@ -4,6 +4,7 @@ import { toDate } from "@shared/format";
 import { adminDb } from "@/lib/firebase-admin";
 import { ApiError, authedRoute, logNotification } from "@/lib/api";
 import { sendPush, toRecipients } from "@/lib/push";
+import { requestDonorsMessage } from "@shared/pushMessages";
 
 // Admin-approved alert to donors with the request's blood type.
 export const POST = authedRoute<RequestDonorsBody>(["admin"], async (caller, input) => {
@@ -33,11 +34,13 @@ export const POST = authedRoute<RequestDonorsBody>(["admin"], async (caller, inp
     .map(doc => ({ id: doc.id, data: doc.data() }));
   const recipients = toRecipients(candidates);
 
-  const units = `${request.units} ${request.units === 1 ? "unit" : "units"}`;
-  const title = `${request.bloodType} blood needed${request.district ? ` in ${request.district}` : ""}`;
-  const body = `${units} at ${request.hospital}. Tap to see the request and call the family.`;
+  const info = request as Parameters<typeof requestDonorsMessage>[0];
+  const { title, body } = requestDonorsMessage(info, "en");
   const result = recipients.length
-    ? await sendPush(recipients, { title, body, data: { type: "request", requestId } })
+    ? await sendPush(recipients, language => ({
+      ...requestDonorsMessage(info, language),
+      data: { type: "request", requestId },
+    }))
     : { sent: 0, recipients: 0 };
 
   await ref.update({

@@ -17,9 +17,11 @@ import { List } from '@/src/components/ui/List';
 import Screen from '@/src/components/ui/Screen';
 import Section from '@/src/components/ui/Section';
 import Text from '@/src/components/ui/Text';
+import { useI18n } from '@/src/i18n';
 
 export default function HomeScreen() {
   const { profile } = useCurrentUser();
+  const { t, districtName } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,13 +55,13 @@ export default function HomeScreen() {
   // Prefer requests in the donor's own district; fall back to all of Kerala.
   const nearby = profile?.district ? requests.filter(r => r.district === profile.district) : [];
   const shown = (nearby.length ? nearby : requests).slice(0, 5);
-  const scope = nearby.length ? profile!.district : 'Kerala';
+  const scope = nearby.length ? districtName(profile!.district) : t('common.kerala');
   const firstName = profile?.name?.split(' ')[0] ?? '';
 
   return (
     <Screen
-      title={firstName ? `Hello, ${firstName}` : 'Hello'}
-      subtitle={profile?.district ? `${profile.district}, Kerala` : 'Kerala'}
+      title={firstName ? t('home.helloName', { name: firstName }) : t('home.hello')}
+      subtitle={profile?.district ? t('common.inKerala', { district: districtName(profile.district) }) : t('common.kerala')}
       refreshing={refreshing}
       onRefresh={onRefresh}
       hero={profile && (
@@ -78,7 +80,7 @@ export default function HomeScreen() {
         <Pressable style={styles.notice} onPress={() => router.push('/profile/edit')} accessibilityRole="button">
           <MaterialCommunityIcons name="map-marker-plus" size={24} color={palette.turmeric} />
           <Text variant="body" style={styles.flex}>
-            Add your district so volunteers can call you for requests nearby.
+            {t('home.addDistrict')}
           </Text>
           <MaterialCommunityIcons name="chevron-right" size={22} color={palette.turmeric} />
         </Pressable>
@@ -87,15 +89,15 @@ export default function HomeScreen() {
       <View style={styles.actions}>
         <ActionTile
           icon="water-plus"
-          title="Request blood"
-          text="For a patient who needs it"
+          title={t('home.requestBlood')}
+          text={t('home.requestBloodText')}
           onPress={() => router.push('/request/new')}
           filled
         />
         <ActionTile
           icon="hand-heart"
-          title="I donated"
-          text="Log it to start your cool-off"
+          title={t('home.donated')}
+          text={t('home.donatedText')}
           onPress={() => router.push('/donation/new')}
         />
       </View>
@@ -103,23 +105,23 @@ export default function HomeScreen() {
       <Pressable style={styles.findRow} onPress={() => router.push('/find-donors')} accessibilityRole="button">
         <MaterialCommunityIcons name="account-search" size={24} color={palette.blood} />
         <View style={styles.flex}>
-          <Text variant="bodyStrong">Find donors</Text>
-          <Text variant="caption" color={palette.inkMuted}>Donors near you who chose to be listed</Text>
+          <Text variant="bodyStrong">{t('home.findDonors')}</Text>
+          <Text variant="caption" color={palette.inkMuted}>{t('home.findDonorsText')}</Text>
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={palette.inkFaint} />
       </Pressable>
 
       <Section
-        title={`Open requests in ${scope}`}
-        action={{ label: 'See all', onPress: () => router.navigate('/(tabs)/requests') }}
+        title={t('home.openRequestsIn', { place: scope })}
+        action={{ label: t('common.seeAll'), onPress: () => router.navigate('/(tabs)/requests') }}
       >
         {loading ? (
           <ActivityIndicator color={palette.blood} style={styles.loading} />
         ) : shown.length === 0 ? (
           <EmptyState
             icon="water-check"
-            title="No open requests right now"
-            message="When someone needs blood, it shows up here."
+            title={t('home.noRequests')}
+            message={t('home.noRequestsMessage')}
           />
         ) : (
           <List>

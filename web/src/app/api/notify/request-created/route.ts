@@ -2,6 +2,7 @@ import type { NotifyResult, RequestCreatedBody } from "@shared/notifications";
 import { adminDb } from "@/lib/firebase-admin";
 import { ApiError, authedRoute, logNotification } from "@/lib/api";
 import { sendPush, toRecipients } from "@/lib/push";
+import { requestCreatedMessage } from "@shared/pushMessages";
 
 // Called by the app right after a request is posted. Alerts admins only, once
 // per request; donors are alerted later when an admin approves it.
@@ -31,10 +32,12 @@ export const POST = authedRoute<RequestCreatedBody>("any", async (caller, { requ
   );
   if (!recipients.length) return { sent: 0, recipients: 0, skipped: "no-recipients" } satisfies NotifyResult;
 
-  const units = `${request.units} ${request.units === 1 ? "unit" : "units"}`;
-  const title = `New ${request.bloodType} request${request.district ? ` in ${request.district}` : ""}`;
-  const body = `${units} at ${request.hospital} for ${request.patientName}. Review it and alert donors.`;
-  const result = await sendPush(recipients, { title, body, data: { type: "request", requestId } });
+  const info = request as Parameters<typeof requestCreatedMessage>[0];
+  const { title, body } = requestCreatedMessage(info, "en");
+  const result = await sendPush(recipients, language => ({
+    ...requestCreatedMessage(info, language),
+    data: { type: "request", requestId },
+  }));
 
   await logNotification({ type: "request-created", title, body, requestId, ...result, caller });
   return result satisfies NotifyResult;

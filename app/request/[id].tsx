@@ -7,7 +7,7 @@ import { useCurrentUser } from '@/src/context/UserContext';
 import { BloodRequest, Donation } from '@/shared/types';
 import { coversDistrict, isVolunteer, mapDonation, mapRequest } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
-import { formatDate, timeAgo } from '@/shared/format';
+import { StringKey, useI18n } from '@/src/i18n';
 import { palette, radius, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
 import BloodMark from '@/src/components/ui/BloodMark';
@@ -21,21 +21,22 @@ import Text from '@/src/components/ui/Text';
 import { callNotifyApi } from '@/src/utils/push';
 import { NOTIFY_ENDPOINTS, NotifyResult, RequestDonorsBody } from '@/shared/notifications';
 
-const URGENCY: Record<BloodRequest['urgency'], { label: string; tone: Tone }> = {
-  high: { label: 'Urgent', tone: 'blood' },
-  medium: { label: 'Needed soon', tone: 'turmeric' },
-  low: { label: 'Planned', tone: 'muted' },
+const URGENCY: Record<BloodRequest['urgency'], { label: StringKey; tone: Tone }> = {
+  high: { label: 'urgency.high', tone: 'blood' },
+  medium: { label: 'urgency.medium', tone: 'turmeric' },
+  low: { label: 'urgency.low', tone: 'muted' },
 };
 
-const STATUS: Record<BloodRequest['status'], { label: string; tone: Tone }> = {
-  open: { label: 'Open', tone: 'info' },
-  fulfilled: { label: 'Fulfilled', tone: 'leaf' },
-  closed: { label: 'Closed', tone: 'muted' },
+const STATUS: Record<BloodRequest['status'], { label: StringKey; tone: Tone }> = {
+  open: { label: 'status.open', tone: 'info' },
+  fulfilled: { label: 'status.fulfilled', tone: 'leaf' },
+  closed: { label: 'status.closed', tone: 'muted' },
 };
 
 export default function RequestDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { profile } = useCurrentUser();
+  const { t, formatDate, timeAgo, districtName } = useI18n();
   const [request, setRequest] = useState<BloodRequest | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [notFound, setNotFound] = useState(false);
@@ -57,7 +58,7 @@ export default function RequestDetails() {
       }
     } catch (error) {
       console.error('Error fetching request:', error);
-      showMessage('Could not load request', 'Check your connection and pull down to try again.');
+      showMessage(t('requestDetail.couldNotLoad'), t('requestDetail.pullToRetry'));
     }
   };
 
@@ -73,11 +74,11 @@ export default function RequestDetails() {
 
   const updateStatus = async (status: 'fulfilled' | 'closed') => {
     const ok = await confirmAction(
-      status === 'fulfilled' ? 'Mark as fulfilled?' : 'Close this request?',
+      status === 'fulfilled' ? t('requestDetail.fulfilled.title') : t('requestDetail.closeRequest.title'),
       status === 'fulfilled'
-        ? 'The patient has the blood they need. Donors will stop seeing this request.'
-        : 'Donors will stop seeing this request. Use this if it is no longer needed.',
-      status === 'fulfilled' ? 'Mark fulfilled' : 'Close request',
+        ? t('requestDetail.fulfilled.message')
+        : t('requestDetail.closeRequest.message'),
+      status === 'fulfilled' ? t('requestDetail.markFulfilled') : t('requestDetail.closeRequest.confirm'),
     );
     if (!ok) return;
 
@@ -92,7 +93,7 @@ export default function RequestDetails() {
       router.back();
     } catch (error) {
       console.error('Error updating request:', error);
-      showMessage('Could not update request', 'Check your connection and try again.');
+      showMessage(t('requestDetail.couldNotUpdate'), t('common.checkConnection'));
     } finally {
       setUpdating(false);
     }
@@ -100,15 +101,15 @@ export default function RequestDetails() {
 
   if (notFound) {
     return (
-      <Screen back title="Blood request">
-        <EmptyState icon="file-question-outline" title="This request no longer exists" />
+      <Screen back title={t('requestDetail.title')}>
+        <EmptyState icon="file-question-outline" title={t('requestDetail.notFound')} />
       </Screen>
     );
   }
 
   if (!request) {
     return (
-      <Screen back title="Blood request">
+      <Screen back title={t('requestDetail.title')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
@@ -118,25 +119,29 @@ export default function RequestDetails() {
   const isManager = coversDistrict(profile, request.district);
   const canUpdate = (isOwner || isManager) && request.status === 'open';
   const phone = request.contactNumber?.replace(/\D/g, '').slice(-10);
-  const place = [request.location, request.district].filter(Boolean).join(', ');
-  const unitsLabel = `${request.units} ${request.units === 1 ? 'unit' : 'units'}`;
+  const place = [request.location, districtName(request.district)].filter(Boolean).join(', ');
+  const unitsLabel = request.units === 1
+    ? t('requestDetail.oneUnitOf', { bloodType: request.bloodType })
+    : t('requestDetail.unitsOf', { units: request.units, bloodType: request.bloodType });
 
   return (
     <Screen
       back
-      title="Blood request"
-      subtitle={`Posted ${timeAgo(request.createdAt)} by ${request.requesterName}`}
+      title={t('requestDetail.title')}
+      subtitle={t('requestDetail.postedBy', { time: timeAgo(request.createdAt), name: request.requesterName })}
       refreshing={refreshing}
       onRefresh={onRefresh}
     >
       <View style={styles.summary}>
         <BloodMark bloodType={request.bloodType} size="lg" muted={request.status !== 'open'} />
         <View style={styles.summaryText}>
-          <Text variant="title">{unitsLabel} of {request.bloodType}</Text>
-          <Text variant="body" color={palette.inkMuted}>for {request.patientName}</Text>
+          <Text variant="title">{unitsLabel}</Text>
+          <Text variant="body" color={palette.inkMuted}>{t('requestDetail.forPatient', { patient: request.patientName })}</Text>
           <View style={styles.pills}>
-            <Pill {...STATUS[request.status]} />
-            {request.status === 'open' && <Pill {...URGENCY[request.urgency]} />}
+            <Pill label={t(STATUS[request.status].label)} tone={STATUS[request.status].tone} />
+            {request.status === 'open' && (
+              <Pill label={t(URGENCY[request.urgency].label)} tone={URGENCY[request.urgency].tone} />
+            )}
           </View>
         </View>
       </View>
@@ -145,13 +150,13 @@ export default function RequestDetails() {
         <View style={styles.actions}>
           <Button
             icon="phone"
-            label="Call"
+            label={t('common.call')}
             onPress={() => Linking.openURL(`tel:${phone}`)}
             style={styles.flex}
           />
           <Button
             icon="whatsapp"
-            label="WhatsApp"
+            label={t('common.whatsapp')}
             variant="secondary"
             color={palette.leaf}
             onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
@@ -162,14 +167,14 @@ export default function RequestDetails() {
 
       <List>
         <ListRow icon="hospital-building" title={request.hospital} subtitle={place || undefined} />
-        <ListRow icon="phone-outline" title={request.contactNumber || 'No contact number'} subtitle="Contact" />
-        <ListRow icon="calendar-blank-outline" title={formatDate(request.createdAt)} subtitle="Posted" />
+        <ListRow icon="phone-outline" title={request.contactNumber || t('requestDetail.noContact')} subtitle={t('requestDetail.contact')} />
+        <ListRow icon="calendar-blank-outline" title={formatDate(request.createdAt)} subtitle={t('requestDetail.posted')} />
       </List>
 
       {isManager && request.status === 'open' && (
         <Button
           icon="account-search"
-          label="Find eligible donors"
+          label={t('requestDetail.findEligible')}
           color={palette.info}
           onPress={() => router.push({
             pathname: '/(tabs)/manage',
@@ -181,7 +186,7 @@ export default function RequestDetails() {
       {isOwner && !isManager && request.status === 'open' && (
         <Button
           icon="account-search"
-          label="Find donors"
+          label={t('findDonors.title')}
           color={palette.info}
           onPress={() => router.push({
             pathname: '/find-donors',
@@ -191,7 +196,7 @@ export default function RequestDetails() {
       )}
 
       {isManager && (
-        <Section title={`Donations logged (${donations.length} of ${request.units})`}>
+        <Section title={t('requestDetail.donationsLogged', { count: donations.length, units: request.units })}>
           <View style={styles.progressTrack}>
             <View style={[
               styles.progressFill,
@@ -210,14 +215,14 @@ export default function RequestDetails() {
         <View style={styles.actions}>
           <Button
             icon="check-circle-outline"
-            label="Mark fulfilled"
+            label={t('requestDetail.markFulfilled')}
             color={palette.leaf}
             loading={updating}
             onPress={() => updateStatus('fulfilled')}
             style={styles.flex}
           />
           <Button
-            label="Close"
+            label={t('requestDetail.close')}
             variant="secondary"
             color={palette.inkMuted}
             disabled={updating}
@@ -232,6 +237,7 @@ export default function RequestDetails() {
 
 // Admin-only: alert donors with the request's blood type through the notification API.
 function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () => void }) {
+  const { t, timeAgo, districtName } = useI18n();
   const [includeCoolingOff, setIncludeCoolingOff] = useState(false);
   const [districtOnly, setDistrictOnly] = useState(false);
   const [sending, setSending] = useState(false);
@@ -239,9 +245,9 @@ function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () =
 
   const send = async () => {
     const ok = await confirmAction(
-      alreadySent ? 'Send the alert again?' : 'Notify donors?',
-      `Send an alert to donors with ${request.bloodType} blood?`,
-      alreadySent ? 'Send again' : 'Send alert',
+      alreadySent ? t('requestDetail.notify.titleAgain') : t('requestDetail.notify.title'),
+      t('requestDetail.notify.message', { bloodType: request.bloodType }),
+      alreadySent ? t('requestDetail.notify.sendAgain') : t('requestDetail.notify.send'),
     );
     if (!ok) return;
 
@@ -255,31 +261,45 @@ function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () =
       };
       const result = await callNotifyApi<NotifyResult>(NOTIFY_ENDPOINTS.requestDonors, body);
       if (result.skipped === 'no-recipients') {
-        showMessage('Nobody to notify', `No donors with ${request.bloodType} blood have the app with notifications on.`);
+        showMessage(t('requestDetail.notify.nobody.title'), t('requestDetail.notify.nobody.message', { bloodType: request.bloodType }));
       } else if (result.skipped === 'already-notified') {
-        showMessage('Already sent', 'Donors were already alerted for this request.');
+        showMessage(t('requestDetail.notify.already.title'), t('requestDetail.notify.already.message'));
       } else {
-        showMessage('Alert sent', `Sent to ${result.recipients} ${result.recipients === 1 ? 'donor' : 'donors'}.`);
+        showMessage(
+          t('requestDetail.notify.sent.title'),
+          result.recipients === 1
+            ? t('requestDetail.notify.sentToOne')
+            : t('requestDetail.notify.sentToMany', { count: result.recipients }),
+        );
       }
       onSent();
     } catch (error) {
       console.error('Error notifying donors:', error);
-      showMessage('Could not send alert', error instanceof Error ? error.message : 'Check your connection and try again.');
+      showMessage(t('requestDetail.notify.couldNotSend'), error instanceof Error ? error.message : t('common.checkConnection'));
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <Section title="Notify donors">
+    <Section title={t('requestDetail.notify.section')}>
       <View style={styles.notifyCard}>
         <Text variant="body" color={palette.inkMuted}>
           {alreadySent
-            ? `Sent to ${request.donorsNotifiedCount ?? 0} donors ${timeAgo(request.donorsNotifiedAt!)}${request.donorsNotifiedByName ? ` by ${request.donorsNotifiedByName}` : ''}`
-            : 'Not sent to donors yet'}
+            ? request.donorsNotifiedByName
+              ? t('requestDetail.notify.summaryBy', {
+                count: request.donorsNotifiedCount ?? 0,
+                time: timeAgo(request.donorsNotifiedAt!),
+                name: request.donorsNotifiedByName,
+              })
+              : t('requestDetail.notify.summary', {
+                count: request.donorsNotifiedCount ?? 0,
+                time: timeAgo(request.donorsNotifiedAt!),
+              })
+            : t('requestDetail.notify.notSent')}
         </Text>
         <View style={styles.switchRow}>
-          <Text variant="body" style={styles.flex}>Include donors in cool-off</Text>
+          <Text variant="body" style={styles.flex}>{t('requestDetail.notify.includeCoolingOff')}</Text>
           <Switch
             value={includeCoolingOff}
             onValueChange={setIncludeCoolingOff}
@@ -289,7 +309,9 @@ function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () =
         </View>
         {request.district && (
           <View style={styles.switchRow}>
-            <Text variant="body" style={styles.flex}>Only donors in {request.district}</Text>
+            <Text variant="body" style={styles.flex}>
+              {t('requestDetail.notify.districtOnly', { district: districtName(request.district) })}
+            </Text>
             <Switch
               value={districtOnly}
               onValueChange={setDistrictOnly}
@@ -300,7 +322,7 @@ function NotifyDonors({ request, onSent }: { request: BloodRequest; onSent: () =
         )}
         <Button
           icon="bell-ring-outline"
-          label={alreadySent ? 'Send again' : `Notify ${request.bloodType} donors`}
+          label={alreadySent ? t('requestDetail.notify.sendAgain') : t('requestDetail.notify.button', { bloodType: request.bloodType })}
           variant={alreadySent ? 'secondary' : 'primary'}
           loading={sending}
           onPress={send}

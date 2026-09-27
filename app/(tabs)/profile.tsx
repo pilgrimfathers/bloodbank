@@ -8,10 +8,12 @@ import { getDonations } from '@/src/utils/data';
 import { callNotifyApi, unregisterPushToken } from '@/src/utils/push';
 import { ACCOUNT_DELETE_ENDPOINT } from '@/shared/privacy';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
+import { LANGUAGES, useI18n } from '@/src/i18n';
 import { palette, space } from '@/src/theme';
 import DonationList from '@/src/components/DonationList';
 import AlertsCard from '@/src/components/AlertsCard';
 import DonorCard from '@/src/components/DonorCard';
+import { LanguageOption } from '@/src/components/LanguageChooser';
 import VisibilityPicker from '@/src/components/VisibilityPicker';
 import Button from '@/src/components/ui/Button';
 import { List, ListRow } from '@/src/components/ui/List';
@@ -20,13 +22,14 @@ import Screen from '@/src/components/ui/Screen';
 import Section from '@/src/components/ui/Section';
 
 const ROLE_LABELS = {
-  donor: 'Donor',
-  volunteer: 'Volunteer',
-  admin: 'Admin',
-};
+  donor: 'role.donor',
+  volunteer: 'role.volunteer',
+  admin: 'role.admin',
+} as const;
 
 export default function ProfileScreen() {
   const { profile } = useCurrentUser();
+  const { t, districtName, language, setLanguage } = useI18n();
   const [donations, setDonations] = useState<Donation[]>([]);
 
   useFocusEffect(useCallback(() => {
@@ -42,25 +45,25 @@ export default function ProfileScreen() {
   // donation history, requests and login in one go.
   const handleDeleteAccount = async () => {
     const ok = await confirmAction(
-      'Delete your account?',
-      'This permanently erases your profile, blood group, donation history and the requests you posted. It cannot be undone.',
-      'Delete account',
+      t('profile.deleteConfirmTitle'),
+      t('profile.deleteConfirmBody'),
+      t('profile.deleteAccount'),
     );
     if (!ok) return;
     setDeleting(true);
     try {
       await callNotifyApi(ACCOUNT_DELETE_ENDPOINT, {});
       await auth.signOut().catch(() => {});
-      showMessage('Account deleted', 'Your account and data have been erased. Thank you for being a donor.');
+      showMessage(t('profile.deletedTitle'), t('profile.deletedBody'));
     } catch (error) {
-      showMessage('Could not delete account', (error as Error).message);
+      showMessage(t('profile.deleteFailed'), (error as Error).message);
     } finally {
       setDeleting(false);
     }
   };
 
   const handleLogout = async () => {
-    const ok = await confirmAction('Log out?', 'You will need your email and password to log back in.', 'Log out');
+    const ok = await confirmAction(t('profile.logoutConfirmTitle'), t('profile.logoutConfirmBody'), t('profile.logout'));
     if (!ok) return;
     try {
       // Stop alerts to this phone before the session ends.
@@ -69,25 +72,25 @@ export default function ProfileScreen() {
       router.replace('/(auth)/login');
       // _layout.tsx will handle navigation due to auth state change
     } catch (error) {
-      showMessage('Could not log out', 'Check your connection and try again.');
+      showMessage(t('profile.logoutFailed'), t('common.checkConnection'));
     }
   };
 
   if (!profile) {
     return (
-      <Screen title="Profile">
+      <Screen title={t('profile.title')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
   }
 
   const role = profile.role ?? 'donor';
-  const place = [profile.area, profile.district].filter(Boolean).join(', ');
+  const place = [profile.area, districtName(profile.district)].filter(Boolean).join(', ');
 
   return (
     <Screen
       title={profile.name}
-      subtitle={profile.district ? `${profile.district}, Kerala` : 'District not set'}
+      subtitle={profile.district ? t('common.inKerala', { district: districtName(profile.district) }) : t('profile.districtNotSet')}
       hero={
         <DonorCard
           bloodType={profile.bloodType}
@@ -97,10 +100,10 @@ export default function ProfileScreen() {
       }
     >
       <View style={styles.actions}>
-        <Button icon="water-plus" label="I donated" onPress={() => router.push('/donation/new')} style={styles.flex} />
+        <Button icon="water-plus" label={t('profile.iDonated')} onPress={() => router.push('/donation/new')} style={styles.flex} />
         <Button
           icon="pencil-outline"
-          label="Edit profile"
+          label={t('profile.editProfile')}
           variant="secondary"
           onPress={() => router.push('/profile/edit')}
           style={styles.flex}
@@ -109,40 +112,53 @@ export default function ProfileScreen() {
 
       <AlertsCard />
 
-      <Section title="Your details">
+      <Section title={t('profile.yourDetails')}>
         <View style={styles.pills}>
-          <Pill label={ROLE_LABELS[role]} tone={role === 'donor' ? 'muted' : 'info'} />
-          <Pill label={profile.verified ? 'Verified' : 'Not verified yet'} tone={profile.verified ? 'kasavu' : 'muted'} />
+          <Pill label={t(ROLE_LABELS[role])} tone={role === 'donor' ? 'muted' : 'info'} />
+          <Pill label={profile.verified ? t('profile.verified') : t('profile.notVerified')} tone={profile.verified ? 'kasavu' : 'muted'} />
         </View>
         <List>
-          <ListRow icon="email-outline" title={profile.email || 'No email'} subtitle="Email" />
-          <ListRow icon="phone-outline" title={profile.phoneNumber || 'No phone number'} subtitle="Phone" />
+          <ListRow icon="email-outline" title={profile.email || t('profile.noEmail')} subtitle={t('profile.email')} />
+          <ListRow icon="phone-outline" title={profile.phoneNumber || t('common.noPhone')} subtitle={t('profile.phone')} />
           <ListRow
             icon="map-marker-outline"
-            title={place || 'Add your district'}
-            subtitle="Area"
+            title={place || t('profile.addDistrict')}
+            subtitle={t('profile.area')}
             onPress={place ? undefined : () => router.push('/profile/edit')}
           />
-          {profile.address ? <ListRow icon="home-outline" title={profile.address} subtitle="Address" /> : null}
+          {profile.address ? <ListRow icon="home-outline" title={profile.address} subtitle={t('profile.address')} /> : null}
           <ListRow
             icon={profile.isDonor ? 'hand-heart-outline' : 'pause-circle-outline'}
-            title={profile.isDonor ? 'Available to donate' : 'Not available right now'}
-            subtitle="Volunteers only call you when you are available"
+            title={profile.isDonor ? t('profile.available') : t('profile.notAvailable')}
+            subtitle={t('profile.availableHint')}
           />
         </List>
       </Section>
 
-      <Section title="Who can find you">
+      <Section title={t('profile.whoCanFind')}>
         <VisibilityPicker profile={profile} />
       </Section>
 
-      <Section title={`Donation history (${donations.length})`}>
+      <Section title={t('language.setting')}>
+        <View style={styles.languages} accessibilityRole="radiogroup">
+          {LANGUAGES.map(option => (
+            <LanguageOption
+              key={option.value}
+              label={option.label}
+              selected={(language ?? 'en') === option.value}
+              onPress={() => setLanguage(option.value)}
+            />
+          ))}
+        </View>
+      </Section>
+
+      <Section title={t('profile.history', { count: donations.length })}>
         <DonationList donations={donations} />
       </Section>
 
       <Button
         icon="compass-outline"
-        label="Take the app tour"
+        label={t('profile.takeTour')}
         variant="quiet"
         color={palette.inkMuted}
         onPress={() => router.push('/tour')}
@@ -150,7 +166,7 @@ export default function ProfileScreen() {
 
       <Button
         icon="logout"
-        label="Log out"
+        label={t('profile.logout')}
         variant="quiet"
         color={palette.inkMuted}
         onPress={handleLogout}
@@ -159,14 +175,14 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <Button
           icon="shield-account-outline"
-          label="Privacy policy"
+          label={t('profile.privacyPolicy')}
           variant="quiet"
           color={palette.inkMuted}
           onPress={() => router.push('/privacy')}
         />
         <Button
           icon="delete-outline"
-          label="Delete account"
+          label={t('profile.deleteAccount')}
           variant="quiet"
           color={palette.blood}
           loading={deleting}
@@ -192,6 +208,9 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  languages: {
+    gap: space.md,
   },
   pills: {
     flexDirection: 'row',

@@ -6,6 +6,7 @@ import { firestore } from '@/src/config/firebase';
 import { VISIBILITY_OPTIONS } from '@/shared/donors';
 import { ProfileVisibility, UserProfile } from '@/shared/types';
 import { showMessage } from '@/src/utils/dialog';
+import { useI18n } from '@/src/i18n';
 import { palette, radius, space } from '@/src/theme';
 import Text from './ui/Text';
 
@@ -16,6 +17,7 @@ export async function saveVisibility(userId: string, visibility: ProfileVisibili
 // Lets donors choose who outside the volunteer team can find them. Saves on tap;
 // the live profile in UserContext picks up the change.
 export default function VisibilityPicker({ profile }: { profile: UserProfile }) {
+  const { t } = useI18n();
   const [saving, setSaving] = useState<ProfileVisibility | null>(null);
   const current = profile.visibility ?? 'private';
 
@@ -26,7 +28,7 @@ export default function VisibilityPicker({ profile }: { profile: UserProfile }) 
       await saveVisibility(profile.id, visibility);
     } catch (error) {
       console.error('Error saving visibility:', error);
-      showMessage('Could not save', 'Check your connection and try again.');
+      showMessage(t('common.couldNotSave'), t('common.checkConnection'));
     } finally {
       setSaving(null);
     }
@@ -59,8 +61,8 @@ export default function VisibilityPicker({ profile }: { profile: UserProfile }) 
               />
             )}
             <View style={styles.text}>
-              <Text variant="bodyStrong">{option.label}</Text>
-              <Text variant="caption" color={palette.inkMuted}>{option.description}</Text>
+              <Text variant="bodyStrong">{t(`visibility.${option.value}.label`)}</Text>
+              <Text variant="caption" color={palette.inkMuted}>{t(`visibility.${option.value}.description`)}</Text>
             </View>
           </Pressable>
         );

@@ -1,12 +1,13 @@
 import "server-only";
 import { FieldValue } from "firebase-admin/firestore";
 import { ANDROID_CHANNEL_ID, type NotificationData } from "@shared/notifications";
+import { pushLanguage, type PushLanguage } from "@shared/pushMessages";
 import { adminDb } from "./firebase-admin";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const BATCH_SIZE = 100;
 
-export type Recipient = { uid: string; tokens: string[] };
+export type Recipient = { uid: string; tokens: string[]; language: PushLanguage };
 
 export type PushMessage = {
   title: string;
@@ -25,14 +26,24 @@ function isExpoToken(token: unknown): token is string {
 // Turns user documents into recipients with valid, de-duplicated tokens.
 export function toRecipients(users: { id: string; data: FirebaseFirestore.DocumentData }[]): Recipient[] {
   return users
-    .map(({ id, data }) => ({ uid: id, tokens: [...new Set((data.pushTokens ?? []).filter(isExpoToken))] as string[] }))
+    .map(({ id, data }) => ({
+      uid: id,
+      tokens: [...new Set((data.pushTokens ?? []).filter(isExpoToken))] as string[],
+      language: pushLanguage(data.language),
+    }))
     .filter(recipient => recipient.tokens.length > 0);
 }
 
 // Sends one message to every device of every recipient through Expo's push
-// service, and drops tokens Expo reports as no longer registered.
-export async function sendPush(recipients: Recipient[], message: PushMessage) {
-  const targets = recipients.flatMap(({ uid, tokens }) => tokens.map(token => ({ uid, token })));
+// service, and drops tokens Expo reports as no longer registered. Pass a
+// function to word the message in each recipient's language.
+export async function sendPush(
+  recipients: Recipient[],
+  message: PushMessage | ((language: PushLanguage) => PushMessage),
+) {
+  const messageFor = typeof message === "function" ? message : () => message;
+  const targets = recipients.flatMap(({ uid, tokens, language }) =>
+    tokens.map(token => ({ uid, token, message: messageFor(language) })));
   const deadTokens: { uid: string; token: string }[] = [];
   let sent = 0;
 
@@ -45,7 +56,7 @@ export async function sendPush(recipients: Recipient[], message: PushMessage) {
         accept: "application/json",
         ...(process.env.EXPO_ACCESS_TOKEN && { authorization: `Bearer ${process.env.EXPO_ACCESS_TOKEN}` }),
       },
-      body: JSON.stringify(batch.map(({ token }) => ({
+      body: JSON.stringify(batch.map(({ token, message }) => ({
         to: token,
         title: message.title,
         body: message.body,

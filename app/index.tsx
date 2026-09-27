@@ -6,9 +6,11 @@ import { BLOOD_TYPES } from '@/shared/constants';
 import { palette, radius, space } from '@/src/theme';
 import Button from '@/src/components/ui/Button';
 import Text from '@/src/components/ui/Text';
+import { useI18n } from '@/src/i18n';
 
 export default function LandingScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   return (
     <View style={styles.page}>
@@ -17,7 +19,7 @@ export default function LandingScreen() {
           <MaterialCommunityIcons name="water" size={56} color="#fff" />
           <Text variant="display" color="#fff" style={styles.title}>Blood Bank Kerala</Text>
           <Text variant="body" color="rgba(255,255,255,0.85)">
-            Donors, volunteers and patients across all 14 districts, one phone call apart.
+            {t('landing.tagline')}
           </Text>
           <View style={styles.groups}>
             {BLOOD_TYPES.map(type => (
@@ -31,11 +33,11 @@ export default function LandingScreen() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.xl }]}>
         <View style={styles.inner}>
-          <Text variant="heading">Every donation counts</Text>
+          <Text variant="heading">{t('landing.heading')}</Text>
           <Text variant="body" color={palette.inkMuted} style={styles.lead}>
-            Sign up as a donor, track your cool-off, and help volunteers find blood when someone needs it.
+            {t('landing.lead')}
           </Text>
-          <Button label="Get started" onPress={() => router.push('/(auth)/login')} />
+          <Button label={t('landing.getStarted')} onPress={() => router.push('/(auth)/login')} />
         </View>
       </View>
     </View>

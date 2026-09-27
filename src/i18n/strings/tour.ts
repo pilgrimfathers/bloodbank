@@ -1,0 +1,133 @@
+import { defineStrings } from '../define';
+
+// The first-run app tour (app/tour.tsx).
+export const tour = defineStrings(
+  {
+    'tour.progress': '{step} of {total}',
+    'tour.start': 'Start using the app',
+
+    'tour.welcome.titleName': 'Welcome, {name}',
+    'tour.welcome.title': 'Welcome',
+    'tour.welcome.intro': 'Blood Bank Kerala connects blood donors with patients across all 14 districts. Volunteers run it, and it is free. Here is a quick look at how it works and how your details are kept safe.',
+
+    'tour.card.title': 'Your donor card',
+    'tour.card.intro': 'The card at the top of Home shows your blood group and whether you can donate today.',
+    'tour.card.gap': 'After you donate, there is a {months}-month gap before you can give again. The ring counts down the days.',
+    'tour.card.logIt': 'Tap "I donated" after each donation, so nobody asks you too early.',
+    'tour.card.reminder': 'We remind you on the day you can donate again.',
+
+    'tour.requests.title': 'Requests for blood',
+    'tour.requests.intro': 'When a patient needs blood, anyone can post a request from Home with "Request blood".',
+    'tour.requests.where': 'Open requests near you show on Home, and all of them on the Requests tab.',
+    'tour.requests.volunteers': 'Volunteers are told right away, and they call matching donors.',
+    'tour.requests.contact': 'The contact number in a request is visible to everyone signed in, so they can call. Use a number the family is happy to share.',
+
+    'tour.find.title': 'Find donors',
+    'tour.find.intro': 'You can also look for donors yourself from "Find donors" on Home.',
+    'tour.find.listed': 'You only see donors who chose to be listed, and only what they agreed to share.',
+    'tour.find.ask': 'If a donor\'s number is hidden, tap "Ask to donate" to send them your request. You can ask up to {limit} donors a day.',
+    'tour.find.callback': 'The donor gets a notification and calls you if they can help.',
+
+    'tour.alerts.title': 'Request alerts',
+    'tour.alerts.introGroup': 'Get a notification when someone needs {group} blood, or when a person asks you directly.',
+    'tour.alerts.introAny': 'Get a notification when someone needs your blood group, or when a person asks you directly.',
+    'tour.alerts.on': 'Alerts are on',
+    'tour.alerts.turnOn': 'Turn on alerts',
+    'tour.alerts.openSettings': 'Open settings',
+    'tour.alerts.later': 'You can also turn them on later from Home.',
+
+    'tour.visibility.title': 'Who can find you',
+    'tour.visibility.intro': 'You decide whether people who need blood can find you. Private is the default: only volunteers can see you.',
+    'tour.visibility.hint': 'Change this any time in Profile, under "Who can find you".',
+
+    'tour.privacy.title': 'Your data stays yours',
+    'tour.privacy.intro': 'What we keep, who sees it, and how to take it back.',
+    'tour.privacy.volunteers': 'Volunteers see your details, including your phone number, only for the districts they manage, and only to arrange donations.',
+    'tour.privacy.hidden': 'Your address, email, medical conditions and donation dates are never shown to the public.',
+    'tour.privacy.location': 'We never track your location. We only know the district and area you enter.',
+    'tour.privacy.pause': 'Turn off "Available to donate" in Edit profile to stop being called.',
+    'tour.privacy.delete': 'Delete your account from Profile at any time. It erases your profile, donation history and requests.',
+    'tour.privacy.noAds': 'We never sell your data or use it for ads.',
+    'tour.privacy.read': 'Read the privacy policy',
+
+    'tour.volunteer.titleAdmin': 'Your admin tools',
+    'tour.volunteer.title': 'Your volunteer tools',
+    'tour.volunteer.intro': 'You manage donors in {districts}. The Donors tab is only visible to volunteers and admins.',
+    'tour.volunteer.allKerala': 'all of Kerala',
+    'tour.volunteer.add': 'Add donors who don\'t use the app, and verify or deactivate donors.',
+    'tour.volunteer.log': 'Log donations, including ones linked to a request, to start the cool-off.',
+    'tour.volunteer.notify': 'From a request, use "Notify donors" to alert everyone who matches.',
+    'tour.volunteer.merge': 'When a donor you added signs up, merge the two so history stays in one place.',
+    'tour.volunteer.roles': 'Change roles and districts from a donor page.',
+    'tour.volunteer.private': 'Donor details are private. Use them only to arrange donations, and never share them outside the team.',
+
+    'tour.done.title': 'You\'re all set',
+    'tour.done.intro': 'Thank you for being part of Blood Bank Kerala. One donation can help up to three people.',
+    'tour.done.update': 'Keep your district and phone number up to date in Profile.',
+    'tour.done.again': 'You can see this tour again from Profile.',
+  },
+  {
+    'tour.progress': '{step} / {total}',
+    'tour.start': 'ആപ്പ് ഉപയോഗിച്ച് തുടങ്ങാം',
+
+    'tour.welcome.titleName': 'സ്വാഗതം, {name}',
+    'tour.welcome.title': 'സ്വാഗതം',
+    'tour.welcome.intro': 'കേരളത്തിലെ 14 ജില്ലകളിലെയും രോഗികളെ രക്തദാതാക്കളുമായി ബന്ധിപ്പിക്കുന്ന ആപ്പാണ് Blood Bank Kerala. വോളണ്ടിയർമാരാണ് ഇത് നടത്തുന്നത്, പൂർണ്ണമായും സൗജന്യം. ഇത് എങ്ങനെ പ്രവർത്തിക്കുന്നു, നിങ്ങളുടെ വിവരങ്ങൾ എങ്ങനെ സുരക്ഷിതമായി സൂക്ഷിക്കുന്നു എന്ന് ചുരുക്കത്തിൽ നോക്കാം.',
+
+    'tour.card.title': 'നിങ്ങളുടെ ഡോണർ കാർഡ്',
+    'tour.card.intro': 'ഹോമിന്റെ മുകളിലുള്ള കാർഡിൽ നിങ്ങളുടെ ബ്ലഡ് ഗ്രൂപ്പും ഇന്ന് രക്തം നൽകാനാകുമോ എന്നും കാണാം.',
+    'tour.card.gap': 'രക്തം നൽകിയ ശേഷം വീണ്ടും നൽകാൻ {months} മാസത്തെ ഇടവേള വേണം. ബാക്കിയുള്ള ദിവസങ്ങൾ വളയത്തിൽ കാണാം.',
+    'tour.card.logIt': 'ഓരോ തവണ രക്തം നൽകിയ ശേഷവും "ഞാൻ രക്തം നൽകി" അമർത്തുക. അപ്പോൾ ആരും നേരത്തെ നിങ്ങളോട് ചോദിക്കില്ല.',
+    'tour.card.reminder': 'വീണ്ടും രക്തം നൽകാനാകുന്ന ദിവസം ഞങ്ങൾ ഓർമ്മിപ്പിക്കും.',
+
+    'tour.requests.title': 'രക്തത്തിനുള്ള അഭ്യർത്ഥനകൾ',
+    'tour.requests.intro': 'ഒരു രോഗിക്ക് രക്തം ആവശ്യമുള്ളപ്പോൾ, ആർക്കും ഹോമിലെ "രക്തം ആവശ്യപ്പെടുക" വഴി അഭ്യർത്ഥന പോസ്റ്റ് ചെയ്യാം.',
+    'tour.requests.where': 'നിങ്ങളുടെ അടുത്തുള്ള അഭ്യർത്ഥനകൾ ഹോമിലും, എല്ലാ അഭ്യർത്ഥനകളും "അഭ്യർത്ഥനകൾ" ടാബിലും കാണാം.',
+    'tour.requests.volunteers': 'വോളണ്ടിയർമാരെ ഉടൻ അറിയിക്കും, അവർ യോജിക്കുന്ന ദാതാക്കളെ വിളിക്കും.',
+    'tour.requests.contact': 'അഭ്യർത്ഥനയിലെ ഫോൺ നമ്പർ ലോഗിൻ ചെയ്ത എല്ലാവർക്കും കാണാം, അവർക്ക് വിളിക്കാനാണിത്. കുടുംബത്തിന് പങ്കുവയ്ക്കാൻ വിരോധമില്ലാത്ത നമ്പർ നൽകുക.',
+
+    'tour.find.title': 'ദാതാക്കളെ കണ്ടെത്തുക',
+    'tour.find.intro': 'ഹോമിലെ "ദാതാക്കളെ കണ്ടെത്തുക" വഴി നിങ്ങൾക്കും നേരിട്ട് ദാതാക്കളെ തിരയാം.',
+    'tour.find.listed': 'ലിസ്റ്റിൽ വരാൻ സമ്മതിച്ച ദാതാക്കളെ മാത്രമേ കാണൂ, അവർ പങ്കുവയ്ക്കാൻ സമ്മതിച്ച വിവരങ്ങൾ മാത്രവും.',
+    'tour.find.ask': 'ദാതാവിന്റെ നമ്പർ മറച്ചിട്ടുണ്ടെങ്കിൽ, "രക്തം നൽകാൻ ചോദിക്കുക" അമർത്തി നിങ്ങളുടെ അഭ്യർത്ഥന അയയ്ക്കാം. ഒരു ദിവസം {limit} ദാതാക്കളോട് വരെ ചോദിക്കാം.',
+    'tour.find.callback': 'ദാതാവിന് ഒരു നോട്ടിഫിക്കേഷൻ ലഭിക്കും, സഹായിക്കാനാകുമെങ്കിൽ അവർ നിങ്ങളെ വിളിക്കും.',
+
+    'tour.alerts.title': 'അഭ്യർത്ഥന അലേർട്ടുകൾ',
+    'tour.alerts.introGroup': 'ആർക്കെങ്കിലും {group} രക്തം ആവശ്യമുള്ളപ്പോഴോ ഒരാൾ നിങ്ങളോട് നേരിട്ട് ചോദിക്കുമ്പോഴോ നോട്ടിഫിക്കേഷൻ ലഭിക്കും.',
+    'tour.alerts.introAny': 'ആർക്കെങ്കിലും നിങ്ങളുടെ ഗ്രൂപ്പിലെ രക്തം ആവശ്യമുള്ളപ്പോഴോ ഒരാൾ നിങ്ങളോട് നേരിട്ട് ചോദിക്കുമ്പോഴോ നോട്ടിഫിക്കേഷൻ ലഭിക്കും.',
+    'tour.alerts.on': 'അലേർട്ടുകൾ ഓണാണ്',
+    'tour.alerts.turnOn': 'അലേർട്ടുകൾ ഓണാക്കുക',
+    'tour.alerts.openSettings': 'സെറ്റിംഗ്സ് തുറക്കുക',
+    'tour.alerts.later': 'പിന്നീട് ഹോമിൽ നിന്നും ഓണാക്കാം.',
+
+    'tour.visibility.title': 'ആർക്കൊക്കെ നിങ്ങളെ കണ്ടെത്താം',
+    'tour.visibility.intro': 'രക്തം ആവശ്യമുള്ളവർക്ക് നിങ്ങളെ കണ്ടെത്താനാകണോ എന്ന് നിങ്ങൾക്ക് തീരുമാനിക്കാം. സ്വതവേ "സ്വകാര്യം" ആണ്: വോളണ്ടിയർമാർക്ക് മാത്രമേ നിങ്ങളെ കാണാനാകൂ.',
+    'tour.visibility.hint': 'പ്രൊഫൈലിലെ "ആർക്കൊക്കെ നിങ്ങളെ കണ്ടെത്താം" എന്നതിൽ എപ്പോൾ വേണമെങ്കിലും മാറ്റാം.',
+
+    'tour.privacy.title': 'നിങ്ങളുടെ വിവരങ്ങൾ നിങ്ങളുടേത് തന്നെ',
+    'tour.privacy.intro': 'ഞങ്ങൾ എന്ത് സൂക്ഷിക്കുന്നു, ആർക്കൊക്കെ കാണാം, എങ്ങനെ തിരിച്ചെടുക്കാം.',
+    'tour.privacy.volunteers': 'വോളണ്ടിയർമാർക്ക് അവർ കൈകാര്യം ചെയ്യുന്ന ജില്ലകളിലുള്ളവരുടെ വിവരങ്ങൾ, ഫോൺ നമ്പർ ഉൾപ്പെടെ, കാണാം. രക്തദാനം ഏർപ്പാടാക്കാൻ മാത്രമാണിത്.',
+    'tour.privacy.hidden': 'നിങ്ങളുടെ വിലാസം, ഇമെയിൽ, രോഗവിവരങ്ങൾ, രക്തദാന തീയതികൾ എന്നിവ ഒരിക്കലും പൊതുവായി കാണിക്കില്ല.',
+    'tour.privacy.location': 'നിങ്ങളുടെ ലൊക്കേഷൻ ഞങ്ങൾ ഒരിക്കലും ട്രാക്ക് ചെയ്യില്ല. നിങ്ങൾ നൽകുന്ന ജില്ലയും സ്ഥലവും മാത്രമേ ഞങ്ങൾക്കറിയൂ.',
+    'tour.privacy.pause': 'വിളികൾ വരുന്നത് നിർത്താൻ, "പ്രൊഫൈൽ എഡിറ്റ് ചെയ്യുക" എന്നതിൽ "രക്തം നൽകാൻ ലഭ്യമാണ്" ഓഫ് ചെയ്യുക.',
+    'tour.privacy.delete': 'പ്രൊഫൈലിൽ നിന്ന് എപ്പോൾ വേണമെങ്കിലും അക്കൗണ്ട് ഡിലീറ്റ് ചെയ്യാം. നിങ്ങളുടെ പ്രൊഫൈൽ, രക്തദാന ചരിത്രം, അഭ്യർത്ഥനകൾ എന്നിവ മായ്ക്കും.',
+    'tour.privacy.noAds': 'നിങ്ങളുടെ വിവരങ്ങൾ ഞങ്ങൾ ഒരിക്കലും വിൽക്കുകയോ പരസ്യങ്ങൾക്ക് ഉപയോഗിക്കുകയോ ഇല്ല.',
+    'tour.privacy.read': 'സ്വകാര്യതാ നയം വായിക്കുക',
+
+    'tour.volunteer.titleAdmin': 'നിങ്ങളുടെ അഡ്മിൻ ടൂളുകൾ',
+    'tour.volunteer.title': 'നിങ്ങളുടെ വോളണ്ടിയർ ടൂളുകൾ',
+    'tour.volunteer.intro': 'നിങ്ങൾ ദാതാക്കളെ കൈകാര്യം ചെയ്യുന്ന സ്ഥലം: {districts}. "ദാതാക്കൾ" ടാബ് വോളണ്ടിയർമാർക്കും അഡ്മിൻമാർക്കും മാത്രമേ കാണൂ.',
+    'tour.volunteer.allKerala': 'കേരളം മുഴുവൻ',
+    'tour.volunteer.add': 'ആപ്പ് ഉപയോഗിക്കാത്ത ദാതാക്കളെ ചേർക്കാം, ദാതാക്കളെ വെരിഫൈ ചെയ്യുകയോ നിർജ്ജീവമാക്കുകയോ ചെയ്യാം.',
+    'tour.volunteer.log': 'ഇടവേള തുടങ്ങാൻ രക്തദാനങ്ങൾ രേഖപ്പെടുത്തുക, ഒരു അഭ്യർത്ഥനയുമായി ബന്ധപ്പെട്ടവ ഉൾപ്പെടെ.',
+    'tour.volunteer.notify': 'ഒരു അഭ്യർത്ഥനയിൽ നിന്ന് "ദാതാക്കളെ അറിയിക്കുക" ഉപയോഗിച്ച് യോജിക്കുന്ന എല്ലാവരെയും അറിയിക്കാം.',
+    'tour.volunteer.merge': 'നിങ്ങൾ ചേർത്ത ഒരു ദാതാവ് ആപ്പിൽ സൈൻ അപ്പ് ചെയ്താൽ, ചരിത്രം ഒരിടത്ത് തന്നെ ഉണ്ടാകാൻ രണ്ടും ഒന്നാക്കുക.',
+    'tour.volunteer.roles': 'ഒരു ദാതാവിന്റെ പേജിൽ നിന്ന് റോളും ജില്ലകളും മാറ്റാം.',
+    'tour.volunteer.private': 'ദാതാക്കളുടെ വിവരങ്ങൾ സ്വകാര്യമാണ്. രക്തദാനം ഏർപ്പാടാക്കാൻ മാത്രം ഉപയോഗിക്കുക, ടീമിന് പുറത്ത് ഒരിക്കലും പങ്കുവയ്ക്കരുത്.',
+
+    'tour.done.title': 'എല്ലാം തയ്യാർ',
+    'tour.done.intro': 'Blood Bank Kerala-യുടെ ഭാഗമായതിന് നന്ദി. ഒരു രക്തദാനം മൂന്ന് പേരെ വരെ സഹായിക്കും.',
+    'tour.done.update': 'നിങ്ങളുടെ ജില്ലയും ഫോൺ നമ്പറും പ്രൊഫൈലിൽ പുതുക്കി വയ്ക്കുക.',
+    'tour.done.again': 'ഈ പരിചയപ്പെടുത്തൽ പ്രൊഫൈലിൽ നിന്ന് വീണ്ടും കാണാം.',
+  },
+);

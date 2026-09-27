@@ -9,6 +9,7 @@ import ChipSelect from './ChipSelect';
 import Field from './Field';
 import Button from './ui/Button';
 import Text from './ui/Text';
+import { useI18n } from '../i18n';
 
 export type DonorFormValues = {
   name: string;
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export default function DonorForm({ initial, showLastDonation, showNotes, submitLabel, onSubmit }: Props) {
+  const { t, districtName } = useI18n();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     name: initial?.name ?? '',
@@ -50,16 +52,16 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
 
   const handleSubmit = async () => {
     const phoneNumber = normalizePhone(form.phoneNumber);
-    if (!form.name.trim()) return showMessage('Missing name', 'Please enter the full name.');
-    if (!phoneNumber) return showMessage('Invalid phone', 'Enter a 10-digit Indian mobile number.');
-    if (!form.bloodType) return showMessage('Missing blood type', 'Please select a blood type.');
-    if (!form.district) return showMessage('Missing district', 'Please select a district.');
+    if (!form.name.trim()) return showMessage(t('donorForm.missingName'), t('donorForm.enterName'));
+    if (!phoneNumber) return showMessage(t('donorForm.invalidPhone'), t('donorForm.enterPhone'));
+    if (!form.bloodType) return showMessage(t('donorForm.missingBloodType'), t('donorForm.selectBloodType'));
+    if (!form.district) return showMessage(t('donorForm.missingDistrict'), t('donorForm.selectDistrict'));
 
     let lastDonation: Date | null = null;
     if (showLastDonation && form.lastDonation.trim()) {
       lastDonation = parseDateInput(form.lastDonation);
-      if (!lastDonation) return showMessage('Invalid date', 'Enter the last donation date as DD-MM-YYYY.');
-      if (lastDonation > new Date()) return showMessage('Invalid date', 'Last donation date cannot be in the future.');
+      if (!lastDonation) return showMessage(t('donationNew.invalidDate'), t('donorForm.lastDateFormat'));
+      if (lastDonation > new Date()) return showMessage(t('donationNew.invalidDate'), t('donorForm.lastDateFuture'));
     }
 
     setSubmitting(true);
@@ -81,69 +83,70 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
 
   return (
     <View>
-      <Field label="Full name" value={form.name} onChangeText={name => set({ name })} autoComplete="name" />
+      <Field label={t('donorForm.fullName')} value={form.name} onChangeText={name => set({ name })} autoComplete="name" />
       <Field
-        label="Phone number"
+        label={t('donorForm.phone')}
         value={form.phoneNumber}
         onChangeText={phoneNumber => set({ phoneNumber })}
         keyboardType="phone-pad"
-        placeholder="10-digit mobile number"
+        placeholder={t('donorForm.phonePlaceholder')}
         autoComplete="tel"
       />
       <ChipSelect
-        label="Blood group"
+        label={t('donorForm.bloodGroup')}
         options={BLOOD_TYPES}
         value={form.bloodType || null}
         onChange={bloodType => set({ bloodType })}
       />
       <ChipSelect
-        label="District"
+        label={t('manage.district')}
         options={KERALA_DISTRICTS}
         value={form.district || null}
         onChange={district => set({ district })}
+        format={district => districtName(district)}
       />
       <Field
-        label="Area or town"
+        label={t('donorForm.area')}
         value={form.area}
         onChangeText={area => set({ area })}
-        placeholder="e.g. Kanhangad, Edappally"
+        placeholder={t('donorForm.areaPlaceholder')}
       />
-      <Field label="Address (optional)" value={form.address} onChangeText={address => set({ address })} multiline />
+      <Field label={t('donorForm.address')} value={form.address} onChangeText={address => set({ address })} multiline />
       {showLastDonation && (
         <Field
-          label="Last donation date (optional)"
+          label={t('donorForm.lastDonation')}
           value={form.lastDonation}
           onChangeText={lastDonation => set({ lastDonation })}
           placeholder="DD-MM-YYYY"
-          hint="Leave empty if never donated"
+          hint={t('donorForm.lastDonationHint')}
         />
       )}
       <Field
-        label="Medical conditions (optional)"
+        label={t('donorForm.medical')}
         value={form.medicalConditions}
         onChangeText={medicalConditions => set({ medicalConditions })}
         multiline
       />
       {showNotes && (
         <Field
-          label="Volunteer notes (optional)"
+          label={t('donorForm.notes')}
           value={form.notes}
           onChangeText={notes => set({ notes })}
           multiline
-          hint="Not shown to the donor in the app"
+          hint={t('donorForm.notesHint')}
         />
       )}
       <View style={styles.switchRow}>
         <View style={styles.switchText}>
-          <Text variant="bodyStrong">Available to donate</Text>
-          <Text variant="caption" color={palette.inkMuted}>Turn off to stop volunteers calling for requests</Text>
+          <Text variant="bodyStrong">{t('donorForm.available')}</Text>
+          <Text variant="caption" color={palette.inkMuted}>{t('donorForm.availableHint')}</Text>
         </View>
         <Switch
           value={form.isDonor}
           onValueChange={isDonor => set({ isDonor })}
           trackColor={{ false: palette.line, true: palette.leaf }}
           thumbColor="#fff"
-          accessibilityLabel="Available to donate"
+          accessibilityLabel={t('donorForm.available')}
         />
       </View>
 

@@ -12,11 +12,13 @@ import ChipSelect from '@/src/components/ChipSelect';
 import RequestRow from '@/src/components/RequestRow';
 import EmptyState from '@/src/components/ui/EmptyState';
 import Screen, { HeaderButton } from '@/src/components/ui/Screen';
+import { useI18n } from '@/src/i18n';
 
 type StatusFilter = 'open' | 'all';
 
 export default function RequestsScreen() {
   const { profile } = useCurrentUser();
+  const { t, districtName } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [district, setDistrict] = useState<string | null>(profile?.district ?? null);
   const [status, setStatus] = useState<StatusFilter>('open');
@@ -55,9 +57,9 @@ export default function RequestsScreen() {
 
   return (
     <Screen
-      title="Blood requests"
-      subtitle={district ? `Showing ${district}` : 'Showing all of Kerala'}
-      right={<HeaderButton icon="plus" label="Request blood" onPress={() => router.push('/request/new')} />}
+      title={t('requests.title')}
+      subtitle={district ? t('requests.showing', { district: districtName(district) }) : t('requests.showingAll')}
+      right={<HeaderButton icon="plus" label={t('requests.new')} onPress={() => router.push('/request/new')} />}
       scroll={false}
       contentStyle={styles.noGap}
     >
@@ -84,7 +86,8 @@ export default function RequestsScreen() {
               options={withFirst(KERALA_DISTRICTS, profile?.district)}
               value={district}
               onChange={setDistrict}
-              allLabel="All Kerala"
+              allLabel={t('requests.allKerala')}
+              format={districtName}
               onClear={() => setDistrict(null)}
             />
             <ChipSelect
@@ -92,7 +95,7 @@ export default function RequestsScreen() {
               options={['open', 'all']}
               value={status}
               onChange={value => setStatus(value as StatusFilter)}
-              format={value => (value === 'open' ? 'Open only' : 'Include closed')}
+              format={value => (value === 'open' ? t('requests.openOnly') : t('requests.includeClosed'))}
             />
           </View>
         }
@@ -101,9 +104,11 @@ export default function RequestsScreen() {
         ) : (
           <EmptyState
             icon="water-check"
-            title={`No ${status === 'open' ? 'open ' : ''}requests${district ? ` in ${district}` : ''}`}
-            message="Try another district, or post a request if someone needs blood."
-            action={{ label: 'Request blood', onPress: () => router.push('/request/new') }}
+            title={status === 'open'
+              ? district ? t('requests.noneOpenIn', { district: districtName(district) }) : t('requests.noneOpen')
+              : district ? t('requests.noneIn', { district: districtName(district) }) : t('requests.none')}
+            message={t('requests.emptyMessage')}
+            action={{ label: t('requests.new'), onPress: () => router.push('/request/new') }}
           />
         )}
       />

@@ -13,6 +13,8 @@ import {
 } from '@expo-google-fonts/anek-malayalam';
 import { palette } from '@/src/theme';
 import { UserProvider, useCurrentUser } from '@/src/context/UserContext';
+import { LanguageProvider, useI18n } from '@/src/i18n';
+import LanguageChooser from '@/src/components/LanguageChooser';
 import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,6 +23,7 @@ const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile',
 
 function RootNavigator() {
   const { authUser, profile, initializing } = useCurrentUser();
+  const { language, loaded: languageLoaded } = useI18n();
   const isAuthenticated = !!authUser;
   const segments = useSegments();
   const router = useRouter();
@@ -32,7 +35,7 @@ function RootNavigator() {
     AnekMalayalam_800ExtraBold,
   });
   // Fall back to system fonts rather than blocking the app if loading fails.
-  const ready = !initializing && (fontsLoaded || !!fontError);
+  const ready = !initializing && languageLoaded && (fontsLoaded || !!fontError);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
@@ -56,10 +59,10 @@ function RootNavigator() {
   const tourShown = useRef(false);
   const needsTour = !!profile && !profile.tourSeenAt;
   useEffect(() => {
-    if (!ready || !needsTour || tourShown.current || segments[0] !== '(tabs)') return;
+    if (!ready || !language || !needsTour || tourShown.current || segments[0] !== '(tabs)') return;
     tourShown.current = true;
     router.push('/tour');
-  }, [ready, needsTour, segments[0]]);
+  }, [ready, language, needsTour, segments[0]]);
 
   // Open the request when a push is tapped, whether the app was running or not.
   // The hook and the listener can both report the same tap, so remember handled ones.
@@ -87,6 +90,7 @@ function RootNavigator() {
   }, [ready, isAuthenticated]);
 
   if (!ready) return null;
+  if (!language) return <LanguageChooser />;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.paper } }}>
@@ -118,7 +122,9 @@ export default function RootLayout() {
     <UserProvider>
       {/* Every screen opens with the red header band, so status bar icons stay light. */}
       <StatusBar style="light" />
-      <RootNavigator />
+      <LanguageProvider>
+        <RootNavigator />
+      </LanguageProvider>
     </UserProvider>
   );
 }

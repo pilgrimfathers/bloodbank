@@ -8,6 +8,7 @@ import { auth, firestore } from '@/src/config/firebase';
 import { COOLOFF_MONTHS } from '@/shared/constants';
 import { nextEligibleDate } from '@/shared/eligibility';
 import { ANDROID_CHANNEL_ID, NotifyResult, PRODUCTION_API_URL } from '@/shared/notifications';
+import { translate } from '@/src/i18n';
 
 const TOKEN_KEY = 'pushToken';
 const REMINDER_KEY = 'cooloffReminderId';
@@ -25,7 +26,7 @@ Notifications.setNotificationHandler({
 async function ensureAndroidChannel() {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-    name: 'Blood requests',
+    name: translate('push.channelName'),
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#A3142B',
@@ -86,8 +87,8 @@ export async function scheduleCooloffReminder(lastDonation?: Date | null) {
     await ensureAndroidChannel();
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'You can donate again',
-        body: `Your ${COOLOFF_MONTHS}-month cool-off is over. Thank you for keeping someone alive.`,
+        title: translate('push.cooloffTitle'),
+        body: translate('push.cooloffBody', { months: COOLOFF_MONTHS }),
         data: { type: 'broadcast' },
       },
       trigger: {
@@ -105,7 +106,7 @@ export async function scheduleCooloffReminder(lastDonation?: Date | null) {
 // Calls the notification API on the web app with the user's Firebase ID token.
 export async function callNotifyApi<T = NotifyResult>(path: string, body: unknown): Promise<T> {
   const user = auth.currentUser;
-  if (!user) throw new Error('You need to be logged in.');
+  if (!user) throw new Error(translate('push.loginNeeded'));
   const token = await user.getIdToken();
 
   const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL ?? PRODUCTION_API_URL}${path}`, {
@@ -114,6 +115,6 @@ export async function callNotifyApi<T = NotifyResult>(path: string, body: unknow
     body: JSON.stringify(body),
   });
   const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(json.error ?? `Request failed (${response.status})`);
+  if (!response.ok) throw new Error(json.error ?? translate('push.requestFailed', { status: response.status }));
   return json as T;
 }

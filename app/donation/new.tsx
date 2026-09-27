@@ -9,18 +9,20 @@ import { Donation, UserProfile } from '@/shared/types';
 import { coversDistrict, getDonations, getUser, logDonation } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { addMonths } from '@/shared/eligibility';
-import { formatDate, parseDateInput, toDateInput } from '@/shared/format';
+import { parseDateInput, toDateInput } from '@/shared/format';
 import { palette, space } from '@/src/theme';
 import DonorCard from '@/src/components/DonorCard';
 import Field from '@/src/components/Field';
 import Button from '@/src/components/ui/Button';
 import EmptyState from '@/src/components/ui/EmptyState';
 import Screen from '@/src/components/ui/Screen';
+import { useI18n } from '@/src/i18n';
 
 // Logs a donation for the current user, or for any donor a volunteer manages.
 export default function NewDonationScreen() {
   const { donorId, requestId } = useLocalSearchParams<{ donorId?: string; requestId?: string }>();
   const { profile: me } = useCurrentUser();
+  const { t, formatDate, districtName } = useI18n();
   const [donor, setDonor] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<Donation[]>([]);
   const [date, setDate] = useState(toDateInput(new Date()));
@@ -41,13 +43,13 @@ export default function NewDonationScreen() {
       }
     })().catch(error => {
       console.error('Error loading donor:', error);
-      showMessage('Could not load donor', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotLoad'), t('common.checkConnection'));
     });
   }, [targetId, requestId]);
 
   if (!me || !donor) {
     return (
-      <Screen back title="Log donation">
+      <Screen back title={t('donorDetail.logDonation')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
@@ -56,11 +58,11 @@ export default function NewDonationScreen() {
   const isSelf = donor.id === me.id;
   if (!isSelf && !coversDistrict(me, donor.district)) {
     return (
-      <Screen back title="Log donation">
+      <Screen back title={t('donorDetail.logDonation')}>
         <EmptyState
           icon="lock-outline"
-          title="You can't log donations for this donor"
-          message="Only volunteers who manage this donor's district can do that."
+          title={t('donationNew.notAllowedTitle')}
+          message={t('donationNew.notAllowedMessage')}
         />
       </Screen>
     );
@@ -68,8 +70,8 @@ export default function NewDonationScreen() {
 
   const handleSave = async () => {
     const donationDate = parseDateInput(date);
-    if (!donationDate) return showMessage('Invalid date', 'Enter the donation date as DD-MM-YYYY.');
-    if (donationDate > new Date()) return showMessage('Invalid date', 'Donation date cannot be in the future.');
+    if (!donationDate) return showMessage(t('donationNew.invalidDate'), t('donationNew.dateFormat'));
+    if (donationDate > new Date()) return showMessage(t('donationNew.invalidDate'), t('donationNew.futureDate'));
 
     // Two donations closer than the cool-off period usually means a mistake.
     const tooClose = history.find(d =>
@@ -77,9 +79,9 @@ export default function NewDonationScreen() {
     );
     if (tooClose) {
       const ok = await confirmAction(
-        'Inside cool-off period',
-        `${donor.name} already has a donation on ${formatDate(tooClose.date)}, less than ${COOLOFF_MONTHS} months apart. Record anyway?`,
-        'Record',
+        t('donationNew.coolOffTitle'),
+        t('donationNew.coolOffMessage', { name: donor.name, date: formatDate(tooClose.date), months: COOLOFF_MONTHS }),
+        t('donationNew.record'),
       );
       if (!ok) return;
     }
@@ -87,11 +89,17 @@ export default function NewDonationScreen() {
     setSaving(true);
     try {
       await logDonation(donor, { date: donationDate, hospital, requestId }, { id: me.id, name: me.name });
-      showMessage('Donation saved', `Thank you! ${isSelf ? 'You' : donor.name} can donate again from ${formatDate(addMonths(donationDate, COOLOFF_MONTHS))}.`);
+      const nextDate = formatDate(addMonths(donationDate, COOLOFF_MONTHS));
+      showMessage(
+        t('donationNew.savedTitle'),
+        isSelf
+          ? t('donationNew.savedSelf', { date: nextDate })
+          : t('donationNew.savedOther', { name: donor.name, date: nextDate }),
+      );
       router.back();
     } catch (error) {
       console.error('Error logging donation:', error);
-      showMessage('Could not save donation', 'Check your connection and try again.');
+      showMessage(t('donationNew.couldNotSave'), t('common.checkConnection'));
     } finally {
       setSaving(false);
     }
@@ -100,8 +108,12 @@ export default function NewDonationScreen() {
   return (
     <Screen
       back
-      title={isSelf ? 'I donated blood' : 'Log donation'}
-      subtitle={isSelf ? 'This starts your cool-off period' : `For ${donor.name}${donor.district ? `, ${donor.district}` : ''}`}
+      title={isSelf ? t('donationNew.titleSelf') : t('donorDetail.logDonation')}
+      subtitle={isSelf
+        ? t('donationNew.subtitleSelf')
+        : donor.district
+          ? t('donationNew.forDonorIn', { name: donor.name, district: districtName(donor.district) })
+          : t('donationNew.forDonor', { name: donor.name })}
     >
       <DonorCard
         bloodType={donor.bloodType}
@@ -109,9 +121,20 @@ export default function NewDonationScreen() {
         donationCount={donor.donationCount ?? history.length}
       />
       <View>
-        <Field label="Donation date" value={date} onChangeText={setDate} placeholder="DD-MM-YYYY" hint="Today by default" />
-        <Field label="Hospital or blood bank" value={hospital} onChangeText={setHospital} placeholder="e.g. District Hospital, Kanhangad" />
-        <Button icon="water-check" label="Save donation" onPress={handleSave} loading={saving} />
+        <Field
+          label={t('donationNew.dateLabel')}
+          value={date}
+          onChangeText={setDate}
+          placeholder="DD-MM-YYYY"
+          hint={t('donationNew.dateHint')}
+        />
+        <Field
+          label={t('donationNew.hospitalLabel')}
+          value={hospital}
+          onChangeText={setHospital}
+          placeholder={t('donationNew.hospitalPlaceholder')}
+        />
+        <Button icon="water-check" label={t('donationNew.save')} onPress={handleSave} loading={saving} />
       </View>
     </Screen>
   );

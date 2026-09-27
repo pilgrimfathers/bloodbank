@@ -4,10 +4,12 @@ import { useCurrentUser } from '@/src/context/UserContext';
 import { isVolunteer } from '@/src/utils/data';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts, palette } from '@/src/theme';
+import { useI18n } from '@/src/i18n';
 
 export default function TabsLayout() {
   const { profile } = useCurrentUser();
   const insets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   return (
     <Tabs screenOptions={{
@@ -39,7 +41,7 @@ export default function TabsLayout() {
     <Tabs.Screen
         name="home"
         options={{
-        title: 'Home',
+        title: t('tabs.home'),
         tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="home" size={28} color={color} />
         ),
@@ -48,7 +50,7 @@ export default function TabsLayout() {
     <Tabs.Screen
         name="requests"
         options={{
-        title: 'Requests',
+        title: t('tabs.requests'),
         tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="water" size={28} color={color} />
         ),
@@ -57,7 +59,7 @@ export default function TabsLayout() {
     <Tabs.Screen
         name="manage"
         options={{
-        title: 'Donors',
+        title: t('tabs.donors'),
         // Hidden from the tab bar unless the user is a volunteer or admin.
         href: isVolunteer(profile) ? '/(tabs)/manage' : null,
         tabBarIcon: ({ color }) => (
@@ -68,7 +70,7 @@ export default function TabsLayout() {
     <Tabs.Screen
         name="profile"
         options={{
-        title: 'Profile',
+        title: t('tabs.profile'),
         tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons name="account" size={28} color={color} />
         ),

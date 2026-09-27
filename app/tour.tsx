@@ -11,12 +11,15 @@ import { COOLOFF_MONTHS } from '@/shared/constants';
 import { DAILY_ASK_LIMIT } from '@/shared/donors';
 import { UserProfile } from '@/shared/types';
 import { isVolunteer } from '@/src/utils/data';
+import { useI18n } from '@/src/i18n';
 import { palette, radius, space } from '@/src/theme';
 import VisibilityPicker from '@/src/components/VisibilityPicker';
 import Button from '@/src/components/ui/Button';
 import Text from '@/src/components/ui/Text';
 
 type Icon = keyof typeof MaterialCommunityIcons.glyphMap;
+
+type I18n = ReturnType<typeof useI18n>;
 
 type Step = {
   key: string;
@@ -38,11 +41,13 @@ async function markTourSeen(uid: string) {
 // Shown once after sign-up (see app/_layout.tsx), and from Profile any time.
 export default function TourScreen() {
   const { profile } = useCurrentUser();
+  const i18n = useI18n();
+  const { t } = i18n;
   const [index, setIndex] = useState(0);
 
   if (!profile) return null;
 
-  const steps = buildSteps(profile);
+  const steps = buildSteps(profile, i18n);
   const step = steps[index];
   const last = index === steps.length - 1;
 
@@ -55,8 +60,8 @@ export default function TourScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.topBar}>
-        <Text variant="label" color={palette.inkMuted}>{index + 1} of {steps.length}</Text>
-        {!last && <Button label="Skip" variant="quiet" color={palette.inkMuted} onPress={finish} />}
+        <Text variant="label" color={palette.inkMuted}>{t('tour.progress', { step: index + 1, total: steps.length })}</Text>
+        {!last && <Button label={t('common.skip')} variant="quiet" color={palette.inkMuted} onPress={finish} />}
       </View>
 
       <ScrollView key={step.key} contentContainerStyle={styles.content}>
@@ -89,14 +94,14 @@ export default function TourScreen() {
         <View style={styles.buttons}>
           {index > 0 && (
             <Button
-              label="Back"
+              label={t('common.back')}
               variant="secondary"
               onPress={() => setIndex(index - 1)}
               style={styles.flex}
             />
           )}
           <Button
-            label={last ? 'Start using the app' : 'Next'}
+            label={last ? t('tour.start') : t('common.next')}
             onPress={last ? finish : () => setIndex(index + 1)}
             style={styles.flex}
           />
@@ -106,7 +111,7 @@ export default function TourScreen() {
   );
 }
 
-function buildSteps(profile: UserProfile): Step[] {
+function buildSteps(profile: UserProfile, { t, districtName }: I18n): Step[] {
   const firstName = profile.name?.split(' ')[0];
   const steps: Step[] = [
     {
@@ -114,20 +119,20 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'water',
       tone: palette.blood,
       tint: palette.bloodTint,
-      title: firstName ? `Welcome, ${firstName}` : 'Welcome',
-      intro: 'Blood Bank Kerala connects blood donors with patients across all 14 districts. Volunteers run it, and it is free. Here is a quick look at how it works and how your details are kept safe.',
+      title: firstName ? t('tour.welcome.titleName', { name: firstName }) : t('tour.welcome.title'),
+      intro: t('tour.welcome.intro'),
     },
     {
       key: 'card',
       icon: 'card-account-details-outline',
       tone: palette.leaf,
       tint: palette.leafTint,
-      title: 'Your donor card',
-      intro: 'The card at the top of Home shows your blood group and whether you can donate today.',
+      title: t('tour.card.title'),
+      intro: t('tour.card.intro'),
       points: [
-        { icon: 'calendar-clock', text: `After you donate, there is a ${COOLOFF_MONTHS}-month gap before you can give again. The ring counts down the days.` },
-        { icon: 'hand-heart', text: 'Tap "I donated" after each donation, so nobody asks you too early.' },
-        { icon: 'bell-ring-outline', text: 'We remind you on the day you can donate again.' },
+        { icon: 'calendar-clock', text: t('tour.card.gap', { months: COOLOFF_MONTHS }) },
+        { icon: 'hand-heart', text: t('tour.card.logIt') },
+        { icon: 'bell-ring-outline', text: t('tour.card.reminder') },
       ],
     },
     {
@@ -135,12 +140,12 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'water-plus',
       tone: palette.blood,
       tint: palette.bloodTint,
-      title: 'Requests for blood',
-      intro: 'When a patient needs blood, anyone can post a request from Home with "Request blood".',
+      title: t('tour.requests.title'),
+      intro: t('tour.requests.intro'),
       points: [
-        { icon: 'format-list-bulleted', text: 'Open requests near you show on Home, and all of them on the Requests tab.' },
-        { icon: 'account-group-outline', text: 'Volunteers are told right away, and they call matching donors.' },
-        { icon: 'phone-outline', text: 'The contact number in a request is visible to everyone signed in, so they can call. Use a number the family is happy to share.' },
+        { icon: 'format-list-bulleted', text: t('tour.requests.where') },
+        { icon: 'account-group-outline', text: t('tour.requests.volunteers') },
+        { icon: 'phone-outline', text: t('tour.requests.contact') },
       ],
     },
     {
@@ -148,12 +153,12 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'account-search',
       tone: palette.info,
       tint: palette.infoTint,
-      title: 'Find donors',
-      intro: 'You can also look for donors yourself from "Find donors" on Home.',
+      title: t('tour.find.title'),
+      intro: t('tour.find.intro'),
       points: [
-        { icon: 'eye-outline', text: 'You only see donors who chose to be listed, and only what they agreed to share.' },
-        { icon: 'send-outline', text: `If a donor's number is hidden, tap "Ask to donate" to send them your request. You can ask up to ${DAILY_ASK_LIMIT} donors a day.` },
-        { icon: 'phone-in-talk-outline', text: 'The donor gets a notification and calls you if they can help.' },
+        { icon: 'eye-outline', text: t('tour.find.listed') },
+        { icon: 'send-outline', text: t('tour.find.ask', { limit: DAILY_ASK_LIMIT }) },
+        { icon: 'phone-in-talk-outline', text: t('tour.find.callback') },
       ],
     },
     {
@@ -161,8 +166,10 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'bell-ring-outline',
       tone: palette.info,
       tint: palette.infoTint,
-      title: 'Request alerts',
-      intro: `Get a notification when someone needs ${profile.bloodType || 'your blood group'} blood, or when a person asks you directly.`,
+      title: t('tour.alerts.title'),
+      intro: profile.bloodType
+        ? t('tour.alerts.introGroup', { group: profile.bloodType })
+        : t('tour.alerts.introAny'),
       action: <AlertsStep uid={profile.id} />,
     },
     {
@@ -170,13 +177,13 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'account-eye-outline',
       tone: palette.leaf,
       tint: palette.leafTint,
-      title: 'Who can find you',
-      intro: 'You decide whether people who need blood can find you. Private is the default: only volunteers can see you.',
+      title: t('tour.visibility.title'),
+      intro: t('tour.visibility.intro'),
       action: (
         <>
           <VisibilityPicker profile={profile} />
           <Text variant="caption" color={palette.inkMuted} style={styles.hint}>
-            Change this any time in Profile, under "Who can find you".
+            {t('tour.visibility.hint')}
           </Text>
         </>
       ),
@@ -186,20 +193,20 @@ function buildSteps(profile: UserProfile): Step[] {
       icon: 'shield-lock-outline',
       tone: palette.kasavu,
       tint: palette.kasavuTint,
-      title: 'Your data stays yours',
-      intro: 'What we keep, who sees it, and how to take it back.',
+      title: t('tour.privacy.title'),
+      intro: t('tour.privacy.intro'),
       points: [
-        { icon: 'account-tie-outline', text: 'Volunteers see your details, including your phone number, only for the districts they manage, and only to arrange donations.' },
-        { icon: 'eye-off-outline', text: 'Your address, email, medical conditions and donation dates are never shown to the public.' },
-        { icon: 'map-marker-off-outline', text: 'We never track your location. We only know the district and area you enter.' },
-        { icon: 'pause-circle-outline', text: 'Turn off "Available to donate" in Edit profile to stop being called.' },
-        { icon: 'delete-outline', text: 'Delete your account from Profile at any time. It erases your profile, donation history and requests.' },
-        { icon: 'cash-off', text: 'We never sell your data or use it for ads.' },
+        { icon: 'account-tie-outline', text: t('tour.privacy.volunteers') },
+        { icon: 'eye-off-outline', text: t('tour.privacy.hidden') },
+        { icon: 'map-marker-off-outline', text: t('tour.privacy.location') },
+        { icon: 'pause-circle-outline', text: t('tour.privacy.pause') },
+        { icon: 'delete-outline', text: t('tour.privacy.delete') },
+        { icon: 'cash-off', text: t('tour.privacy.noAds') },
       ],
       action: (
         <Button
           icon="shield-account-outline"
-          label="Read the privacy policy"
+          label={t('tour.privacy.read')}
           variant="secondary"
           onPress={() => router.push('/privacy')}
         />
@@ -208,25 +215,27 @@ function buildSteps(profile: UserProfile): Step[] {
   ];
 
   if (isVolunteer(profile)) {
-    const districts = profile.volunteerDistricts?.length ? profile.volunteerDistricts.join(', ') : 'all of Kerala';
+    const districts = profile.volunteerDistricts?.length
+      ? profile.volunteerDistricts.map(district => districtName(district)).join(', ')
+      : t('tour.volunteer.allKerala');
     steps.push({
       key: 'volunteer',
       icon: 'account-group',
       tone: palette.info,
       tint: palette.infoTint,
-      title: profile.role === 'admin' ? 'Your admin tools' : 'Your volunteer tools',
-      intro: `You manage donors in ${districts}. The Donors tab is only visible to volunteers and admins.`,
+      title: profile.role === 'admin' ? t('tour.volunteer.titleAdmin') : t('tour.volunteer.title'),
+      intro: t('tour.volunteer.intro', { districts }),
       points: [
-        { icon: 'account-plus-outline', text: "Add donors who don't use the app, and verify or deactivate donors." },
-        { icon: 'water-check-outline', text: 'Log donations, including ones linked to a request, to start the cool-off.' },
-        { icon: 'bullhorn-outline', text: 'From a request, use "Notify donors" to alert everyone who matches.' },
+        { icon: 'account-plus-outline', text: t('tour.volunteer.add') },
+        { icon: 'water-check-outline', text: t('tour.volunteer.log') },
+        { icon: 'bullhorn-outline', text: t('tour.volunteer.notify') },
         ...(profile.role === 'admin'
           ? [
-              { icon: 'call-merge' as Icon, text: 'When a donor you added signs up, merge the two so history stays in one place.' },
-              { icon: 'shield-crown-outline' as Icon, text: 'Change roles and districts from a donor page.' },
+              { icon: 'call-merge' as Icon, text: t('tour.volunteer.merge') },
+              { icon: 'shield-crown-outline' as Icon, text: t('tour.volunteer.roles') },
             ]
           : []),
-        { icon: 'lock-outline', text: "Donor details are private. Use them only to arrange donations, and never share them outside the team." },
+        { icon: 'lock-outline', text: t('tour.volunteer.private') },
       ],
     });
   }
@@ -236,11 +245,11 @@ function buildSteps(profile: UserProfile): Step[] {
     icon: 'heart-outline',
     tone: palette.blood,
     tint: palette.bloodTint,
-    title: "You're all set",
-    intro: 'Thank you for being part of Blood Bank Kerala. One donation can help up to three people.',
+    title: t('tour.done.title'),
+    intro: t('tour.done.intro'),
     points: [
-      { icon: 'map-marker-outline', text: 'Keep your district and phone number up to date in Profile.' },
-      { icon: 'replay', text: 'You can see this tour again from Profile.' },
+      { icon: 'map-marker-outline', text: t('tour.done.update') },
+      { icon: 'replay', text: t('tour.done.again') },
     ],
   });
 
@@ -249,12 +258,13 @@ function buildSteps(profile: UserProfile): Step[] {
 
 function AlertsStep({ uid }: { uid: string }) {
   const { permission, enable } = useAlertPermission(uid);
+  const { t } = useI18n();
   if (!permission) return null;
   if (permission.granted) {
     return (
       <View style={styles.done}>
         <MaterialCommunityIcons name="check-circle" size={22} color={palette.leaf} />
-        <Text variant="bodyStrong" color={palette.leaf}>Alerts are on</Text>
+        <Text variant="bodyStrong" color={palette.leaf}>{t('tour.alerts.on')}</Text>
       </View>
     );
   }
@@ -262,12 +272,12 @@ function AlertsStep({ uid }: { uid: string }) {
     <>
       <Button
         icon={permission.canAskAgain ? 'bell-ring-outline' : 'cog-outline'}
-        label={permission.canAskAgain ? 'Turn on alerts' : 'Open settings'}
+        label={permission.canAskAgain ? t('tour.alerts.turnOn') : t('tour.alerts.openSettings')}
         color={palette.info}
         onPress={enable}
       />
       <Text variant="caption" color={palette.inkMuted} style={styles.hint}>
-        You can also turn them on later from Home.
+        {t('tour.alerts.later')}
       </Text>
     </>
   );

@@ -10,6 +10,7 @@ import { showMessage } from '@/src/utils/dialog';
 import { callNotifyApi } from '@/src/utils/push';
 import { NOTIFY_ENDPOINTS } from '@/shared/notifications';
 import { normalizePhone } from '@/shared/format';
+import { StringKey, useI18n } from '@/src/i18n';
 import { space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import Field from '@/src/components/Field';
@@ -18,14 +19,15 @@ import Screen from '@/src/components/ui/Screen';
 
 type Urgency = BloodRequest['urgency'];
 
-const URGENCY_LABELS: Record<Urgency, string> = {
-  high: 'Urgent',
-  medium: 'Needed soon',
-  low: 'Planned',
+const URGENCY_LABELS: Record<Urgency, StringKey> = {
+  high: 'urgency.high',
+  medium: 'urgency.medium',
+  low: 'urgency.low',
 };
 
 export default function NewRequestScreen() {
   const { profile } = useCurrentUser();
+  const { t, districtName } = useI18n();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     district: profile?.district ?? '',
@@ -43,19 +45,19 @@ export default function NewRequestScreen() {
     const units = Number(formData.units);
     const contactNumber = normalizePhone(formData.contactNumber);
 
-    if (!formData.patientName.trim()) return showMessage('Missing patient name', 'Enter the name of the patient who needs blood.');
-    if (!formData.bloodType) return showMessage('Missing blood type', 'Select the blood type the patient needs.');
+    if (!formData.patientName.trim()) return showMessage(t('requestNew.missingPatient.title'), t('requestNew.missingPatient.message'));
+    if (!formData.bloodType) return showMessage(t('requestNew.missingBloodType.title'), t('requestNew.missingBloodType.message'));
     if (!/^\d+$/.test(formData.units.trim()) || units < 1) {
-      return showMessage('Invalid units', 'Enter the number of units needed, for example 2.');
+      return showMessage(t('requestNew.invalidUnits.title'), t('requestNew.invalidUnits.message'));
     }
-    if (!formData.urgency) return showMessage('Missing urgency', 'Select how soon the blood is needed.');
-    if (!formData.hospital.trim()) return showMessage('Missing hospital', 'Enter the hospital or blood bank name.');
-    if (!formData.district) return showMessage('Missing district', 'Select the district of the hospital.');
-    if (!formData.location.trim()) return showMessage('Missing area', 'Enter the area or town of the hospital.');
-    if (!contactNumber) return showMessage('Invalid phone', 'Enter a 10-digit Indian mobile number donors can call.');
+    if (!formData.urgency) return showMessage(t('requestNew.missingUrgency.title'), t('requestNew.missingUrgency.message'));
+    if (!formData.hospital.trim()) return showMessage(t('requestNew.missingHospital.title'), t('requestNew.missingHospital.message'));
+    if (!formData.district) return showMessage(t('requestNew.missingDistrict.title'), t('requestNew.missingDistrict.message'));
+    if (!formData.location.trim()) return showMessage(t('requestNew.missingArea.title'), t('requestNew.missingArea.message'));
+    if (!contactNumber) return showMessage(t('requestNew.invalidPhone.title'), t('requestNew.invalidPhone.message'));
 
     const user = auth.currentUser;
-    if (!user) return showMessage('Not signed in', 'Sign in again to post a request.');
+    if (!user) return showMessage(t('requestNew.notSignedIn.title'), t('requestNew.notSignedIn.message'));
 
     setSaving(true);
     try {
@@ -78,67 +80,68 @@ export default function NewRequestScreen() {
       // Alert admins in the background; posting must not depend on it.
       callNotifyApi(NOTIFY_ENDPOINTS.requestCreated, { requestId: ref.id })
         .catch(error => console.warn('Could not alert admins:', error));
-      showMessage('Request posted', 'Volunteers and donors can now see it.');
+      showMessage(t('requestNew.posted.title'), t('requestNew.posted.message'));
       router.back();
     } catch (error) {
       console.error('Error creating request:', error);
-      showMessage('Could not post request', 'Check your connection and try again.');
+      showMessage(t('requestNew.couldNotPost'), t('common.checkConnection'));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Screen back title="Request blood" subtitle="Volunteers will call donors who match">
+    <Screen back title={t('requestNew.title')} subtitle={t('requestNew.subtitle')}>
       <Field
-        label="Patient name *"
+        label={t('requestNew.patientName')}
         value={formData.patientName}
         onChangeText={patientName => set({ patientName })}
       />
       <ChipSelect
-        label="Blood type needed *"
+        label={t('requestNew.bloodType')}
         options={BLOOD_TYPES}
         value={formData.bloodType || null}
         onChange={bloodType => set({ bloodType })}
       />
       <Field
-        label="Units needed *"
+        label={t('requestNew.units')}
         value={formData.units}
         onChangeText={units => set({ units })}
         keyboardType="number-pad"
       />
       <ChipSelect
-        label="How soon *"
+        label={t('requestNew.urgency')}
         options={['high', 'medium', 'low']}
         value={formData.urgency || null}
         onChange={urgency => set({ urgency: urgency as Urgency })}
-        format={value => URGENCY_LABELS[value as Urgency]}
+        format={value => t(URGENCY_LABELS[value as Urgency])}
       />
       <Field
-        label="Hospital or blood bank *"
+        label={t('requestNew.hospital')}
         value={formData.hospital}
         onChangeText={hospital => set({ hospital })}
       />
       <ChipSelect
-        label="District *"
+        label={t('requestNew.district')}
         options={KERALA_DISTRICTS}
         value={formData.district || null}
         onChange={district => set({ district })}
+        format={districtName}
       />
       <Field
-        label="Area / town *"
+        label={t('requestNew.area')}
         value={formData.location}
         onChangeText={location => set({ location })}
-        placeholder="e.g. Kanhangad, Edappally"
+        placeholder={t('requestNew.areaPlaceholder')}
       />
       <Field
-        label="Contact number *"
+        label={t('requestNew.contact')}
         value={formData.contactNumber}
         onChangeText={contactNumber => set({ contactNumber })}
         keyboardType="phone-pad"
-        hint="Donors and volunteers will call this number"
+        hint={t('requestNew.contactHint')}
       />
-      <Button label="Post request" icon="water-plus" loading={saving} onPress={handleSubmit} style={styles.submit} />
+      <Button label={t('requestNew.submit')} icon="water-plus" loading={saving} onPress={handleSubmit} style={styles.submit} />
     </Screen>
   );
 }

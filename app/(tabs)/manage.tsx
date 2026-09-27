@@ -20,17 +20,19 @@ import { ListRow } from '@/src/components/ui/List';
 import Pill from '@/src/components/ui/Pill';
 import Screen, { HeaderButton } from '@/src/components/ui/Screen';
 import Text from '@/src/components/ui/Text';
+import { StringKey, useI18n } from '@/src/i18n';
 
 type EligibilityFilter = 'all' | 'eligible' | 'cooling';
 
-const ELIGIBILITY_LABELS: Record<EligibilityFilter, string> = {
-  all: 'All',
-  eligible: 'Can donate',
-  cooling: 'Cooling off',
+const ELIGIBILITY_LABELS: Record<EligibilityFilter, StringKey> = {
+  all: 'manage.all',
+  eligible: 'eligibility.canDonate',
+  cooling: 'manage.coolingOff',
 };
 
 export default function ManageDonorsScreen() {
   const { profile } = useCurrentUser();
+  const { t, districtName } = useI18n();
   const params = useLocalSearchParams<{ bloodType?: string; district?: string; requestId?: string }>();
 
   // Volunteers limited to some districts must always query one of them.
@@ -113,7 +115,7 @@ export default function ManageDonorsScreen() {
 
   if (!profile) {
     return (
-      <Screen title="Donors">
+      <Screen title={t('manage.title')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
@@ -121,11 +123,11 @@ export default function ManageDonorsScreen() {
 
   if (!isVolunteer(profile)) {
     return (
-      <Screen title="Donors">
+      <Screen title={t('manage.title')}>
         <EmptyState
           icon="account-lock-outline"
-          title="Only volunteers can see donors"
-          message="Ask an admin if you help coordinate donations."
+          title={t('manage.volunteersOnly.title')}
+          message={t('manage.volunteersOnly.message')}
         />
       </Screen>
     );
@@ -141,7 +143,7 @@ export default function ManageDonorsScreen() {
   const renderDonor = ({ item, index }: { item: UserProfile; index: number }) => {
     const eligible = getEligibility(item.lastDonation).eligible;
     const active = eligible && item.isDonor && item.status !== 'inactive';
-    const place = [item.area, item.district].filter(Boolean).join(', ') || 'No district set';
+    const place = [item.area, districtName(item.district)].filter(Boolean).join(', ') || t('manage.noDistrictSet');
 
     return (
       <View style={[
@@ -153,16 +155,16 @@ export default function ManageDonorsScreen() {
         <ListRow
           leading={<BloodMark bloodType={item.bloodType} muted={!active} />}
           title={item.name}
-          subtitle={`${place}\n${item.phoneNumber || 'No phone number'}`}
+          subtitle={`${place}\n${item.phoneNumber || t('common.noPhone')}`}
           trailing={
             <View style={styles.meta}>
               <EligibilityBadge lastDonation={item.lastDonation} />
-              {item.role === 'volunteer' && <Pill label="Volunteer" tone="info" />}
-              {item.role === 'admin' && <Pill label="Admin" tone="info" />}
-              {!item.verified && <Pill label="Unverified" tone="muted" />}
-              {!item.isDonor && <Pill label="Unavailable" tone="turmeric" />}
-              {item.status === 'inactive' && <Pill label="Inactive" tone="muted" />}
-              {item.hasAccount === false && <Pill label="No app" tone="kasavu" />}
+              {item.role === 'volunteer' && <Pill label={t('role.volunteer')} tone="info" />}
+              {item.role === 'admin' && <Pill label={t('role.admin')} tone="info" />}
+              {!item.verified && <Pill label={t('manage.pill.unverified')} tone="muted" />}
+              {!item.isDonor && <Pill label={t('manage.pill.unavailable')} tone="turmeric" />}
+              {item.status === 'inactive' && <Pill label={t('manage.pill.inactive')} tone="muted" />}
+              {item.hasAccount === false && <Pill label={t('manage.pill.noApp')} tone="kasavu" />}
             </View>
           }
           chevron={false}
@@ -174,16 +176,18 @@ export default function ManageDonorsScreen() {
 
   return (
     <Screen
-      title="Donors"
-      subtitle={allowedDistricts ? `Managing ${allowedDistricts.join(', ')}` : 'Managing all of Kerala'}
+      title={t('manage.title')}
+      subtitle={allowedDistricts
+        ? t('manage.managing', { districts: allowedDistricts.map(d => districtName(d)).join(', ') })
+        : t('manage.managingAll')}
       right={
         <>
           <HeaderButton
             icon={showFilters ? 'filter-variant-remove' : 'filter-variant'}
-            label={showFilters ? 'Hide filters' : 'Show filters'}
+            label={showFilters ? t('manage.hideFilters') : t('manage.showFilters')}
             onPress={() => setShowFilters(!showFilters)}
           />
-          <HeaderButton icon="account-plus" label="Add donor" onPress={() => router.push('/donor/edit')} />
+          <HeaderButton icon="account-plus" label={t('manage.addDonor')} onPress={() => router.push('/donor/edit')} />
         </>
       }
       scroll={false}
@@ -203,13 +207,13 @@ export default function ManageDonorsScreen() {
               <View style={styles.banner}>
                 <MaterialCommunityIcons name="information-outline" size={22} color={palette.info} />
                 <Text variant="body" color={palette.info} style={styles.flex}>
-                  Finding donors for a {params.bloodType} request. Open a donor to log their donation against it.
+                  {t('manage.requestBanner', { bloodType: params.bloodType ?? '' })}
                 </Text>
                 <Pressable
                   onPress={() => router.setParams({ requestId: '', bloodType: '', district: '' })}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel="Stop finding donors for this request"
+                  accessibilityLabel={t('manage.stopFinding')}
                 >
                   <MaterialCommunityIcons name="close" size={22} color={palette.info} />
                 </Pressable>
@@ -220,15 +224,15 @@ export default function ManageDonorsScreen() {
               <MaterialCommunityIcons name="magnify" size={22} color={palette.inkFaint} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search name, phone or area"
+                placeholder={t('manage.searchPlaceholder')}
                 placeholderTextColor={palette.inkFaint}
                 selectionColor={palette.blood}
                 value={search}
                 onChangeText={setSearch}
-                accessibilityLabel="Search donors"
+                accessibilityLabel={t('manage.searchLabel')}
               />
               {!!search && (
-                <Pressable onPress={() => setSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear search">
+                <Pressable onPress={() => setSearch('')} hitSlop={10} accessibilityRole="button" accessibilityLabel={t('manage.clearSearch')}>
                   <MaterialCommunityIcons name="close-circle" size={20} color={palette.inkFaint} />
                 </Pressable>
               )}
@@ -238,28 +242,29 @@ export default function ManageDonorsScreen() {
               <View>
                 <ChipSelect
                   horizontal
-                  label="District"
+                  label={t('manage.district')}
                   options={withFirst(allowedDistricts ?? KERALA_DISTRICTS, defaultDistrict ?? profile?.district)}
+                  format={d => districtName(d)}
                   value={district}
                   onChange={setDistrict}
-                  allLabel={allowedDistricts ? undefined : 'All Kerala'}
+                  allLabel={allowedDistricts ? undefined : t('manage.allKerala')}
                   onClear={() => setDistrict(null)}
                 />
                 <ChipSelect
                   horizontal
-                  label="Blood type"
+                  label={t('manage.bloodType')}
                   options={BLOOD_TYPES}
                   value={bloodType}
                   onChange={setBloodType}
-                  allLabel="All"
+                  allLabel={t('manage.all')}
                   onClear={() => setBloodType(null)}
                 />
                 {bloodType && (
                   <View style={styles.switchRow}>
                     <View style={styles.flex}>
-                      <Text variant="bodyStrong">Include compatible donors</Text>
+                      <Text variant="bodyStrong">{t('manage.includeCompatible')}</Text>
                       <Text variant="caption" color={palette.inkMuted}>
-                        {COMPATIBLE_DONORS[bloodType as BloodType].join(', ')} can give to {bloodType}
+                        {t('manage.canGiveTo', { groups: COMPATIBLE_DONORS[bloodType as BloodType].join(', '), bloodType })}
                       </Text>
                     </View>
                     <Switch
@@ -272,17 +277,17 @@ export default function ManageDonorsScreen() {
                 )}
                 <ChipSelect
                   horizontal
-                  label="Eligibility"
+                  label={t('manage.eligibility')}
                   options={['all', 'eligible', 'cooling']}
                   value={eligibility}
                   onChange={value => setEligibility(value as EligibilityFilter)}
-                  format={value => ELIGIBILITY_LABELS[value as EligibilityFilter]}
+                  format={value => t(ELIGIBILITY_LABELS[value as EligibilityFilter])}
                 />
               </View>
             )}
 
             <Text variant="caption" color={palette.inkMuted} style={styles.count}>
-              {loading ? 'Loading donors' : `Showing ${visibleDonors.length} of ${donors.length} donors`}
+              {loading ? t('manage.loading') : t('manage.showing', { shown: visibleDonors.length, total: donors.length })}
             </Text>
           </View>
         }
@@ -291,9 +296,9 @@ export default function ManageDonorsScreen() {
         ) : (
           <EmptyState
             icon="account-search-outline"
-            title="No donors match these filters"
-            message="Try another district or blood type, or add a donor who doesn't use the app."
-            action={{ label: 'Add donor', onPress: () => router.push('/donor/edit') }}
+            title={t('manage.empty.title')}
+            message={t('manage.empty.message')}
+            action={{ label: t('manage.addDonor'), onPress: () => router.push('/donor/edit') }}
           />
         )}
       />

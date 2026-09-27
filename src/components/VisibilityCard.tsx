@@ -7,12 +7,14 @@ import { showMessage } from '@/src/utils/dialog';
 import { palette, radius, space } from '@/src/theme';
 import { saveVisibility } from './VisibilityPicker';
 import Button from './ui/Button';
+import { useI18n } from '@/src/i18n';
 import Text from './ui/Text';
 
 // Asked once: donors who haven't chosen yet stay private until they opt in.
 // Either answer is saved, so the card doesn't come back on other devices.
 export default function VisibilityCard() {
   const { profile } = useCurrentUser();
+  const { t } = useI18n();
   const [saving, setSaving] = useState<ProfileVisibility | null>(null);
 
   if (!profile || profile.visibility || !profile.isDonor) return null;
@@ -23,7 +25,7 @@ export default function VisibilityCard() {
       await saveVisibility(profile.id, visibility);
     } catch (error) {
       console.error('Error saving visibility:', error);
-      showMessage('Could not save', 'Check your connection and try again.');
+      showMessage(t('common.couldNotSave'), t('common.checkConnection'));
     } finally {
       setSaving(null);
     }
@@ -34,16 +36,15 @@ export default function VisibilityCard() {
       <View style={styles.row}>
         <MaterialCommunityIcons name="account-eye-outline" size={24} color={palette.leaf} />
         <View style={styles.text}>
-          <Text variant="bodyStrong">Let people who need blood find you?</Text>
+          <Text variant="bodyStrong">{t('visibilityCard.title')}</Text>
           <Text variant="caption" color={palette.inkMuted}>
-            They'll see your blood group and area, not your number, and can ask you through the app.
-            Change it any time in Profile.
+            {t('visibilityCard.body')}
           </Text>
         </View>
       </View>
       <View style={styles.row}>
         <Button
-          label="Make me findable"
+          label={t('visibilityCard.public')}
           color={palette.leaf}
           loading={saving === 'public'}
           disabled={!!saving}
@@ -51,7 +52,7 @@ export default function VisibilityCard() {
           style={styles.flex}
         />
         <Button
-          label="Keep private"
+          label={t('visibilityCard.private')}
           variant="secondary"
           color={palette.inkMuted}
           loading={saving === 'private'}

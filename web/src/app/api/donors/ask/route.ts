@@ -6,6 +6,7 @@ import type { ProfileVisibility } from "@shared/types";
 import { adminDb } from "@/lib/firebase-admin";
 import { ApiError, authedRoute, logNotification } from "@/lib/api";
 import { sendPush, toRecipients } from "@/lib/push";
+import { donorAskMessage } from "@shared/pushMessages";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -61,10 +62,12 @@ export const POST = authedRoute<AskDonorBody>("any", async (caller, { donorId, r
   });
   if (!claimed) return { sent: false, skipped: "already-asked" } satisfies AskDonorResult;
 
-  const units = `${request.units} ${request.units === 1 ? "unit" : "units"}`;
-  const title = `Can you donate ${donor.bloodType}?`;
-  const body = `${caller.name || "Someone"} asked you directly: ${units} of ${request.bloodType} at ${request.hospital}. Tap to see the request and call the family.`;
-  const result = await sendPush(recipients, { title, body, data: { type: "request", requestId } });
+  const info = request as Parameters<typeof donorAskMessage>[0];
+  const { title, body } = donorAskMessage(info, donor.bloodType, caller.name, "en");
+  const result = await sendPush(recipients, language => ({
+    ...donorAskMessage(info, donor.bloodType, caller.name, language),
+    data: { type: "request", requestId },
+  }));
 
   await logNotification({ type: "donor-ask", title, body, requestId, filters: { donorId }, ...result, caller });
   return { sent: result.sent > 0 } satisfies AskDonorResult;

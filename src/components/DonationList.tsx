@@ -2,7 +2,7 @@ import { Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { palette } from '@/src/theme';
 import { Donation } from '@/shared/types';
-import { formatDate } from '@/shared/format';
+import { useI18n } from '@/src/i18n';
 import EmptyState from './ui/EmptyState';
 import { List, ListRow } from './ui/List';
 
@@ -12,8 +12,9 @@ type Props = {
 };
 
 export default function DonationList({ donations, onDelete }: Props) {
+  const { t, formatDate } = useI18n();
   if (donations.length === 0) {
-    return <EmptyState icon="water-outline" title="No donations recorded yet" />;
+    return <EmptyState icon="water-outline" title={t('eligibility.noDonations')} />;
   }
 
   return (
@@ -24,15 +25,15 @@ export default function DonationList({ donations, onDelete }: Props) {
           icon="water"
           title={formatDate(donation.date)}
           subtitle={[
-            donation.hospital || 'Hospital not recorded',
-            donation.recordedByName && `Logged by ${donation.recordedByName}`,
+            donation.hospital || t('donation.hospitalNotRecorded'),
+            donation.recordedByName && t('donation.loggedBy', { name: donation.recordedByName }),
           ].filter(Boolean).join('\n')}
           trailing={onDelete && (
             <Pressable
               onPress={() => onDelete(donation)}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel={`Delete donation on ${formatDate(donation.date)}`}
+              accessibilityLabel={t('donation.deleteLabel', { date: formatDate(donation.date) })}
             >
               <MaterialCommunityIcons name="delete-outline" size={22} color={palette.inkFaint} />
             </Pressable>

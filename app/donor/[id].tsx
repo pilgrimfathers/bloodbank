@@ -10,7 +10,6 @@ import { Donation, UserProfile, UserRole } from '@/shared/types';
 import { coversDistrict, deleteAddedDonor, deleteDonation, getDonations, getUser, mapUser } from '@/src/utils/data';
 import { callNotifyApi } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
-import { formatDate } from '@/shared/format';
 import { palette, radius, space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import DonationList from '@/src/components/DonationList';
@@ -23,13 +22,15 @@ import Pill from '@/src/components/ui/Pill';
 import Screen from '@/src/components/ui/Screen';
 import Section from '@/src/components/ui/Section';
 import Text from '@/src/components/ui/Text';
+import { StringKey, useI18n } from '@/src/i18n';
 
 const ROLES: UserRole[] = ['donor', 'volunteer', 'admin'];
-const ROLE_LABELS: Record<UserRole, string> = { donor: 'Donor', volunteer: 'Volunteer', admin: 'Admin' };
+const ROLE_LABELS: Record<UserRole, StringKey> = { donor: 'role.donor', volunteer: 'role.volunteer', admin: 'role.admin' };
 
 export default function DonorDetailScreen() {
   const { id, requestId } = useLocalSearchParams<{ id: string; requestId?: string }>();
   const { profile: me } = useCurrentUser();
+  const { t, formatDate, districtName } = useI18n();
   const [donor, setDonor] = useState<UserProfile | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [notFound, setNotFound] = useState(false);
@@ -45,7 +46,7 @@ export default function DonorDetailScreen() {
       setDonations(await getDonations(id));
     } catch (error) {
       console.error('Error loading donor:', error);
-      showMessage('Could not load donor', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotLoad'), t('common.checkConnection'));
     }
   };
 
@@ -55,14 +56,14 @@ export default function DonorDetailScreen() {
 
   if (notFound) {
     return (
-      <Screen back title="Donor">
-        <EmptyState icon="account-question-outline" title="This donor no longer exists" />
+      <Screen back title={t('role.donor')}>
+        <EmptyState icon="account-question-outline" title={t('donorDetail.notFound')} />
       </Screen>
     );
   }
   if (!donor || !me) {
     return (
-      <Screen back title="Donor">
+      <Screen back title={t('role.donor')}>
         <ActivityIndicator color={palette.blood} style={styles.loading} />
       </Screen>
     );
@@ -75,30 +76,30 @@ export default function DonorDetailScreen() {
     try {
       await updateDoc(doc(firestore, 'users', donor.id), { ...patch, updatedAt: new Date() });
       setDonor({ ...donor, ...patch });
-      if (message) showMessage('Saved', message);
+      if (message) showMessage(t('common.saved'), message);
     } catch (error) {
       console.error('Error updating donor:', error);
-      showMessage('Could not update donor', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotUpdate'), t('common.checkConnection'));
     }
   };
 
   const toggleActive = async () => {
     const deactivating = donor.status !== 'inactive';
     const ok = await confirmAction(
-      deactivating ? 'Deactivate donor?' : 'Reactivate donor?',
+      deactivating ? t('donorDetail.deactivateTitle') : t('donorDetail.reactivateTitle'),
       deactivating
-        ? `${donor.name} will be hidden from eligible donor searches.`
-        : `${donor.name} will show up in donor searches again.`,
-      deactivating ? 'Deactivate' : 'Reactivate',
+        ? t('donorDetail.deactivateMessage', { name: donor.name })
+        : t('donorDetail.reactivateMessage', { name: donor.name }),
+      deactivating ? t('donorDetail.deactivate') : t('donorDetail.reactivate'),
     );
     if (ok) await update({ status: deactivating ? 'inactive' : 'active' });
   };
 
   const handleDeleteDonor = async () => {
     const ok = await confirmAction(
-      'Delete donor?',
-      `${donor.name} and their ${donations.length} recorded donations will be removed. This can't be undone.`,
-      'Delete',
+      t('donorDetail.deleteTitle'),
+      t('donorDetail.deleteMessage', { name: donor.name, count: donations.length }),
+      t('common.delete'),
     );
     if (!ok) return;
     try {
@@ -106,24 +107,28 @@ export default function DonorDetailScreen() {
       router.back();
     } catch (error) {
       console.error('Error deleting donor:', error);
-      showMessage('Could not delete donor', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotDelete'), t('common.checkConnection'));
     }
   };
 
   const handleDeleteDonation = async (donation: Donation) => {
-    const ok = await confirmAction('Delete donation?', `Remove the donation on ${formatDate(donation.date)}?`, 'Delete');
+    const ok = await confirmAction(
+      t('donorDetail.deleteDonationTitle'),
+      t('donorDetail.deleteDonationMessage', { date: formatDate(donation.date) }),
+      t('common.delete'),
+    );
     if (!ok) return;
     try {
       await deleteDonation(donation);
       await load();
     } catch (error) {
       console.error('Error deleting donation:', error);
-      showMessage('Could not delete donation', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotDeleteDonation'), t('common.checkConnection'));
     }
   };
 
   const phone = donor.phoneNumber?.replace(/\D/g, '').slice(-10);
-  const place = [donor.area, donor.district].filter(Boolean).join(', ') || 'No district set';
+  const place = [donor.area, districtName(donor.district)].filter(Boolean).join(', ') || t('manage.noDistrictSet');
 
   return (
     <Screen
@@ -139,21 +144,21 @@ export default function DonorDetailScreen() {
       }
     >
       <View style={styles.pills}>
-        <Pill label={ROLE_LABELS[donor.role ?? 'donor']} tone="info" />
-        <Pill label={donor.verified ? 'Verified' : 'Unverified'} tone={donor.verified ? 'leaf' : 'muted'} />
-        {!donor.isDonor && <Pill label="Unavailable" tone="turmeric" />}
-        {donor.status === 'inactive' && <Pill label="Inactive" tone="muted" />}
-        {donor.hasAccount === false && <Pill label="No app" tone="kasavu" />}
-        {donor.visibility === 'public' && <Pill label="Public" tone="leaf" />}
-        {donor.visibility === 'public_phone' && <Pill label="Public with number" tone="leaf" />}
+        <Pill label={t(ROLE_LABELS[donor.role ?? 'donor'])} tone="info" />
+        <Pill label={donor.verified ? t('manage.pill.verified') : t('manage.pill.unverified')} tone={donor.verified ? 'leaf' : 'muted'} />
+        {!donor.isDonor && <Pill label={t('manage.pill.unavailable')} tone="turmeric" />}
+        {donor.status === 'inactive' && <Pill label={t('manage.pill.inactive')} tone="muted" />}
+        {donor.hasAccount === false && <Pill label={t('manage.pill.noApp')} tone="kasavu" />}
+        {donor.visibility === 'public' && <Pill label={t('manage.pill.public')} tone="leaf" />}
+        {donor.visibility === 'public_phone' && <Pill label={t('visibility.public_phone.label')} tone="leaf" />}
       </View>
 
       {phone && (
         <View style={styles.row}>
-          <Button icon="phone" label="Call" onPress={() => Linking.openURL(`tel:${phone}`)} style={styles.flex} />
+          <Button icon="phone" label={t('common.call')} onPress={() => Linking.openURL(`tel:${phone}`)} style={styles.flex} />
           <Button
             icon="whatsapp"
-            label="WhatsApp"
+            label={t('common.whatsapp')}
             variant="secondary"
             color={palette.leaf}
             onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
@@ -163,19 +168,19 @@ export default function DonorDetailScreen() {
       )}
 
       <List>
-        <ListRow icon="phone-outline" title={donor.phoneNumber || 'No phone number'} subtitle="Phone" />
-        {donor.email && <ListRow icon="email-outline" title={donor.email} subtitle="Email" />}
-        <ListRow icon="home-outline" title={donor.address || 'Not added'} subtitle="Address" />
-        <ListRow icon="medical-bag" title={donor.medicalConditions || 'None noted'} subtitle="Medical conditions" />
-        {donor.notes && <ListRow icon="note-text-outline" title={donor.notes} subtitle="Volunteer notes" />}
-        <ListRow icon="calendar-blank-outline" title={formatDate(donor.createdAt)} subtitle="Added on" />
+        <ListRow icon="phone-outline" title={donor.phoneNumber || t('common.noPhone')} subtitle={t('donorDetail.phone')} />
+        {donor.email && <ListRow icon="email-outline" title={donor.email} subtitle={t('donorDetail.email')} />}
+        <ListRow icon="home-outline" title={donor.address || t('common.notAdded')} subtitle={t('donorDetail.address')} />
+        <ListRow icon="medical-bag" title={donor.medicalConditions || t('donorDetail.noneNoted')} subtitle={t('donorDetail.medical')} />
+        {donor.notes && <ListRow icon="note-text-outline" title={donor.notes} subtitle={t('donorDetail.volunteerNotes')} />}
+        <ListRow icon="calendar-blank-outline" title={formatDate(donor.createdAt)} subtitle={t('donorDetail.addedOn')} />
       </List>
 
       {canManage && (
         <View style={styles.manage}>
           <Button
             icon="water-plus"
-            label="Log donation"
+            label={t('donorDetail.logDonation')}
             onPress={() => router.push({
               pathname: '/donation/new',
               params: { donorId: donor.id, ...(requestId && { requestId }) },
@@ -184,14 +189,14 @@ export default function DonorDetailScreen() {
           <View style={styles.row}>
             <Button
               icon="pencil-outline"
-              label="Edit"
+              label={t('common.edit')}
               variant="secondary"
               onPress={() => router.push({ pathname: '/donor/edit', params: { id: donor.id } })}
               style={styles.flex}
             />
             <Button
               icon={donor.verified ? 'shield-off-outline' : 'shield-check-outline'}
-              label={donor.verified ? 'Unverify' : 'Verify'}
+              label={donor.verified ? t('donorDetail.unverify') : t('donorDetail.verify')}
               variant="secondary"
               color={palette.leaf}
               onPress={() => update({ verified: !donor.verified })}
@@ -200,7 +205,7 @@ export default function DonorDetailScreen() {
           </View>
           <Button
             icon={donor.status === 'inactive' ? 'account-check-outline' : 'account-off-outline'}
-            label={donor.status === 'inactive' ? 'Reactivate donor' : 'Deactivate donor'}
+            label={donor.status === 'inactive' ? t('donorDetail.reactivateDonor') : t('donorDetail.deactivateDonor')}
             variant="secondary"
             color={palette.inkMuted}
             onPress={toggleActive}
@@ -208,7 +213,7 @@ export default function DonorDetailScreen() {
           {isAdmin && donor.hasAccount === false && (
             <Button
               icon="trash-can-outline"
-              label="Delete donor"
+              label={t('donorDetail.deleteDonor')}
               variant="secondary"
               color={palette.blood}
               onPress={handleDeleteDonor}
@@ -230,7 +235,7 @@ export default function DonorDetailScreen() {
         <RoleEditor donor={donor} onSave={update} />
       )}
 
-      <Section title="Donation history">
+      <Section title={t('donorDetail.history')}>
         <DonationList donations={donations} onDelete={canManage ? handleDeleteDonation : undefined} />
       </Section>
     </Screen>
@@ -255,12 +260,13 @@ function useSamePhone(donor: UserProfile) {
 
 // On an app account: donors a volunteer added earlier who may be the same person.
 function AddedRecordsSection({ donor }: { donor: UserProfile }) {
+  const { t, districtName } = useI18n();
   const added = useSamePhone(donor).filter(user => user.hasAccount === false);
   if (!added.length) return null;
   return (
-    <Section title="Also added without the app">
+    <Section title={t('donorDetail.alsoAdded')}>
       <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
-        A volunteer added a donor with this number before they signed up. Open it to merge it into this account.
+        {t('donorDetail.alsoAddedHint')}
       </Text>
       <List>
         {added.map(user => (
@@ -268,7 +274,7 @@ function AddedRecordsSection({ donor }: { donor: UserProfile }) {
             key={user.id}
             icon="account-outline"
             title={user.name}
-            subtitle={`${user.bloodType} · ${user.district || 'No district'}`}
+            subtitle={`${user.bloodType} · ${districtName(user.district) || t('common.noDistrict')}`}
             onPress={() => router.push({ pathname: '/donor/[id]', params: { id: user.id } })}
           />
         ))}
@@ -279,6 +285,7 @@ function AddedRecordsSection({ donor }: { donor: UserProfile }) {
 
 // On a donor added without the app: move them onto the account they signed up with.
 function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (intoId: string) => void }) {
+  const { t } = useI18n();
   const samePhone = useSamePhone(donor).filter(user => user.hasAccount !== false);
   const [email, setEmail] = useState('');
   const [found, setFound] = useState<UserProfile[] | null>(null);
@@ -292,7 +299,7 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
       setFound(snap.docs.map(mapUser).filter(user => user.hasAccount !== false && user.id !== donor.id));
     } catch (error) {
       console.error('Error searching accounts:', error);
-      showMessage('Could not search', 'Check your connection and try again.');
+      showMessage(t('donorDetail.couldNotSearch'), t('common.checkConnection'));
     } finally {
       setBusy(null);
     }
@@ -300,10 +307,13 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
 
   const merge = async (account: UserProfile) => {
     const ok = await confirmAction(
-      'Merge donor?',
-      `Merge ${donor.name} into ${account.name}'s account (${account.email ?? account.phoneNumber})? ` +
-        'Their donation history moves to the account, and this record is deleted.',
-      'Merge',
+      t('donorDetail.mergeTitle'),
+      t('donorDetail.mergeMessage', {
+        donor: donor.name,
+        account: account.name,
+        contact: account.email ?? account.phoneNumber ?? '',
+      }),
+      t('donorDetail.merge'),
     );
     if (!ok) return;
     setBusy(account.id);
@@ -311,7 +321,7 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
       await callNotifyApi<MergeDonorResult>(DONOR_ENDPOINTS.merge, { fromId: donor.id, intoId: account.id });
       onMerged(account.id);
     } catch (error) {
-      showMessage('Could not merge', error instanceof Error ? error.message : 'Try again in a minute.');
+      showMessage(t('donorDetail.couldNotMerge'), error instanceof Error ? error.message : t('common.tryAgainLater'));
       setBusy(null);
     }
   };
@@ -319,21 +329,21 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
   const candidates = [...samePhone, ...(found ?? []).filter(user => !samePhone.some(s => s.id === user.id))];
 
   return (
-    <Section title="Signed up on the app?">
+    <Section title={t('donorDetail.signedUp')}>
       <View style={styles.panel}>
         <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
-          Merge this donor into their account to keep one record.
+          {t('donorDetail.mergeHint')}
         </Text>
         {candidates.map(account => (
           <View key={account.id} style={styles.candidate}>
             <Text variant="bodyStrong">{account.name}</Text>
             <Text variant="caption" color={palette.inkMuted}>
-              {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && 'Same phone']
+              {[account.bloodType, account.email, account.phoneNumber === donor.phoneNumber && t('donorDetail.samePhone')]
                 .filter(Boolean).join(' · ')}
             </Text>
             <Button
               icon="call-merge"
-              label="Merge into this account"
+              label={t('donorDetail.mergeInto')}
               variant="secondary"
               loading={busy === account.id}
               disabled={!!busy}
@@ -343,7 +353,7 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
           </View>
         ))}
         <Field
-          label="Find account by email"
+          label={t('donorDetail.findByEmail')}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -353,12 +363,12 @@ function MergeSection({ donor, onMerged }: { donor: UserProfile; onMerged: (into
         />
         {found && !found.length && (
           <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
-            No app account uses that email.
+            {t('donorDetail.noAccount')}
           </Text>
         )}
         <Button
           icon="magnify"
-          label="Search"
+          label={t('common.search')}
           variant="secondary"
           loading={busy === 'search'}
           disabled={!!busy}
@@ -373,6 +383,7 @@ function RoleEditor({ donor, onSave }: {
   donor: UserProfile;
   onSave: (patch: Partial<UserProfile>, message?: string) => Promise<void>;
 }) {
+  const { t, districtName } = useI18n();
   const [role, setRole] = useState<UserRole>(donor.role ?? 'donor');
   const [districts, setDistricts] = useState<string[]>(donor.volunteerDistricts ?? []);
   const [saving, setSaving] = useState(false);
@@ -385,29 +396,29 @@ function RoleEditor({ donor, onSave }: {
     setSaving(true);
     await onSave(
       { role, volunteerDistricts: role === 'volunteer' ? districts : [] },
-      `${donor.name} is now ${role === 'admin' ? 'an admin' : `a ${role}`}.`,
+      t(role === 'admin' ? 'donorDetail.nowAdmin' : role === 'volunteer' ? 'donorDetail.nowVolunteer' : 'donorDetail.nowDonor', { name: donor.name }),
     );
     setSaving(false);
   };
 
   return (
-    <Section title="Access">
+    <Section title={t('donorDetail.access')}>
       <View style={styles.panel}>
         <Text variant="caption" color={palette.inkMuted} style={styles.panelHint}>
-          Only admins can change this.
+          {t('donorDetail.adminsOnly')}
         </Text>
         <ChipSelect
-          label="Role"
+          label={t('donorDetail.role')}
           options={ROLES}
           value={role}
           onChange={value => setRole(value as UserRole)}
-          format={value => ROLE_LABELS[value as UserRole]}
+          format={value => t(ROLE_LABELS[value as UserRole])}
         />
         {role === 'volunteer' && (
           <View style={styles.districts}>
-            <Text variant="label" color={palette.inkMuted}>Districts they manage</Text>
+            <Text variant="label" color={palette.inkMuted}>{t('donorDetail.districtsTheyManage')}</Text>
             <Text variant="caption" color={palette.inkFaint} style={styles.panelHint}>
-              Leave all unselected to cover the whole of Kerala.
+              {t('donorDetail.wholeKerala')}
             </Text>
             <View style={styles.chips}>
               {KERALA_DISTRICTS.map(district => {
@@ -420,14 +431,14 @@ function RoleEditor({ donor, onSave }: {
                     accessibilityState={{ checked: selected }}
                     style={[styles.chip, selected && styles.chipSelected]}
                   >
-                    <Text variant="label" color={selected ? '#fff' : palette.ink}>{district}</Text>
+                    <Text variant="label" color={selected ? '#fff' : palette.ink}>{districtName(district)}</Text>
                   </Pressable>
                 );
               })}
             </View>
           </View>
         )}
-        <Button label="Save access" color={palette.info} loading={saving} onPress={save} />
+        <Button label={t('donorDetail.saveAccess')} color={palette.info} loading={saving} onPress={save} />
       </View>
     </Section>
   );

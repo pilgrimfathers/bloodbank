@@ -1,15 +1,25 @@
 import { StyleSheet, View } from 'react-native';
 import { LAST_UPDATED, PRIVACY_POLICY } from '@/shared/privacy';
+import { PRIVACY_POLICY_ML } from '@/src/i18n/privacyMl';
+import { useI18n } from '@/src/i18n';
 import { palette, space } from '@/src/theme';
 import Screen from '@/src/components/ui/Screen';
 import Section from '@/src/components/ui/Section';
 import Text from '@/src/components/ui/Text';
 
-// Same text as the web page at /privacy (shared/privacy.ts).
+// Same text as the web page at /privacy (shared/privacy.ts). Malayalam readers
+// get a translation (src/i18n/privacyMl.ts); the English text is the one that applies.
 export default function PrivacyPolicyScreen() {
+  const { t, language } = useI18n();
+  const malayalam = language === 'ml';
+  const policy = malayalam ? PRIVACY_POLICY_ML : PRIVACY_POLICY;
+
   return (
-    <Screen back title="Privacy policy" subtitle={`Last updated ${LAST_UPDATED}`}>
-      {PRIVACY_POLICY.map(section => (
+    <Screen back title={t('privacy.title')} subtitle={t('privacy.lastUpdated', { date: LAST_UPDATED })}>
+      {malayalam && (
+        <Text variant="caption" color={palette.inkMuted}>{t('privacy.translationNote')}</Text>
+      )}
+      {policy.map(section => (
         <Section key={section.title} title={section.title}>
           <View style={styles.body}>
             {section.paragraphs?.map(paragraph => (

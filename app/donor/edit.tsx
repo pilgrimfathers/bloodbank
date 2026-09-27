@@ -12,11 +12,13 @@ import DonorForm, { DonorFormValues } from '@/src/components/DonorForm';
 import EmptyState from '@/src/components/ui/EmptyState';
 import Screen from '@/src/components/ui/Screen';
 import Text from '@/src/components/ui/Text';
+import { useI18n } from '@/src/i18n';
 
 // Volunteers add donors who don't use the app, or edit any donor they manage.
 export default function EditDonorScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { profile: me } = useCurrentUser();
+  const { t, districtName } = useI18n();
   const [donor, setDonor] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(!!id);
 
@@ -27,7 +29,9 @@ export default function EditDonorScreen() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const title = id ? (donor ? `Edit ${donor.name}` : 'Edit donor') : 'Add donor';
+  const title = id
+    ? (donor ? t('donorEdit.editNamed', { name: donor.name }) : t('donorEdit.editDonor'))
+    : t('manage.addDonor');
 
   if (!me || loading) {
     return (
@@ -39,7 +43,7 @@ export default function EditDonorScreen() {
   if (!isVolunteer(me)) {
     return (
       <Screen back title={title}>
-        <EmptyState icon="account-lock-outline" title="Only volunteers can manage donors" />
+        <EmptyState icon="account-lock-outline" title={t('donorEdit.volunteersOnly')} />
       </Screen>
     );
   }
@@ -55,16 +59,20 @@ export default function EditDonorScreen() {
 
   const handleSubmit = async (values: DonorFormValues) => {
     if (!coversDistrict(me, values.district)) {
-      showMessage('Not allowed', `You don't manage donors in ${values.district}.`);
+      showMessage(t('donorEdit.notAllowed'), t('donorEdit.notYourDistrict', { district: districtName(values.district) }));
       return;
     }
     try {
       const duplicate = await findDuplicate(values);
       if (duplicate) {
         const ok = await confirmAction(
-          'Possible duplicate',
-          `${duplicate.name} in ${values.district} already uses ${values.phoneNumber}. Save anyway?`,
-          'Save',
+          t('donorEdit.duplicateTitle'),
+          t('donorEdit.duplicateMessage', {
+            name: duplicate.name,
+            district: districtName(values.district),
+            phone: values.phoneNumber,
+          }),
+          t('common.save'),
         );
         if (!ok) return;
       }
@@ -99,7 +107,7 @@ export default function EditDonorScreen() {
       router.replace({ pathname: '/donor/[id]', params: { id: ref.id } });
     } catch (error) {
       console.error('Error saving donor:', error);
-      showMessage('Could not save donor', 'Check your connection and try again.');
+      showMessage(t('donorEdit.couldNotSave'), t('common.checkConnection'));
     }
   };
 
@@ -108,7 +116,7 @@ export default function EditDonorScreen() {
       {!donor && (
         <View style={styles.note}>
           <Text variant="body" color={palette.info}>
-            For donors who don't use the app. People who sign up themselves appear automatically.
+            {t('donorEdit.note')}
           </Text>
         </View>
       )}
@@ -116,7 +124,7 @@ export default function EditDonorScreen() {
         initial={donor ?? { district: me.volunteerDistricts?.[0] ?? me.district }}
         showLastDonation={!donor}
         showNotes
-        submitLabel={donor ? 'Save changes' : 'Add donor'}
+        submitLabel={donor ? t('donorEdit.saveChanges') : t('manage.addDonor')}
         onSubmit={handleSubmit}
       />
     </Screen>
