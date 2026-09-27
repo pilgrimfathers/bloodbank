@@ -29,6 +29,8 @@ export type UserProfile = {
   // Ids of donors added without the app that an admin merged into this account.
   mergedFrom?: string[];
   notes?: string;
+  // When the user finished or skipped the app tour (app/tour.tsx).
+  tourSeenAt?: Date;
   // Expo push tokens for the devices this user is signed in on.
   pushTokens?: string[];
   createdBy?: string;

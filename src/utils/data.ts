@@ -14,6 +14,7 @@ export function mapUser(snap: DocumentSnapshot | QueryDocumentSnapshot): UserPro
     lastDonation: toDate(data.lastDonation),
     createdAt: toDate(data.createdAt) ?? undefined,
     updatedAt: toDate(data.updatedAt) ?? undefined,
+    tourSeenAt: toDate(data.tourSeenAt) ?? undefined,
   } as UserProfile;
 }
 

@@ -141,6 +141,14 @@ export default function ProfileScreen() {
       </Section>
 
       <Button
+        icon="compass-outline"
+        label="Take the app tour"
+        variant="quiet"
+        color={palette.inkMuted}
+        onPress={() => router.push('/tour')}
+      />
+
+      <Button
         icon="logout"
         label="Log out"
         variant="quiet"

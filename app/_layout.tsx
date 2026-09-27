@@ -17,10 +17,10 @@ import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
-const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile', 'find-donors'];
+const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile', 'find-donors', 'tour'];
 
 function RootNavigator() {
-  const { authUser, initializing } = useCurrentUser();
+  const { authUser, profile, initializing } = useCurrentUser();
   const isAuthenticated = !!authUser;
   const segments = useSegments();
   const router = useRouter();
@@ -50,6 +50,16 @@ function RootNavigator() {
       router.replace('/(tabs)/home');
     }
   }, [isAuthenticated, initializing, segments[0]]);
+
+  // First time in the app: walk through it once. Saved on the profile, so
+  // it doesn't come back on other phones.
+  const tourShown = useRef(false);
+  const needsTour = !!profile && !profile.tourSeenAt;
+  useEffect(() => {
+    if (!ready || !needsTour || tourShown.current || segments[0] !== '(tabs)') return;
+    tourShown.current = true;
+    router.push('/tour');
+  }, [ready, needsTour, segments[0]]);
 
   // Open the request when a push is tapped, whether the app was running or not.
   // The hook and the listener can both report the same tap, so remember handled ones.
@@ -95,6 +105,7 @@ function RootNavigator() {
         <Stack.Screen name="donation/new" />
         <Stack.Screen name="profile/edit" />
         <Stack.Screen name="find-donors" />
+        <Stack.Screen name="tour" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
       </Stack.Protected>
       {/* Readable signed in or out */}
       <Stack.Screen name="privacy" />
