@@ -1,5 +1,5 @@
 import { addMonths, getEligibility, nextEligibleDate } from '../shared/eligibility';
-import { normalizePhone, parseDateInput } from '../shared/format';
+import { normalizePhone } from '../shared/format';
 
 describe('addMonths', () => {
   it('adds calendar months', () => {
@@ -44,20 +44,6 @@ describe('getEligibility', () => {
 
   it('ignores time of day on the donation date', () => {
     expect(nextEligibleDate(new Date(2026, 2, 21, 23, 59))).toEqual(new Date(2026, 8, 21));
-  });
-});
-
-describe('parseDateInput', () => {
-  it('parses DD-MM-YYYY with common separators', () => {
-    expect(parseDateInput('05-03-2026')).toEqual(new Date(2026, 2, 5));
-    expect(parseDateInput('5/3/2026')).toEqual(new Date(2026, 2, 5));
-    expect(parseDateInput('05.03.2026')).toEqual(new Date(2026, 2, 5));
-  });
-
-  it('rejects impossible dates', () => {
-    expect(parseDateInput('31-02-2026')).toBeNull();
-    expect(parseDateInput('2026-03-05')).toBeNull();
-    expect(parseDateInput('')).toBeNull();
   });
 });
 

@@ -26,6 +26,10 @@ export const common = defineStrings(
     'common.kerala': 'Kerala',
     'common.inKerala': '{district}, Kerala',
 
+    'date.pick': 'Pick a date',
+    'date.clear': 'Clear date',
+    'date.done': 'Done',
+
     'time.justNow': 'just now',
     'time.minutesAgo': '{count}m ago',
     'time.hoursAgo': '{count}h ago',
@@ -92,6 +96,10 @@ export const common = defineStrings(
     'common.notAdded': 'ചേർത്തിട്ടില്ല',
     'common.kerala': 'കേരളം',
     'common.inKerala': '{district}, കേരളം',
+
+    'date.pick': 'തീയതി തിരഞ്ഞെടുക്കുക',
+    'date.clear': 'തീയതി മായ്ക്കുക',
+    'date.done': 'ശരി',
 
     'time.justNow': 'ഇപ്പോൾ',
     'time.minutesAgo': '{count} മിനിറ്റ് മുമ്പ്',

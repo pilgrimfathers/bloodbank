@@ -9,8 +9,8 @@ import { Donation, UserProfile } from '@/shared/types';
 import { coversDistrict, getDonations, getUser, logDonation } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { addMonths } from '@/shared/eligibility';
-import { parseDateInput, toDateInput } from '@/shared/format';
 import { palette, space } from '@/src/theme';
+import DateField from '@/src/components/DateField';
 import DonorCard from '@/src/components/DonorCard';
 import Field from '@/src/components/Field';
 import Button from '@/src/components/ui/Button';
@@ -25,7 +25,7 @@ export default function NewDonationScreen() {
   const { t, formatDate, districtName } = useI18n();
   const [donor, setDonor] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<Donation[]>([]);
-  const [date, setDate] = useState(toDateInput(new Date()));
+  const [donationDate, setDonationDate] = useState(new Date());
   const [hospital, setHospital] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -69,8 +69,6 @@ export default function NewDonationScreen() {
   }
 
   const handleSave = async () => {
-    const donationDate = parseDateInput(date);
-    if (!donationDate) return showMessage(t('donationNew.invalidDate'), t('donationNew.dateFormat'));
     if (donationDate > new Date()) return showMessage(t('donationNew.invalidDate'), t('donationNew.futureDate'));
 
     // Two donations closer than the cool-off period usually means a mistake.
@@ -121,11 +119,11 @@ export default function NewDonationScreen() {
         donationCount={donor.donationCount ?? history.length}
       />
       <View>
-        <Field
+        <DateField
           label={t('donationNew.dateLabel')}
-          value={date}
-          onChangeText={setDate}
-          placeholder="DD-MM-YYYY"
+          value={donationDate}
+          onChange={picked => picked && setDonationDate(picked)}
+          maximumDate={new Date()}
           hint={t('donationNew.dateHint')}
         />
         <Field

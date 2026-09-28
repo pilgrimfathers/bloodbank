@@ -4,8 +4,9 @@ import { BLOOD_TYPES, KERALA_DISTRICTS } from '@/shared/constants';
 import { palette, radius, space } from '../theme';
 import { UserProfile } from '@/shared/types';
 import { showMessage } from '../utils/dialog';
-import { normalizePhone, parseDateInput, toDateInput } from '@/shared/format';
+import { normalizePhone } from '@/shared/format';
 import ChipSelect from './ChipSelect';
+import DateField from './DateField';
 import Field from './Field';
 import Button from './ui/Button';
 import Text from './ui/Text';
@@ -46,7 +47,7 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
     medicalConditions: initial?.medicalConditions ?? '',
     isDonor: initial?.isDonor ?? true,
     notes: initial?.notes ?? '',
-    lastDonation: toDateInput(initial?.lastDonation),
+    lastDonation: initial?.lastDonation ?? null,
   });
   const set = (patch: Partial<typeof form>) => setForm(prev => ({ ...prev, ...patch }));
 
@@ -57,11 +58,9 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
     if (!form.bloodType) return showMessage(t('donorForm.missingBloodType'), t('donorForm.selectBloodType'));
     if (!form.district) return showMessage(t('donorForm.missingDistrict'), t('donorForm.selectDistrict'));
 
-    let lastDonation: Date | null = null;
-    if (showLastDonation && form.lastDonation.trim()) {
-      lastDonation = parseDateInput(form.lastDonation);
-      if (!lastDonation) return showMessage(t('donationNew.invalidDate'), t('donorForm.lastDateFormat'));
-      if (lastDonation > new Date()) return showMessage(t('donationNew.invalidDate'), t('donorForm.lastDateFuture'));
+    const lastDonation = showLastDonation ? form.lastDonation : null;
+    if (lastDonation && lastDonation > new Date()) {
+      return showMessage(t('donationNew.invalidDate'), t('donorForm.lastDateFuture'));
     }
 
     setSubmitting(true);
@@ -113,11 +112,12 @@ export default function DonorForm({ initial, showLastDonation, showNotes, submit
       />
       <Field label={t('donorForm.address')} value={form.address} onChangeText={address => set({ address })} multiline />
       {showLastDonation && (
-        <Field
+        <DateField
           label={t('donorForm.lastDonation')}
           value={form.lastDonation}
-          onChangeText={lastDonation => set({ lastDonation })}
-          placeholder="DD-MM-YYYY"
+          onChange={lastDonation => set({ lastDonation })}
+          maximumDate={new Date()}
+          clearable
           hint={t('donorForm.lastDonationHint')}
         />
       )}
