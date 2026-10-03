@@ -84,6 +84,14 @@ export default function Login() {
           secureTextEntry
           autoComplete="password"
         />
+        <Pressable
+          onPress={() => router.push({ pathname: '/(auth)/forgot-password', params: email.trim() ? { email: email.trim() } : {} })}
+          accessibilityRole="link"
+          hitSlop={8}
+          style={styles.forgot}
+        >
+          <Text variant="label" color={palette.blood}>{t('auth.login.forgotPassword')}</Text>
+        </Pressable>
         <Button label={t('auth.login.title')} onPress={handleLogin} loading={loading} />
       </View>
 
@@ -108,5 +116,10 @@ const styles = StyleSheet.create({
   },
   center: {
     textAlign: 'center',
+  },
+  forgot: {
+    alignSelf: 'flex-end',
+    marginTop: -space.sm,
+    marginBottom: space.lg,
   },
 });
