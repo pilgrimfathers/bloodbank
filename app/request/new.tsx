@@ -14,6 +14,7 @@ import { StringKey, useI18n } from '@/src/i18n';
 import { space } from '@/src/theme';
 import ChipSelect from '@/src/components/ChipSelect';
 import Field from '@/src/components/Field';
+import HospitalField from '@/src/components/HospitalField';
 import Button from '@/src/components/ui/Button';
 import Screen from '@/src/components/ui/Screen';
 
@@ -116,17 +117,19 @@ export default function NewRequestScreen() {
         onChange={urgency => set({ urgency: urgency as Urgency })}
         format={value => t(URGENCY_LABELS[value as Urgency])}
       />
-      <Field
-        label={t('requestNew.hospital')}
-        value={formData.hospital}
-        onChangeText={hospital => set({ hospital })}
-      />
       <ChipSelect
         label={t('requestNew.district')}
         options={KERALA_DISTRICTS}
         value={formData.district || null}
         onChange={district => set({ district })}
         format={districtName}
+      />
+      <HospitalField
+        label={t('requestNew.hospital')}
+        hint={t('requestNew.hospitalHint')}
+        value={formData.hospital}
+        onChangeText={hospital => set({ hospital })}
+        district={formData.district}
       />
       <Field
         label={t('requestNew.area')}

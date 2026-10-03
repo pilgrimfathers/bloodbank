@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { CheckCircle2, Send } from "lucide-react";
 import { BLOOD_TYPES, KERALA_DISTRICTS } from "@shared/constants";
+import { HOSPITALS } from "@shared/hospitals";
 import { normalizePhone } from "@shared/format";
 import { NOTIFY_ENDPOINTS } from "@shared/notifications";
 import type { BloodRequest } from "@shared/types";
@@ -39,6 +40,9 @@ export default function RequestBloodPage() {
   const [postedId, setPostedId] = useState<string | null>(null);
 
   if (!profile) return null;
+  const hospitalSuggestions = form.district in HOSPITALS
+    ? HOSPITALS[form.district as keyof typeof HOSPITALS]
+    : [...new Set(Object.values(HOSPITALS).flat())];
   const set = (patch: Partial<typeof form>) => setForm(prev => ({ ...prev, ...patch }));
 
   const handleSubmit = async (event: FormEvent) => {
@@ -131,7 +135,6 @@ export default function RequestBloodPage() {
               onChange={urgency => set({ urgency: urgency as Urgency })}
             />
           </div>
-          <Field label={t("myRequest.hospital")} value={form.hospital} onChange={e => set({ hospital: e.target.value })} />
           <div className="grid gap-5 sm:grid-cols-2">
             <Select
               label={t("myRequest.district")}
@@ -147,6 +150,17 @@ export default function RequestBloodPage() {
               placeholder={t("myRequest.areaPlaceholder")}
             />
           </div>
+          <Field
+            label={t("myRequest.hospital")}
+            hint={t("myRequest.hospitalHint")}
+            list="hospital-suggestions"
+            autoComplete="off"
+            value={form.hospital}
+            onChange={e => set({ hospital: e.target.value })}
+          />
+          <datalist id="hospital-suggestions">
+            {hospitalSuggestions.map(name => <option key={name} value={name} />)}
+          </datalist>
           <Field
             label={t("myRequest.contact")}
             type="tel"
