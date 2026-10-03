@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View, ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -25,12 +25,57 @@ type Props = {
 
 const HERO_OVERLAP = 56;
 
+type Measurable = Pick<View, 'measureInWindow'>;
+
+// Lets content inside a scrolling Screen ask to be scrolled clear of the
+// keyboard, e.g. an input whose suggestion list just opened below it.
+const RevealContext = createContext<(node: Measurable | null) => void>(() => {});
+export const useReveal = () => useContext(RevealContext);
+
 // Page shell: red header band (safe-area aware) over a warm background,
 // with width-capped content below.
 export default function Screen({
   title, subtitle, back, right, hero, children, scroll = true, refreshing, onRefresh, contentStyle,
 }: Props) {
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+  const keyboardTop = useRef<number | null>(null);
+  // A reveal asked for before the keyboard finished opening, run once it has.
+  const pending = useRef<Measurable | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // Android draws edge to edge, so the keyboard covers the page instead of
+  // shrinking it. Scroll whatever was asked for into the space above it.
+  const reveal = useCallback((node: Measurable | null) => {
+    if (!node) return;
+    if (keyboardTop.current === null) { pending.current = node; return; }
+    node.measureInWindow((_x, y, _width, height) => {
+      const top = insets.top + space.md;
+      const hiddenBelow = y + height + space.md - keyboardTop.current!;
+      // Never scroll the node's top out of view, even if it can't fit.
+      const by = Math.min(hiddenBelow, y - top);
+      if (by > 0) scrollRef.current?.scrollTo({ y: scrollY.current + by, animated: true });
+    });
+  }, [insets.top]);
+
+  useEffect(() => {
+    if (!scroll) return;
+    const shown = Keyboard.addListener('keyboardDidShow', event => {
+      keyboardTop.current = event.endCoordinates.screenY;
+      setKeyboardHeight(event.endCoordinates.height);
+      // Wait for the extra padding to lay out so there is room to scroll.
+      const node = pending.current ?? (TextInput.State.currentlyFocusedInput() as Measurable | null);
+      pending.current = null;
+      requestAnimationFrame(() => reveal(node));
+    });
+    const hidden = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardTop.current = null;
+      pending.current = null;
+      setKeyboardHeight(0);
+    });
+    return () => { shown.remove(); hidden.remove(); };
+  }, [scroll, reveal]);
 
   const band = (
     <View style={[styles.band, { paddingTop: insets.top + space.md }, hero ? { paddingBottom: HERO_OVERLAP + space.md } : null]}>
@@ -68,14 +113,19 @@ export default function Screen({
     <View style={styles.page}>
       {scroll ? (
         <ScrollView
-          contentContainerStyle={{ paddingBottom: (back ? insets.bottom : 0) + space.xxl }}
+          ref={scrollRef}
+          onScroll={event => { scrollY.current = event.nativeEvent.contentOffset.y; }}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: (back ? insets.bottom : 0) + space.xxl + keyboardHeight }}
           keyboardShouldPersistTaps="handled"
           refreshControl={onRefresh && (
             <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor="#fff" colors={[palette.blood]} />
           )}
         >
           {band}
-          <View style={[styles.content, hero ? null : styles.contentTop, contentStyle]}>{body}</View>
+          <RevealContext.Provider value={reveal}>
+            <View style={[styles.content, hero ? null : styles.contentTop, contentStyle]}>{body}</View>
+          </RevealContext.Provider>
         </ScrollView>
       ) : (
         <View style={[styles.fill, { paddingBottom: back ? insets.bottom : 0 }]}>
