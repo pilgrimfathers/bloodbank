@@ -11,6 +11,7 @@ import {
   type AskDonorBody, type AskDonorResult, type DonorSearchBody, type DonorSearchResult, type PublicDonor,
 } from "@shared/donors";
 import type { BloodRequest } from "@shared/types";
+import { donorMessage, whatsappUrl } from "@shared/whatsapp";
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { callNotifyApi, mapRequest } from "@/lib/data";
@@ -220,6 +221,7 @@ function FindDonors() {
                   <DonorRow
                     key={donor.id}
                     donor={donor}
+                    request={request}
                     canAsk={!!request}
                     asking={asking === donor.id}
                     asked={!!request && asked.has(`${request.id}_${donor.id}`)}
@@ -235,8 +237,9 @@ function FindDonors() {
   );
 }
 
-function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
+function DonorRow({ donor, request, canAsk, asking, asked, onAsk }: {
   donor: PublicDonor;
+  request: BloodRequest | null;
   canAsk: boolean;
   asking: boolean;
   asked: boolean;
@@ -271,7 +274,7 @@ function DonorRow({ donor, canAsk, asking, asked, onAsk }: {
                 {phone}
               </a>
               <a
-                href={`https://wa.me/91${phone}`}
+                href={whatsappUrl(phone, donorMessage(t, donor, request))}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={t("myDonors.whatsapp", { name: donor.name })}

@@ -5,6 +5,7 @@ import { collection, doc, getDoc, getDocs, query, updateDoc, where } from 'fireb
 import { auth, firestore } from '@/src/config/firebase';
 import { useCurrentUser } from '@/src/context/UserContext';
 import { BloodRequest, Donation } from '@/shared/types';
+import { requesterMessage, whatsappUrl } from '@/shared/whatsapp';
 import { coversDistrict, isVolunteer, mapDonation, mapRequest } from '@/src/utils/data';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
 import { StringKey, useI18n } from '@/src/i18n';
@@ -159,7 +160,7 @@ export default function RequestDetails() {
             label={t('common.whatsapp')}
             variant="secondary"
             color={palette.leaf}
-            onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
+            onPress={() => Linking.openURL(whatsappUrl(phone, requesterMessage(t, request)))}
             style={styles.flex}
           />
         </View>

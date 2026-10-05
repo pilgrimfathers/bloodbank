@@ -11,6 +11,7 @@ import { COOLOFF_MONTHS, KERALA_DISTRICTS } from "@shared/constants";
 import { DONOR_ENDPOINTS, type MergeDonorResult } from "@shared/donors";
 import { addMonths } from "@shared/eligibility";
 import type { Donation, UserProfile, UserRole } from "@shared/types";
+import { donorMessage, whatsappUrl } from "@shared/whatsapp";
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import {
@@ -267,7 +268,7 @@ function DonorDetail() {
                 {t("common.call")}
               </a>
               <a
-                href={`https://wa.me/91${phone}`}
+                href={whatsappUrl(phone, donorMessage(t, donor))}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border-[1.5px] border-leaf/40 px-4 font-semibold text-leaf hover:bg-leaf-tint"

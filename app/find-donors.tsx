@@ -9,6 +9,7 @@ import {
   AskDonorBody, AskDonorResult, DAILY_ASK_LIMIT, DONOR_ENDPOINTS, DonorSearchBody, DonorSearchResult, PublicDonor,
 } from '@/shared/donors';
 import { BloodRequest } from '@/shared/types';
+import { donorMessage, whatsappUrl } from '@/shared/whatsapp';
 import { mapRequest } from '@/src/utils/data';
 import { callNotifyApi } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
@@ -221,6 +222,7 @@ export default function FindDonorsScreen() {
             <DonorRow
               key={donor.id}
               donor={donor}
+              request={request}
               asking={asking === donor.id}
               asked={!!request && asked.has(`${request.id}_${donor.id}`)}
               onAsk={() => ask(donor)}
@@ -232,8 +234,9 @@ export default function FindDonorsScreen() {
   );
 }
 
-function DonorRow({ donor, asking, asked, onAsk }: {
+function DonorRow({ donor, request, asking, asked, onAsk }: {
   donor: PublicDonor;
+  request: BloodRequest | null;
   asking: boolean;
   asked: boolean;
   onAsk: () => void;
@@ -268,7 +271,7 @@ function DonorRow({ donor, asking, asked, onAsk }: {
                 label={t('common.whatsapp')}
                 variant="secondary"
                 color={palette.leaf}
-                onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
+                onPress={() => Linking.openURL(whatsappUrl(phone, donorMessage(t, donor, request)))}
                 style={styles.flex}
               />
             </>

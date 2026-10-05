@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { CheckCircle2, FileQuestion, MessageCircle, Phone, UserSearch, XCircle } from "lucide-react";
 import type { BloodRequest, Donation } from "@shared/types";
+import { requesterMessage, whatsappUrl } from "@shared/whatsapp";
 import { auth, firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
 import { coversDistrict, isVolunteer, mapDonation, mapRequest } from "@/lib/data";
@@ -186,7 +187,7 @@ export default function RequestPage() {
                 {t("requestPage.callNumber", { phone: request.contactNumber })}
               </a>
               <a
-                href={`https://wa.me/91${phone}`}
+                href={whatsappUrl(phone, requesterMessage(t, request))}
                 target="_blank"
                 rel="noreferrer"
                 className="flex h-10 items-center justify-center gap-2 rounded-lg border-[1.5px] border-leaf/40 font-semibold text-leaf hover:bg-leaf-tint"

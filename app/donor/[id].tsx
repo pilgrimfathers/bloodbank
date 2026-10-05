@@ -7,6 +7,7 @@ import { useCurrentUser } from '@/src/context/UserContext';
 import { KERALA_DISTRICTS } from '@/shared/constants';
 import { DONOR_ENDPOINTS, MergeDonorResult } from '@/shared/donors';
 import { Donation, UserProfile, UserRole } from '@/shared/types';
+import { donorMessage, whatsappUrl } from '@/shared/whatsapp';
 import { coversDistrict, deleteAddedDonor, deleteDonation, getDonations, getUser, mapUser } from '@/src/utils/data';
 import { callNotifyApi } from '@/src/utils/push';
 import { confirmAction, showMessage } from '@/src/utils/dialog';
@@ -161,7 +162,7 @@ export default function DonorDetailScreen() {
             label={t('common.whatsapp')}
             variant="secondary"
             color={palette.leaf}
-            onPress={() => Linking.openURL(`https://wa.me/91${phone}`)}
+            onPress={() => Linking.openURL(whatsappUrl(phone, donorMessage(t, donor)))}
             style={styles.flex}
           />
         </View>
