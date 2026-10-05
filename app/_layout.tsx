@@ -86,6 +86,8 @@ function RootNavigator() {
     const data = response.notification.request.content.data as Partial<NotificationData> | undefined;
     if (data?.type === 'request' && 'requestId' in data && data.requestId) {
       router.push({ pathname: '/request/[id]', params: { id: data.requestId } });
+    } else if (data?.type === 'donor' && 'donorId' in data && data.donorId) {
+      router.push({ pathname: '/donor/[id]', params: { id: data.donorId } });
     }
   };
 

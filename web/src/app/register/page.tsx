@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { Droplet } from "lucide-react";
+import { NOTIFY_ENDPOINTS } from "@shared/notifications";
 import type { UserProfile } from "@shared/types";
 import { auth, firestore } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth";
-import { logDonation } from "@/lib/data";
+import { callNotifyApi, logDonation } from "@/lib/data";
 import { DonorForm, DonorFormError, type DonorFormValues } from "@/components/donor-form";
 import { Button, Field } from "@/components/ui";
 import { LanguageSwitch, useI18n, type StringKey } from "@/i18n";
@@ -76,6 +77,8 @@ export default function RegisterPage() {
         updatedAt: new Date(),
       };
       await setDoc(doc(firestore, "users", user.uid), profile);
+      callNotifyApi(NOTIFY_ENDPOINTS.userRegistered, {})
+        .catch(error => console.warn("Could not alert admins:", error));
 
       // A self-reported past donation still starts the cool-off period.
       if (lastDonation) {

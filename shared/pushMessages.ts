@@ -37,6 +37,24 @@ export function requestCreatedMessage(request: RequestInfo, language: PushLangua
   };
 }
 
+// To admins, when someone registers.
+export function userRegisteredMessage(
+  user: { name: string; bloodType?: string; district?: string | null },
+  language: PushLanguage,
+) {
+  if (language === 'ml') {
+    const place = user.district ? `, ${DISTRICTS_ML[user.district] ?? user.district}` : '';
+    return {
+      title: `പുതിയ ദാതാവ്: ${user.name}`,
+      body: `${user.bloodType ?? ''}${place}. പരിശോധിച്ച് വെരിഫൈ ചെയ്യുക.`,
+    };
+  }
+  return {
+    title: `New donor: ${user.name}`,
+    body: `${user.bloodType ?? ''}${user.district ? `, ${user.district}` : ''}. Review and verify them.`,
+  };
+}
+
 // To matching donors, when a volunteer alerts them.
 export function requestDonorsMessage(request: RequestInfo, language: PushLanguage) {
   if (language === 'ml') {

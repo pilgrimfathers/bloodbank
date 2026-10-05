@@ -10,6 +10,8 @@ import Screen from '@/src/components/ui/Screen';
 import Text from '@/src/components/ui/Text';
 import { showMessage } from '@/src/utils/dialog';
 import { logDonation } from '@/src/utils/data';
+import { callNotifyApi } from '@/src/utils/push';
+import { NOTIFY_ENDPOINTS } from '@/shared/notifications';
 import { palette, radius, space } from '@/src/theme';
 import { UserProfile } from '@/shared/types';
 import { StringKey, useI18n } from '@/src/i18n';
@@ -69,6 +71,8 @@ export default function Register() {
         updatedAt: new Date(),
       };
       await setDoc(doc(firestore, 'users', uid), profile);
+      callNotifyApi(NOTIFY_ENDPOINTS.userRegistered, {})
+        .catch(error => console.warn('Could not alert admins:', error));
 
       // A self-reported past donation still starts the cool-off period.
       if (lastDonation) {

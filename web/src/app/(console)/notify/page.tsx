@@ -15,7 +15,7 @@ import { useI18n, type StringKey } from "@/i18n";
 
 type LogEntry = {
   id: string;
-  type: "request-created" | "request-donors" | "broadcast" | "donor-ask";
+  type: "request-created" | "request-donors" | "broadcast" | "donor-ask" | "user-registered";
   title: string;
   body: string;
   requestId?: string;
@@ -29,6 +29,7 @@ const TYPE_LABELS: Record<LogEntry["type"], { label: StringKey; tone: Tone }> = 
   "request-donors": { label: "notify.type.requestDonors", tone: "blood" },
   broadcast: { label: "notify.type.broadcast", tone: "kasavu" },
   "donor-ask": { label: "notify.type.donorAsk", tone: "leaf" },
+  "user-registered": { label: "notify.type.userRegistered", tone: "info" },
 };
 
 async function fetchLog(): Promise<LogEntry[]> {

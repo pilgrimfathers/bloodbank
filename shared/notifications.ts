@@ -6,6 +6,8 @@ export const PRODUCTION_API_URL = 'https://bloodbank-kerala.vercel.app';
 export const NOTIFY_ENDPOINTS = {
   // Requester (or a volunteer) after posting a request: alerts admins once.
   requestCreated: '/api/notify/request-created',
+  // New user right after registering: alerts admins once.
+  userRegistered: '/api/notify/user-registered',
   // Admin only: alerts donors with the request's blood type.
   requestDonors: '/api/notify/request-donors',
   // Admin only: free-form message to all users, optionally filtered.
@@ -47,6 +49,7 @@ export type NotifyResult = {
 // Payload attached to every push, used to route taps in the app.
 export type NotificationData =
   | { type: 'request'; requestId: string }
+  | { type: 'donor'; donorId: string }
   | { type: 'broadcast' };
 
 export const ANDROID_CHANNEL_ID = 'requests';

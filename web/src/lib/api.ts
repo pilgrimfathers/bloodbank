@@ -33,12 +33,13 @@ export function authedRoute<Body>(
 
 // Audit trail of every notification sent (readable by admins).
 export function logNotification(entry: {
-  type: "request-created" | "request-donors" | "broadcast" | "donor-ask";
+  type: "request-created" | "request-donors" | "broadcast" | "donor-ask" | "user-registered";
   title: string;
   body: string;
   // Malayalam wording, when it differs from the English title and body.
   ml?: { title: string; body: string };
   requestId?: string;
+  donorId?: string;
   filters?: Record<string, unknown>;
   sent: number;
   recipients: number;
