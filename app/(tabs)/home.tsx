@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
+import { collection, getDocs, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { router, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { firestore } from '@/src/config/firebase';
@@ -20,11 +21,21 @@ import Text from '@/src/components/ui/Text';
 import { useI18n } from '@/src/i18n';
 
 export default function HomeScreen() {
-  const { profile } = useCurrentUser();
+  const { profile, authUser } = useCurrentUser();
   const { t, districtName } = useI18n();
   const [requests, setRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!authUser) return;
+    return onSnapshot(collection(firestore, 'users', authUser.uid, 'inbox'), snap => {
+      const count = snap.docs.filter(item => !item.data().readAt).length;
+      setUnreadCount(count);
+      Notifications.setBadgeCountAsync(count).catch(() => {});
+    }, error => console.error('Error loading notification count:', error));
+  }, [authUser?.uid]);
 
   const fetchRequests = async () => {
     try {
@@ -62,6 +73,10 @@ export default function HomeScreen() {
     <Screen
       title={firstName ? t('home.helloName', { name: firstName }) : t('home.hello')}
       subtitle={profile?.district ? t('common.inKerala', { district: districtName(profile.district) }) : t('common.kerala')}
+      right={<Pressable onPress={() => router.push('/notifications')} accessibilityRole="button" accessibilityLabel={t('notifications.title')} style={styles.bell}>
+        <MaterialCommunityIcons name={unreadCount ? 'bell-badge' : 'bell-outline'} size={26} color="#fff" />
+        {unreadCount > 0 && <View style={styles.bellBadge}><Text variant="caption" color={palette.bloodDark}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>}
+      </Pressable>}
       refreshing={refreshing}
       onRefresh={onRefresh}
       hero={profile && (
@@ -155,6 +170,8 @@ function ActionTile({ icon, title, text, onPress, filled }: {
 }
 
 const styles = StyleSheet.create({
+  bell: { padding: space.xs, position: 'relative' },
+  bellBadge: { position: 'absolute', top: -2, right: -5, minWidth: 18, height: 18, paddingHorizontal: 3, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   flex: {
     flex: 1,
   },

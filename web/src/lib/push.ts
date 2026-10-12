@@ -45,6 +45,7 @@ export async function sendPush(
   const targets = recipients.flatMap(({ uid, tokens, language }) =>
     tokens.map(token => ({ uid, token, message: messageFor(language) })));
   const deadTokens: { uid: string; token: string }[] = [];
+  const delivered = new Set<string>();
   let sent = 0;
 
   for (let i = 0; i < targets.length; i += BATCH_SIZE) {
@@ -76,6 +77,7 @@ export async function sendPush(
     tickets.forEach((ticket, index) => {
       if (ticket.status === "ok") {
         sent++;
+        delivered.add(batch[index].uid);
       } else if (ticket.details?.error === "DeviceNotRegistered") {
         deadTokens.push(batch[index]);
       } else {
@@ -87,6 +89,20 @@ export async function sendPush(
   await Promise.all(deadTokens.map(({ uid, token }) =>
     adminDb().collection("users").doc(uid).update({ pushTokens: FieldValue.arrayRemove(token) }).catch(() => {}),
   ));
+
+  // Keep an in-app copy for each person who received at least one push.
+  const inboxWrites = [...delivered].map(uid => {
+    const recipient = recipients.find(item => item.uid === uid)!;
+    const localized = messageFor(recipient.language);
+    return adminDb().collection("users").doc(uid).collection("inbox").add({
+      title: localized.title,
+      body: localized.body,
+      data: localized.data,
+      createdAt: FieldValue.serverTimestamp(),
+      readAt: null,
+    });
+  });
+  await Promise.all(inboxWrites);
 
   return { sent, recipients: recipients.length };
 }

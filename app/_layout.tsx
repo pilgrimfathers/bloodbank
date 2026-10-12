@@ -20,7 +20,7 @@ import type { NotificationData } from '@/shared/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
-const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile', 'find-donors', 'tour'];
+const PROTECTED_SEGMENTS = ['(tabs)', 'request', 'donor', 'donation', 'profile', 'find-donors', 'notifications', 'tour'];
 
 function RootNavigator() {
   const { authUser, profile, initializing } = useCurrentUser();

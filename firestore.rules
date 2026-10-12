@@ -104,6 +104,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Personal inbox entries are created by the server. Users can read their
+    // own entries and update only the read timestamp.
+    match /users/{userId}/inbox/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create, delete: if false;
+      allow update: if isAuthenticated() && request.auth.uid == userId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+    }
+
     // Donors asked directly for a request (web/src/app/api/donors/ask), server only
     match /donorAsks/{askId} {
       allow read: if isAdmin();

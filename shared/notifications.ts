@@ -52,4 +52,13 @@ export type NotificationData =
   | { type: 'donor'; donorId: string }
   | { type: 'broadcast' };
 
+export type InboxNotification = {
+  id: string;
+  title: string;
+  body: string;
+  data: NotificationData;
+  createdAt: Date | null;
+  readAt: Date | null;
+};
+
 export const ANDROID_CHANNEL_ID = 'requests';
